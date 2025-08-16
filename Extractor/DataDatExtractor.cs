@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -86,6 +86,11 @@ namespace super_toolbox
             }
         }
 
+        private int pmfCounter = 0;
+        private bool ValidatePMF(byte[] data)
+        {
+            return data.Length >= 6 && data.Take(6).SequenceEqual(PMF_SIGNATURE);
+        }
         private void ExtractPMF(string filePath, string outputDir)
         {
             byte[] content = File.ReadAllBytes(filePath);
@@ -97,18 +102,20 @@ namespace super_toolbox
 
                 int nextPmf = IndexOf(content, PMF_SIGNATURE, pmfStart + 6);
                 int nextPng = IndexOf(content, PNG_START_SEQ, pmfStart + 6);
+                int nextAt3 = IndexOf(content, AT3_START_SEQ, pmfStart + 6);
 
                 List<int> endPositions = new List<int>();
                 if (nextPmf != -1) endPositions.Add(nextPmf);
                 if (nextPng != -1) endPositions.Add(nextPng);
+                if (nextAt3 != -1) endPositions.Add(nextAt3);
 
                 int pmfEnd = endPositions.Count > 0 ? endPositions.Min() : content.Length;
                 byte[] pmfData = new byte[pmfEnd - pmfStart];
                 Array.Copy(content, pmfStart, pmfData, 0, pmfData.Length);
 
-                if (pmfData.Length > 6)
+                if (pmfData.Length > 6 && ValidatePMF(pmfData))
                 {
-                    string outPath = Path.Combine(outputDir, $"data{ExtractedFileCount + 1}.pmf");
+                    string outPath = Path.Combine(outputDir, $"data{Interlocked.Increment(ref pmfCounter)}.pmf");
                     CreateDirectoryIfNotExists(outPath);
                     File.WriteAllBytes(outPath, pmfData);
                     OnFileExtracted(outPath);
