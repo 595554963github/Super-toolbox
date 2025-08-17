@@ -98,8 +98,9 @@ namespace super_toolbox
             { "Gzip - gzip_decompress","解压" },
             { "LZ4 - lz4_compress","压缩" },
             { "LZ4 - lz4_decompress","解压" },
-            { "LZMA - lzma_compress","压缩" },
-            { "LZMA - lzma_decompress","解压" },
+            { "LZMA - 7-zip_lzma_compress","压缩" },
+            { "LZMA - 7-zip_lzma_decompress","解压" },
+            { "Wiiu - gtx转换器","图片"}
         };
 
         public SuperToolbox()
@@ -346,8 +347,9 @@ namespace super_toolbox
                 case "Gzip - gzip_decompress": return new Gzip_Decompressor();
                 case "LZ4 - lz4_compress": return new Lz4_Compressor();
                 case "LZ4 - lz4_decompress": return new Lz4_Decompressor();
-                case "LZMA - lzma_compress": return new Lzma_Compressor();
-                case "LZMA - lzma_decompress": return new Lzma_Decompressor();
+                case "LZMA - 7-zip_lzma_compress": return new Lzma_Compressor();
+                case "LZMA - 7-zip_lzma_decompress": return new Lzma_Decompressor();
+                case "Wiiu - gtx转换器": return new Wiiu_gtxConvertor();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
