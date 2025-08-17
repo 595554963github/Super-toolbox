@@ -49,47 +49,57 @@ namespace super_toolbox
             { "索尼 - gxt转换器", "图片" },
             { "ENDILTLE - APK - apk", "其他档案" },
             { "东方天空竞技场 - GPK - gpk", "其他档案" },
-            { "GxArchivedFile - dat", "其他档案"},
+            { "GxArchivedFile - dat", "其他档案" },
             { "苍之彼方的四重奏EXTRA2 - dat", "其他档案" },
             { "Lightvn galgame engine - mcdat/vndat", "其他档案" },
             { "CRI - afs archives - afs", "其他档案" },
             { "CRI - package - cpk", "其他档案" },
-            { "IdeaFactory - tid","图片"},
+            { "IdeaFactory - tid","图片" },
             { "第七史诗 - sct","图片" },
             { "万代南梦宫 - bnsf","音频" },//代表作：情热传说，英文名<Tales of Zestiria>
             { "索尼 - gxt提取器","图片" },
             { "直接绘制表面 - DDS", "图片" },
-            { "IdeaFactory - pck","其他档案"},
-            { "IdeaFactory - tex","图片"},
-            { "SEGS binary data - bin","其他档案"}, //代表作：苍翼默示录_刻之幻影
-            { "FPAC archives - pac","其他档案"},
-            { "断罪的玛利亚 - dat", "其他档案"},
-            { "进击的巨人_自由之翼 - bin", "其他档案"},
+            { "IdeaFactory - pck","其他档案" },
+            { "IdeaFactory - tex","图片" },
+            { "SEGS binary data - bin","其他档案" }, //代表作：苍翼默示录_刻之幻影
+            { "FPAC archives - pac","其他档案" },
+            { "断罪的玛利亚 - dat", "其他档案" },
+            { "进击的巨人_自由之翼 - bin", "其他档案" },
             { "PlayStation 4 bit ADPCM - vag", "音频" },
-            { "零：濡鸦之巫女 - fmsg", "其他档案"},
-            { "零：濡鸦之巫女 - kscl", "图片"},
-            { "PhyreEngine Texture - phyre", "图片"},
-            { "PhyreEngine package - pkg", "其他档案"},
+            { "零：濡鸦之巫女 - fmsg", "其他档案" },
+            { "零：濡鸦之巫女 - kscl", "图片" },
+            { "PhyreEngine Texture - phyre", "图片" },
+            { "PhyreEngine package - pkg", "其他档案" },
             { "女神异闻录5对决：幽灵先锋 - bin", "其他档案" },
             { "MPEG-4 - mp4", "其他档案" },
             { "IdeaFactory - bra","其他档案"},
             { "任天堂 - 3DS/WIIU sound", "音频" },
-            { "Binary Audio Archive - baa","其他档案"},
-            { "Audio Archive - aw","音频"},
-            { "反恐精英OL - pak","其他档案"},
-            { "IdeaFactory - pac提取器","其他档案"},
-            { "IdeaFactory - pac打包器","其他档案"},
+            { "Binary Audio Archive - baa","其他档案" },
+            { "Audio Archive - aw","音频" },
+            { "反恐精英OL - pak","其他档案" },
+            { "IdeaFactory - pac提取器","其他档案" },
+            { "IdeaFactory - pac打包器","其他档案" },
             { "光荣特库摩 - gz/exlilr", "其他档案" },
             { "光荣特库摩 - ebm", "其他档案" },
             { "光荣特库摩 - g1t", "图片" },
             { "光荣特库摩 - gmpk", "其他档案" },
             { "光荣特库摩 - pak", "其他档案" },
-            { "PowerVR转换png","图片"},
-            { "逆战 - upk","其他档案"},
-            { "战争传说 - pak","其他档案"},
-            { "IdeaFactory - cl3","其他档案"},
-            { "5pb - LNK4 archives - dat","其他档案"},
+            { "PowerVR转换png","图片" },
+            { "逆战 - upk","其他档案" },
+            { "战争传说 - pak","其他档案" },
+            { "IdeaFactory - cl3","其他档案" },
+            { "5pb - LNK4 archives - dat","其他档案" },
             { "万代南梦宫 - 情热传说 - dat","其他档案" },
+            { "Yaz0 - yaz0_compress","压缩" },
+            { "Yaz0 - yaz0_decompress","解压" },
+            { "Zlib - zlib_compress","压缩" },
+            { "Zlib - zlib_decompress","解压" },
+            { "Gzip - gzip_compress","压缩" },
+            { "Gzip - gzip_decompress","解压" },
+            { "LZ4 - lz4_compress","压缩" },
+            { "LZ4 - lz4_decompress","解压" },
+            { "LZMA - lzma_compress","压缩" },
+            { "LZMA - lzma_decompress","解压" },
         };
 
         public SuperToolbox()
@@ -97,7 +107,7 @@ namespace super_toolbox
             InitializeComponent();
             statusStrip1 = new StatusStrip();
             lblStatus = new ToolStripStatusLabel { Text = "就绪" };
-            lblFileCount = new ToolStripStatusLabel { Text = "已提取: 0 个文件" };
+            lblFileCount = new ToolStripStatusLabel { Text = "已提取:0个文件" };
             statusStrip1.Items.Add(lblStatus);
             statusStrip1.Items.Add(lblFileCount);
             this.Controls.Add(statusStrip1);
@@ -328,6 +338,16 @@ namespace super_toolbox
                 case "IdeaFactory - cl3": return new IdeaFactory_CL3Extractor();
                 case "5pb - LNK4 archives - dat": return new LNK4Extractor();
                 case "万代南梦宫 - 情热传说 - dat": return new TalesDat_Extractor();
+                case "Yaz0 - yaz0_compress": return new Yaz0_Compressor();
+                case "Yaz0 - yaz0_decompress": return new Yaz0_Decompressor();
+                case "Zlib - zlib_compress": return new Zlib_Compressor();
+                case "Zlib - zlib_decompress": return new Zlib_Decompressor();
+                case "Gzip - gzip_compress": return new Gzip_Compressor();
+                case "Gzip - gzip_decompress": return new Gzip_Decompressor();
+                case "LZ4 - lz4_compress": return new Lz4_Compressor();
+                case "LZ4 - lz4_decompress": return new Lz4_Decompressor();
+                case "LZMA - lzma_compress": return new Lzma_Compressor();
+                case "LZMA - lzma_decompress": return new Lzma_Decompressor();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
