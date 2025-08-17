@@ -79,6 +79,15 @@
 		<EmbeddedResource Include="plugins\lzma.exe">
 			<LogicalName>embedded.lzma.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\TexConv2.exe">
+			<LogicalName>embedded.TexConv2.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\gfd.dll">
+			<LogicalName>embedded.gfd.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\texUtils.dll">
+			<LogicalName>embedded.texUtils.dll</LogicalName>
+		</EmbeddedResource>
 		</ItemGroup>	
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
