@@ -73,6 +73,12 @@
 		<EmbeddedResource Include="plugins\ToBTools.exe">
 			<LogicalName>embedded.ToBTools.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\yaz0.exe">
+			<LogicalName>embedded.yaz0.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\lzma.exe">
+			<LogicalName>embedded.lzma.exe</LogicalName>
+		</EmbeddedResource>
 		</ItemGroup>	
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
@@ -83,6 +89,8 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
+		<PackageReference Include="K4os.Compression.LZ4.Streams" Version="1.3.8" />
 		<PackageReference Include="lz4net" Version="1.0.15.93" />
 		<PackageReference Include="SharpZipLib" Version="1.4.2" />
 		<PackageReference Include="Syroot.IO.BinaryData" Version="4.0.4" />
