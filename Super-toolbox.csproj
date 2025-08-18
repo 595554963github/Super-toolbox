@@ -88,6 +88,12 @@
 		<EmbeddedResource Include="plugins\texUtils.dll">
 			<LogicalName>embedded.texUtils.dll</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\cdecrypt.exe">
+			<LogicalName>embedded.cdecrypt.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\sample.exe">
+			<LogicalName>embedded.sample.exe</LogicalName>
+		</EmbeddedResource>
 		</ItemGroup>	
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
