@@ -102,6 +102,10 @@ namespace super_toolbox
             { "LZMA - 7-zip_lzma_decompress","解压" },
             { "LZSS - lzss_compress","压缩" },
             { "LZSS - lzss_decompress","解压" },
+            { "ZSTD - zstd_compress","压缩" },
+            { "ZSTD - zstd_decompress", "解压" },
+            { "Brotli - brotli_compress","压缩" },
+            { "Brotli - brotli_decompress","解压" },
             { "Wiiu - gtx转换器","图片" },
             { "Wiiu - h3/app","其他档案" },
         };
@@ -354,6 +358,10 @@ namespace super_toolbox
                 case "LZMA - 7-zip_lzma_decompress": return new Lzma_Decompressor();
                 case "LZSS - lzss_compress": return new Lzss_Compressor();
                 case "LZSS - lzss_decompress": return new Lzss_Decompressor();
+                case "ZSTD - zstd_compress": return new Zstd_Compressor();
+                case "ZSTD - zstd_decompress": return new Zstd_Decompressor();
+                case "Brotli - brotli_compress": return new Brotli_Compressor();
+                case "Brotli - brotli_decompress": return new Brotli_Decompressor();
                 case "Wiiu - gtx转换器": return new Wiiu_gtxConvertor();
                 case "Wiiu - h3/app": return new Wiiu_h3appExtractor();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
