@@ -67,3 +67,5 @@ WarTales_PakExtractor       战争传说的pak解包工具，原解包工具PAKT
 Lnk4Extractor               5pb的LNK4文件头的dat解包工具，可解xbox360游戏11只眼：交错的视线
 TalesDat_Extractor          万代南梦宫的情热传说TLDAT解包工具，也可以解狂战传说的，但只能解PS3平台的，不能解steam平台的，因为steam平台加密了
 IdeaFactory_CL3Extractor    地雷社游戏的CL3提取器，可从CL3文件里提取dat、tid等文件，代表作妖精剑士F,stcm-editor.exe这个工具太反人类，受不了，取而代之
+Wiiu_gtxConvertor           任天堂wiiu平台的gtx转换器，可以把gtx转换成png图片
+Wiiu_h3appExtractor         任天堂wiiu平台的h3app转换器，可以把wiiu平台的h3、app文件转换成loadiine格式。
