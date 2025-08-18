@@ -94,6 +94,9 @@
 		<EmbeddedResource Include="plugins\sample.exe">
 			<LogicalName>embedded.sample.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\brotli.exe">
+			<LogicalName>embedded.brotli.exe</LogicalName>
+		</EmbeddedResource>
 		</ItemGroup>	
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
@@ -111,6 +114,7 @@
 		<PackageReference Include="Syroot.IO.BinaryData" Version="4.0.4" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+		<PackageReference Include="ZstdNet" Version="1.4.5" />
 	</ItemGroup>
 
 	<ItemGroup>
