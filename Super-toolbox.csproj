@@ -97,6 +97,12 @@
 		<EmbeddedResource Include="plugins\brotli.exe">
 			<LogicalName>embedded.brotli.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\ndstool.exe">
+			<LogicalName>embedded.ndstool.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\darctool.exe">
+			<LogicalName>embedded.darctool.exe</LogicalName>
+		</EmbeddedResource>
 		</ItemGroup>	
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
