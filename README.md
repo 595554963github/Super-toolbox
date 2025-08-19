@@ -9,3 +9,7 @@
 感谢thesupersonic16制作的DALTools，可以解开switch平台和steam平台的超女神信仰诺瓦露，我下载源码将其生成dll引用到我的项目内，省得自己重头写代码解pck和tex文件了。
 
 8月17日后新增zlib、gzip、lzss、lz4、zstd、yaz0、brotli和7-zip的sdk的lzma共8种压缩和解压缩方法
+
+8月19日创建一个新的Packer文件夹，里面放置各种打包器，然后就是程序的界面里面没写提取器和打包器的默认为提取器，举个例子：3ds - darc提取器和3ds - darc打包器这种特意备注的，那它就是分打包器和解包器，
+
+而逆战 - pak，后面没写打包器还是提取器的，那它默认就是一个提取器。
