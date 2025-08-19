@@ -112,6 +112,7 @@ namespace super_toolbox
             { "Nds - nds打包器","其他档案" },
             { "3ds - darc提取器","其他档案" },
             { "3ds - darc打包器","其他档案" },
+            { "Nds - narc提取器","其他档案" },
         };
 
         public SuperToolbox()
@@ -372,6 +373,7 @@ namespace super_toolbox
                 case "Nds - nds打包器": return new Nds_Repacker();
                 case "3ds - darc提取器": return new Darc_Extractor();
                 case "3ds - darc打包器": return new Darc_Repacker();
+                case "Nds - narc提取器": return new NarcExtractor();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
