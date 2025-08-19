@@ -108,6 +108,10 @@ namespace super_toolbox
             { "Brotli - brotli_decompress","解压" },
             { "Wiiu - gtx转换器","图片" },
             { "Wiiu - h3/app","其他档案" },
+            { "Nds - nds提取器","其他档案" },
+            { "Nds - nds打包器","其他档案" },
+            { "3ds - darc提取器","其他档案" },
+            { "3ds - darc打包器","其他档案" },
         };
 
         public SuperToolbox()
@@ -364,6 +368,10 @@ namespace super_toolbox
                 case "Brotli - brotli_decompress": return new Brotli_Decompressor();
                 case "Wiiu - gtx转换器": return new Wiiu_gtxConvertor();
                 case "Wiiu - h3/app": return new Wiiu_h3appExtractor();
+                case "Nds - nds提取器": return new Nds_Extractor();
+                case "Nds - nds打包器": return new Nds_Repacker();
+                case "3ds - darc提取器": return new Darc_Extractor();
+                case "3ds - darc打包器": return new Darc_Repacker();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
@@ -442,8 +450,9 @@ namespace super_toolbox
         {
             if (e.Node != null && lblStatus != null)
             {
-                string nodeType = e.Node.Tag as string == "category" ? "分组" : "提取器";
-                lblStatus.Text = $"已选择: {e.Node.Text} ({nodeType})";
+                lblStatus.Text = e.Node.Tag as string == "category"
+                    ? $"已选择: {e.Node.Text} (分组)"
+                    : $"已选择: {e.Node.Text}";
             }
         }
 
