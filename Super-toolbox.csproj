@@ -22,8 +22,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="plugins\dds-phyre-tool.dll">
-			<LogicalName>embedded.dds_phyre_tool.dll</LogicalName>
+		<EmbeddedResource Include="plugins\dds-phyre-tool.exe">
+			<LogicalName>embedded.dds_phyre_tool.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\wsyster.exe">
 			<LogicalName>embedded.wsyster.exe</LogicalName>
