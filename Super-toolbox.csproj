@@ -103,6 +103,21 @@
 		<EmbeddedResource Include="plugins\darctool.exe">
 			<LogicalName>embedded.darctool.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\ooz.exe">
+			<LogicalName>embedded.ooz.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\huffman.exe">
+			<LogicalName>embedded.huffman.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\LZ77.exe">
+			<LogicalName>embedded.LZ77.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\LZ77.dll">
+			<LogicalName>embedded.LZ77.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\LZ77.runtimeconfig.json">
+			<LogicalName>embedded.LZ77.runtimeconfig.json</LogicalName>
+		</EmbeddedResource>		
 		</ItemGroup>	
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
