@@ -98,6 +98,8 @@ namespace super_toolbox
             { "Gzip - gzip_decompress","解压" },
             { "LZ4 - lz4_compress","压缩" },
             { "LZ4 - lz4_decompress","解压" },
+            { "LZ77 - lz77_compress","压缩" },
+            { "LZ77 - lz77_decompress","解压" },
             { "LZMA - 7-zip_lzma_compress","压缩" },
             { "LZMA - 7-zip_lzma_decompress","解压" },
             { "LZSS - lzss_compress","压缩" },
@@ -106,6 +108,10 @@ namespace super_toolbox
             { "ZSTD - zstd_decompress", "解压" },
             { "Brotli - brotli_compress","压缩" },
             { "Brotli - brotli_decompress","解压" },
+            { "Oodle - oodle_compress","压缩" },
+            { "Oodle - oodle_decompress","解压" },
+            { "Huffman - huffman_compress","压缩" },
+            { "Huffman - huffman_decompress","解压" },
             { "Wiiu - gtx转换器","图片" },
             { "Wiiu - h3/app","其他档案" },
             { "Nds - nds提取器","其他档案" },
@@ -359,6 +365,8 @@ namespace super_toolbox
                 case "Gzip - gzip_decompress": return new Gzip_Decompressor();
                 case "LZ4 - lz4_compress": return new Lz4_Compressor();
                 case "LZ4 - lz4_decompress": return new Lz4_Decompressor();
+                case "LZ77 - lz77_compress": return new Lz77_Compressor();
+                case "LZ77 - lz77_decompress": return new Lz77_Decompressor();
                 case "LZMA - 7-zip_lzma_compress": return new Lzma_Compressor();
                 case "LZMA - 7-zip_lzma_decompress": return new Lzma_Decompressor();
                 case "LZSS - lzss_compress": return new Lzss_Compressor();
@@ -367,6 +375,10 @@ namespace super_toolbox
                 case "ZSTD - zstd_decompress": return new Zstd_Decompressor();
                 case "Brotli - brotli_compress": return new Brotli_Compressor();
                 case "Brotli - brotli_decompress": return new Brotli_Decompressor();
+                case "Oodle - oodle_compress": return new Oodle_Compressor();
+                case "Oodle - oodle_decompress": return new Oodle_Decompressor();
+                case "Huffman - huffman_compress": return new Huffman_Compressor();
+                case "Huffman - huffman_decompress": return new Huffman_Decompressor();
                 case "Wiiu - gtx转换器": return new Wiiu_gtxConvertor();
                 case "Wiiu - h3/app": return new Wiiu_h3appExtractor();
                 case "Nds - nds提取器": return new Nds_Extractor();
