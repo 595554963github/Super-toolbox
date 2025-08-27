@@ -119,6 +119,10 @@ namespace super_toolbox
             { "3ds - darc提取器","其他档案" },
             { "3ds - darc打包器","其他档案" },
             { "Nds - narc提取器","其他档案" },
+            { "PS3 - psarc","其他档案" },
+            { "Filename - PS3DALpck1","其他档案" },
+            { "Filename - PS3DALpck2","其他档案" },
+            { "传颂之物二人的白皇 - sdat","其他档案" },
         };
 
         public SuperToolbox()
@@ -386,6 +390,10 @@ namespace super_toolbox
                 case "3ds - darc提取器": return new Darc_Extractor();
                 case "3ds - darc打包器": return new Darc_Repacker();
                 case "Nds - narc提取器": return new NarcExtractor();
+                case "PS3 - psarc": return new PsarcExtractor();
+                case "Filename - PS3DALpck1": return new FilenameExtractor();
+                case "Filename - PS3DALpck2": return new Filename2Extractor();
+                case "传颂之物二人的白皇 - sdat": return new SdatExtractor();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
