@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Diagnostics;
 using System.Reflection;
@@ -10,38 +10,23 @@ namespace super_toolbox
     public class PsarcExtractor : BaseExtractor
     {
         private static string _tempExePath;
-        private static string _tempDllPath;
 
         static PsarcExtractor()
         {
             string tempDir = Path.Combine(Path.GetTempPath(), "supertoolbox_temp");
             Directory.CreateDirectory(tempDir);
 
-            _tempExePath = Path.Combine(tempDir, "psarc-tool.exe");
+            _tempExePath = Path.Combine(tempDir, "Unpsarc.exe");
             if (!File.Exists(_tempExePath))
             {
-                using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("embedded.psarc-tool.exe"))
+                using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("embedded.Unpsarc.exe"))
                 {
                     if (stream == null)
-                        throw new FileNotFoundException("嵌入的psarc-tool.exe资源未找到");
+                        throw new FileNotFoundException("嵌入的Unpsarc.exe资源未找到");
 
                     byte[] buffer = new byte[stream.Length];
                     stream.Read(buffer, 0, buffer.Length);
                     File.WriteAllBytes(_tempExePath, buffer);
-                }
-            }
-
-            _tempDllPath = Path.Combine(tempDir, "zlib1.dll");
-            if (!File.Exists(_tempDllPath))
-            {
-                using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("embedded.zlib1.dll"))
-                {
-                    if (stream == null)
-                        throw new FileNotFoundException("嵌入的zlib1.dll资源未找到");
-
-                    byte[] buffer = new byte[stream.Length];
-                    stream.Read(buffer, 0, buffer.Length);
-                    File.WriteAllBytes(_tempDllPath, buffer);
                 }
             }
         }
@@ -72,19 +57,14 @@ namespace super_toolbox
                         cancellationToken.ThrowIfCancellationRequested();
 
                         string psarcDir = Path.GetDirectoryName(psarcFilePath) ?? Directory.GetCurrentDirectory();
-                        string tmpDir = Path.Combine(psarcDir, "tmp");
-
-                        if (!Directory.Exists(tmpDir))
-                        {
-                            Directory.CreateDirectory(tmpDir);
-                        }
+                        string psarcFileName = Path.GetFileNameWithoutExtension(psarcFilePath);
 
                         var process = new Process
                         {
                             StartInfo = new ProcessStartInfo
                             {
                                 FileName = _tempExePath,
-                                Arguments = $"-x \"{psarcFilePath}\"",
+                                Arguments = $"-x \"{psarcFileName}\"",
                                 WorkingDirectory = psarcDir,
                                 UseShellExecute = false,
                                 CreateNoWindow = true,
@@ -106,19 +86,15 @@ namespace super_toolbox
                             continue;
                         }
 
-                        try
+                        string expectedOutputDir = Path.Combine(psarcDir, psarcFileName);
+                        if (Directory.Exists(expectedOutputDir))
                         {
-                            if (Directory.Exists(tmpDir))
-                            {
-                                Directory.Delete(tmpDir, true);
-                            }
+                            OnFileExtracted(psarcFilePath);
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            Console.WriteLine($"清理临时文件夹失败: {ex.Message}");
+                            OnExtractionFailed($"解包失败: 未找到输出目录 {expectedOutputDir}");
                         }
-
-                        OnFileExtracted(psarcFilePath);
                     }
 
                     OnExtractionCompleted();
