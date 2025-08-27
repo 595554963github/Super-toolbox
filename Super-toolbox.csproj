@@ -137,6 +137,9 @@
 		<EmbeddedResource Include="plugins\psarc-tool.exe">
 			<LogicalName>embedded.psarc-tool.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\make_npdata.exe">
+			<LogicalName>embedded.make_npdata.exe</LogicalName>
+		</EmbeddedResource>
 		</ItemGroup>	
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
