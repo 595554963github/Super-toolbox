@@ -119,7 +119,8 @@ namespace super_toolbox
             { "3ds - darc提取器","其他档案" },
             { "3ds - darc打包器","其他档案" },
             { "Nds - narc提取器","其他档案" },
-            { "PS3 - psarc","其他档案" },
+            { "PS3 - psarc提取器","其他档案" },
+            { "PS3 - psarc打包器","其他档案" },
             { "PS3 - NPDRM - sdat","其他档案" },
             { "Filename - PS3DALpck1","其他档案" },
             { "Filename - PS3DALpck2","其他档案" },
@@ -394,7 +395,8 @@ namespace super_toolbox
                 case "3ds - darc提取器": return new Darc_Extractor();
                 case "3ds - darc打包器": return new Darc_Repacker();
                 case "Nds - narc提取器": return new NarcExtractor();
-                case "PS3 - psarc": return new PsarcExtractor();
+                case "PS3 - psarc提取器": return new PsarcExtractor();
+                case "PS3 - psarc打包器": return new PsarcRepacker();
                 case "PS3 - NPDRM - sdat": return new NPD_Extractor();
                 case "Filename - PS3DALpck1": return new FilenameExtractor();
                 case "Filename - PS3DALpck2": return new Filename2Extractor();
