@@ -33,9 +33,9 @@ TidExtractor        地雷社海王星系列pac文件经常存储这种tid文件
 SctExtractor        第七史诗的sct解包工具，从data.pack文件里面提取出来的sct文件可以使用此提取器转换为png
 Bnsf_Extractor   万代南梦宫的bnsf音频提取器，从TLFILE.TLDAT文件里面提取，可解情热传说和ps3平台的狂战传说，后者steam版因加密无法提取。
 SonyGxtExtractor  从索尼的psv、psp等平台游戏里面提取gxt文件，很多游戏喜欢把一堆gxt文件打包到一个个包文件里。
-DdsExtracor       从游戏文件里面提取dds图片的提取器，亲测战场女武神4，一般的dds和DX10纹理的dds都可以提取出来。
-StingPckExtracor     用于解包steam和switch平台的超女神信仰诺瓦露
-StingTexExtracor     用于解包steam和switch平台的超女神信仰诺瓦露
+DdsExtractor       从游戏文件里面提取dds图片的提取器，亲测战场女武神4，一般的dds和DX10纹理的dds都可以提取出来。
+StingPckExtractor     用于解包steam和switch平台的超女神信仰诺瓦露、psv平台的约会大作战凛绪轮回
+StingTexExtractor     用于解包steam和switch平台的超女神信仰诺瓦露
 DataDatExtractor   ps3游戏断罪的玛利亚专用提取器，可解包data.dat文件，提取出里面的视频、音频和图片。
 FPAC_Extractor     FARC档案解包工具，代表作有苍翼默示录：刻之幻影，从bin文件里提取出pac文件可以用此提取器提取音频和图片。
 SEGS_BinExtractor   苍翼默示录：刻之幻影的bin文件解包工具，可提取出里面的所有pac文件。
@@ -74,6 +74,8 @@ Darc_Extractor              任天堂3ds平台的darc解包工具，代表作为
 Darc_Repacker               任天堂3ds平台的darc打包工具，可以把一个文件夹里的文件打包成darc文件
 Narc_Extractor              任天堂nds平台的narc文件提取器
 PsarcExtractor              索尼ps3平台的psarc解包工具，代表作：第二次超级机器人大战OG
+PsarcRepacker               索尼ps3平台的psarc打包工具，可以把一个文件夹重新打包成psarc文件
 SdatExtractor               传颂之物二人的白皇的sdat文件提取器，跟约会大作战、超女神信仰诺瓦露的pck文件头相同，但是解包方法不通用
 FilenameExtractor           ps3约会大作战的pck文件提取器，用于解voice.pck、VoiceEnv.pck、PatternFade.pck、Font.pck、FontMsg.pck，和Filename2Extractor冲突无法兼容
 Filename2Extractor          ps3约会大作战的pck文件提取器，和超女神信仰诺瓦露的pck文件头相同，但是解包方法不通用，只用于解MA和MP文件夹下的pck
+NPD_Extractor               索尼ps3平台的sdat解包工具，代表作：约会大作战或守安装、约会大作战凛弥理想乡、第二次超级机器人大战OG
