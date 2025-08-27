@@ -59,8 +59,8 @@ namespace super_toolbox
             { "万代南梦宫 - bnsf","音频" },//代表作：情热传说，英文名<Tales of Zestiria>
             { "索尼 - gxt提取器","图片" },
             { "直接绘制表面 - DDS", "图片" },
-            { "IdeaFactory - pck","其他档案" },
-            { "IdeaFactory - tex","图片" },
+            { "超女神信仰诺瓦露 - pck","其他档案" },
+            { "超女神信仰诺瓦露 - tex","图片" },
             { "SEGS binary data - bin","其他档案" }, //代表作：苍翼默示录_刻之幻影
             { "FPAC archives - pac","其他档案" },
             { "断罪的玛利亚 - dat", "其他档案" },
@@ -120,6 +120,7 @@ namespace super_toolbox
             { "3ds - darc打包器","其他档案" },
             { "Nds - narc提取器","其他档案" },
             { "PS3 - psarc","其他档案" },
+            { "PS3 - NPDRM - sdat","其他档案" },
             { "Filename - PS3DALpck1","其他档案" },
             { "Filename - PS3DALpck2","其他档案" },
             { "传颂之物二人的白皇 - sdat","其他档案" },
@@ -128,11 +129,14 @@ namespace super_toolbox
         public SuperToolbox()
         {
             InitializeComponent();
+
             statusStrip1 = new StatusStrip();
             lblStatus = new ToolStripStatusLabel { Text = "就绪" };
             lblFileCount = new ToolStripStatusLabel { Text = "已提取:0个文件" };
             statusStrip1.Items.Add(lblStatus);
             statusStrip1.Items.Add(lblFileCount);
+
+            statusStrip1.Dock = DockStyle.Bottom;
             this.Controls.Add(statusStrip1);
 
             InitializeTreeView();
@@ -329,8 +333,8 @@ namespace super_toolbox
                 case "万代南梦宫 - bnsf": return new Bnsf_Extractor();
                 case "索尼 - gxt提取器": return new SonyGxtExtractor();
                 case "直接绘制表面 - DDS": return new DdsExtractor();
-                case "IdeaFactory - pck": return new StingPckExtractor();
-                case "IdeaFactory - tex": return new StingTexExtractor();
+                case "超女神信仰诺瓦露 - pck": return new StingPckExtractor();
+                case "超女神信仰诺瓦露 - tex": return new StingTexExtractor();
                 case "SEGS binary data - bin": return new SEGS_BinExtractor();
                 case "FPAC archives - pac": return new FPAC_Extractor();
                 case "PlayStation 4 bit ADPCM - vag": return new VagExtractor();
@@ -391,6 +395,7 @@ namespace super_toolbox
                 case "3ds - darc打包器": return new Darc_Repacker();
                 case "Nds - narc提取器": return new NarcExtractor();
                 case "PS3 - psarc": return new PsarcExtractor();
+                case "PS3 - NPDRM - sdat": return new NPD_Extractor();
                 case "Filename - PS3DALpck1": return new FilenameExtractor();
                 case "Filename - PS3DALpck2": return new Filename2Extractor();
                 case "传颂之物二人的白皇 - sdat": return new SdatExtractor();
