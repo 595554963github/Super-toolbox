@@ -131,11 +131,8 @@
 		<EmbeddedResource Include="plugins\LZ77.runtimeconfig.json">
 			<LogicalName>embedded.LZ77.runtimeconfig.json</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\zlib1.dll">
-			<LogicalName>embedded.zlib1.dll</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\psarc-tool.exe">
-			<LogicalName>embedded.psarc-tool.exe</LogicalName>
+		<EmbeddedResource Include="plugins\Unpsarc.exe">
+			<LogicalName>embedded.Unpsarc.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\make_npdata.exe">
 			<LogicalName>embedded.make_npdata.exe</LogicalName>
