@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Diagnostics;
 using System.Reflection;
@@ -76,12 +76,10 @@ namespace super_toolbox
                             continue;
                         }
 
-                        // 确定输出文件路径
                         string outputFilePath = Path.ChangeExtension(sdatFilePath, ".dec");
-                        string outputDir = Path.GetDirectoryName(outputFilePath);
+                        string? outputDir = Path.GetDirectoryName(outputFilePath);
 
-                        // 确保输出目录存在
-                        if (!Directory.Exists(outputDir))
+                        if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
                         {
                             Directory.CreateDirectory(outputDir);
                         }
@@ -91,7 +89,7 @@ namespace super_toolbox
                             StartInfo = new ProcessStartInfo
                             {
                                 FileName = _tempExePath,
-                                Arguments = $"-d \"{sdatFilePath}\" \"{outputFilePath}\" 0", // 添加了输出文件参数
+                                Arguments = $"-d \"{sdatFilePath}\" \"{outputFilePath}\" 0", 
                                 WorkingDirectory = Path.GetDirectoryName(sdatFilePath),
                                 UseShellExecute = false,
                                 CreateNoWindow = true,
@@ -102,20 +100,17 @@ namespace super_toolbox
 
                         process.Start();
 
-                        // 读取输出信息用于调试
                         string output = process.StandardOutput.ReadToEnd();
                         string error = process.StandardError.ReadToEnd();
 
                         process.WaitForExit();
 
-                        // 检查进程退出代码
                         if (process.ExitCode == 0 && File.Exists(outputFilePath))
                         {
                             OnFileExtracted(outputFilePath);
                         }
                         else
                         {
-                            // 处理失败情况
                             Console.WriteLine($"处理失败: {sdatFilePath}");
                             Console.WriteLine($"标准输出: {output}");
                             Console.WriteLine($"错误输出: {error}");
