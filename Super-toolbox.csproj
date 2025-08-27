@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net8.0-windows</TargetFramework>
-		<RootNamespace>supertoolbox</RootNamespace>
+		<RootNamespace>super_toolbox</RootNamespace>
 		<Nullable>enable</Nullable>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -22,6 +22,19 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<EmbeddedResource Include="mapping_tables\Utawarerumono_Mask of Truth\BGM_map.txt" />
+		<EmbeddedResource Include="mapping_tables\Utawarerumono_Mask of Truth\BtlVoice_map.txt" />
+		<EmbeddedResource Include="mapping_tables\Utawarerumono_Mask of Truth\DataBase2_map.txt" />
+		<EmbeddedResource Include="mapping_tables\Utawarerumono_Mask of Truth\DataBase_map.txt" />
+		<EmbeddedResource Include="mapping_tables\Utawarerumono_Mask of Truth\Exi_UT2_map.txt" />
+		<EmbeddedResource Include="mapping_tables\Utawarerumono_Mask of Truth\Grp1_map.txt" />
+		<EmbeddedResource Include="mapping_tables\Utawarerumono_Mask of Truth\Grp2_map.txt" />
+		<EmbeddedResource Include="mapping_tables\Utawarerumono_Mask of Truth\Grp3_map.txt" />
+		<EmbeddedResource Include="mapping_tables\Utawarerumono_Mask of Truth\Model_map.txt" />
+		<EmbeddedResource Include="mapping_tables\Utawarerumono_Mask of Truth\PatternFade_map.txt" />
+		<EmbeddedResource Include="mapping_tables\Utawarerumono_Mask of Truth\ScriptEvent_map.txt" />
+		<EmbeddedResource Include="mapping_tables\Utawarerumono_Mask of Truth\SE_map.txt" />
+		<EmbeddedResource Include="mapping_tables\Utawarerumono_Mask of Truth\Voice_map.txt" />
 		<EmbeddedResource Include="plugins\dds-phyre-tool.exe">
 			<LogicalName>embedded.dds_phyre_tool.exe</LogicalName>
 		</EmbeddedResource>
@@ -117,7 +130,13 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\LZ77.runtimeconfig.json">
 			<LogicalName>embedded.LZ77.runtimeconfig.json</LogicalName>
-		</EmbeddedResource>		
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\zlib1.dll">
+			<LogicalName>embedded.zlib1.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\psarc-tool.exe">
+			<LogicalName>embedded.psarc-tool.exe</LogicalName>
+		</EmbeddedResource>
 		</ItemGroup>	
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
@@ -165,9 +184,5 @@
 		<None Update="Extractor说明.txt">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Remove="C:\Users\Administrator\.nuget\packages\zstdnet\1.4.5\build\x86\libzstd.dll" />
 	</ItemGroup>
 </Project>
