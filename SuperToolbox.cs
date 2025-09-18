@@ -1,3 +1,4 @@
+using Microsoft.VisualBasic.Devices;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -125,6 +126,11 @@ namespace super_toolbox
             { "Filename - PS3DALpck1","其他档案" },
             { "Filename - PS3DALpck2","其他档案" },
             { "传颂之物二人的白皇 - sdat","其他档案" },
+            { "CRI - afs打包器","其他档案" },
+            { "Mages - mpk提取器","其他档案" },
+            { "Mages - mpk打包器","其他档案" },
+            { "PS4 - gnf转换器","图片" },
+            { "wav2qoa - 转换qoa", "音频"},
         };
 
         public SuperToolbox()
@@ -401,6 +407,11 @@ namespace super_toolbox
                 case "Filename - PS3DALpck1": return new FilenameExtractor();
                 case "Filename - PS3DALpck2": return new Filename2Extractor();
                 case "传颂之物二人的白皇 - sdat": return new SdatExtractor();
+                case "CRI - afs打包器": return new AfsRepacker();
+                case "Mages - mpk提取器": return new MagesMpkExtractor();
+                case "Mages - mpk打包器": return new MagesMpkRepacker();
+                case "PS4 - gnf转换器": return new GNF2PNG_Converter();
+                case "wav2qoa - 转换qoa": return new Wav2Qoa_Converter();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
