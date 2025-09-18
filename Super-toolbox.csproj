@@ -9,6 +9,7 @@
 		<EnableDefaultCompileItems>true</EnableDefaultCompileItems>
 		<NoWarn>MSB3277;MSB3026</NoWarn>
 		<GenerateDependencyFile>false</GenerateDependencyFile>
+		<Configurations>Debug;Release;x86</Configurations>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -136,6 +137,18 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\make_npdata.exe">
 			<LogicalName>embedded.make_npdata.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\afs_util.exe">
+			<LogicalName>embedded.afs_util.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\mpk.exe">
+			<LogicalName>embedded.mpk.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\GNF2PNG.exe">
+			<LogicalName>embedded.GNF2PNG.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\wav2qoa.exe">
+			<LogicalName>embedded.wav2qoa.exe</LogicalName>
 		</EmbeddedResource>
 		</ItemGroup>	
 	<ItemGroup>
