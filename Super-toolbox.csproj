@@ -150,6 +150,15 @@
 		<EmbeddedResource Include="plugins\wav2qoa.exe">
 			<LogicalName>embedded.wav2qoa.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\CMVDecode.exe">
+			<LogicalName>embedded.CMVDecode.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\minlz.exe">
+			<LogicalName>embedded.minlz.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\lz4c.exe">
+			<LogicalName>embedded.lz4c.exe</LogicalName>
+		</EmbeddedResource>
 		</ItemGroup>	
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
