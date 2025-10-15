@@ -1,15 +1,5 @@
-using Microsoft.VisualBasic.Devices;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace super_toolbox
 {
@@ -97,8 +87,10 @@ namespace super_toolbox
             { "Zlib - zlib_decompress","解压" },
             { "Gzip - gzip_compress","压缩" },
             { "Gzip - gzip_decompress","解压" },
-            { "LZ4 - lz4_compress","压缩" },
-            { "LZ4 - lz4_decompress","解压" },
+            { "Lz4 - lz4_compress","压缩" },
+            { "Lz4 - lz4_decompress","解压" },
+            { "Lz4c - lz4c_Compressor","压缩" },
+            { "Lz4c - lz4c_Decompressor","解压" },
             { "LZ77 - lz77_compress","压缩" },
             { "LZ77 - lz77_decompress","解压" },
             { "LZMA - 7-zip_lzma_compress","压缩" },
@@ -113,6 +105,8 @@ namespace super_toolbox
             { "Oodle - oodle_decompress","解压" },
             { "Huffman - huffman_compress","压缩" },
             { "Huffman - huffman_decompress","解压" },
+            { "Minlz - minlz_compress","压缩" },
+            { "Minlz - minlz_decompress","解压" },
             { "Wiiu - gtx转换器","图片" },
             { "Wiiu - h3/app","其他档案" },
             { "Nds - nds提取器","其他档案" },
@@ -131,6 +125,9 @@ namespace super_toolbox
             { "Mages - mpk打包器","其他档案" },
             { "PS4 - gnf转换器","图片" },
             { "wav2qoa - 转换qoa", "音频"},
+            {"CMVS_Engine - cmv","其他档案" },
+            { "SRPG_Studio - dts","其他档案" },
+            { "XACT Wave Bank - xwb打包器","其他档案" },
         };
 
         public SuperToolbox()
@@ -378,8 +375,10 @@ namespace super_toolbox
                 case "Zlib - zlib_decompress": return new Zlib_Decompressor();
                 case "Gzip - gzip_compress": return new Gzip_Compressor();
                 case "Gzip - gzip_decompress": return new Gzip_Decompressor();
-                case "LZ4 - lz4_compress": return new Lz4_Compressor();
-                case "LZ4 - lz4_decompress": return new Lz4_Decompressor();
+                case "Lz4 - lz4_compress": return new Lz4_Compressor();
+                case "Lz4 - lz4_decompress": return new Lz4_Decompressor();
+                case "Lz4c - lz4c_Compressor": return new Lz4c_Compressor();
+                case "Lz4c - lz4c_Decompressor": return new Lz4c_Decompressor();
                 case "LZ77 - lz77_compress": return new Lz77_Compressor();
                 case "LZ77 - lz77_decompress": return new Lz77_Decompressor();
                 case "LZMA - 7-zip_lzma_compress": return new Lzma_Compressor();
@@ -394,6 +393,8 @@ namespace super_toolbox
                 case "Oodle - oodle_decompress": return new Oodle_Decompressor();
                 case "Huffman - huffman_compress": return new Huffman_Compressor();
                 case "Huffman - huffman_decompress": return new Huffman_Decompressor();
+                case "Minlz - minlz_compress": return new Minlz_Compressor();
+                case "Minlz - minlz_decompress": return new Minlz_Decompressor();               
                 case "Wiiu - gtx转换器": return new Wiiu_gtxConvertor();
                 case "Wiiu - h3/app": return new Wiiu_h3appExtractor();
                 case "Nds - nds提取器": return new Nds_Extractor();
@@ -412,6 +413,9 @@ namespace super_toolbox
                 case "Mages - mpk打包器": return new MagesMpkRepacker();
                 case "PS4 - gnf转换器": return new GNF2PNG_Converter();
                 case "wav2qoa - 转换qoa": return new Wav2Qoa_Converter();
+                case "CMVS_Engine - cmv": return new CmvDecoder();
+                case "SRPG_Studio - dts": return new DtsExtractor();
+                case "XACT Wave Bank - xwb打包器": return new XWBPacker();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
