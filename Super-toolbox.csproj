@@ -159,6 +159,12 @@
 		<EmbeddedResource Include="plugins\lz4c.exe">
 			<LogicalName>embedded.lz4c.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\SRPG_Unpacker.exe">
+			<LogicalName>embedded.SRPG_Unpacker.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\XWBTool.exe">
+			<LogicalName>embedded.XWBTool.exe</LogicalName>
+		</EmbeddedResource>
 		</ItemGroup>	
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
