@@ -207,22 +207,26 @@ namespace super_toolbox
                 EnqueueMessage("正在进行提取操作，请等待...");
                 return;
             }
+
             string dirPath = txtFolderPath.Text;
             if (string.IsNullOrEmpty(dirPath) || !Directory.Exists(dirPath))
             {
                 EnqueueMessage($"错误: {dirPath} 不是一个有效的目录。");
                 return;
             }
+
             TreeNode selectedNode = treeView1.SelectedNode;
             if (selectedNode == null || selectedNode.Tag as string == "category")
             {
                 EnqueueMessage("请选择一个具体的文件格式。");
                 return;
             }
+
             string formatName = selectedNode.Text;
             totalFileCount = 0;
             isExtracting = true;
             UpdateUIState(true);
+
             try
             {
                 var extractor = CreateExtractor(formatName);
@@ -233,36 +237,11 @@ namespace super_toolbox
                     UpdateUIState(false);
                     return;
                 }
+
                 EnqueueMessage($"开始提取 {formatName} 格式的文件...");
-                var fileExtractedEventInfo = extractor.GetType().GetEvent("FileExtracted");
-                var extractionProgressEventInfo = extractor.GetType().GetEvent("ExtractionProgress");
-                var filesExtractedEventInfo = extractor.GetType().GetEvent("FilesExtracted");
-                if (fileExtractedEventInfo != null)
-                {
-                    fileExtractedEventInfo.AddEventHandler(extractor, new EventHandler<string>((s, fileName) =>
-                    {
-                        Interlocked.Increment(ref totalFileCount);
-                        EnqueueMessage($"已提取: {Path.GetFileName(fileName)}");
-                    }));
-                }
-                if (extractionProgressEventInfo != null)
-                {
-                    extractionProgressEventInfo.AddEventHandler(extractor, new EventHandler<string>((s, message) =>
-                    {
-                        EnqueueMessage(message);
-                    }));
-                }
-                if (filesExtractedEventInfo != null)
-                {
-                    filesExtractedEventInfo.AddEventHandler(extractor, new EventHandler<List<string>>((s, fileNames) =>
-                    {
-                        foreach (var fileName in fileNames)
-                        {
-                            Interlocked.Increment(ref totalFileCount);
-                            EnqueueMessage($"已提取: {Path.GetFileName(fileName)}");
-                        }
-                    }));
-                }
+
+                SubscribeToExtractorEvents(extractor);
+
                 await Task.Run(async () =>
                 {
                     try
@@ -305,7 +284,82 @@ namespace super_toolbox
                 UpdateUIState(false);
             }
         }
+        private void SubscribeToExtractorEvents(BaseExtractor extractor)
+        {
 
+            extractor.FileExtracted += (s, fileName) =>
+            {
+                Interlocked.Increment(ref totalFileCount);
+                EnqueueMessage($"已提取: {Path.GetFileName(fileName)}");
+                UpdateFileCountDisplay();
+            };
+
+            extractor.ProgressUpdated += (s, progress) =>
+            {
+            };
+
+            extractor.ExtractionCompleted += (s, count) =>
+            {
+                EnqueueMessage($"提取完成，共提取 {count} 个文件");
+            };
+
+            extractor.ExtractionFailed += (s, error) =>
+            {
+                EnqueueMessage($"提取失败: {error}");
+            };
+
+            var type = extractor.GetType();
+
+            var extractionStartedEvent = type.GetEvent("ExtractionStarted");
+            if (extractionStartedEvent != null)
+            {
+                extractionStartedEvent.AddEventHandler(extractor, new EventHandler<string>((s, message) =>
+                {
+                    EnqueueMessage(message);
+                }));
+            }
+
+            var extractionProgressEvent = type.GetEvent("ExtractionProgress");
+            if (extractionProgressEvent != null)
+            {
+                extractionProgressEvent.AddEventHandler(extractor, new EventHandler<string>((s, message) =>
+                {
+                    EnqueueMessage(message);
+                }));
+            }
+
+            var extractionErrorEvent = type.GetEvent("ExtractionError");
+            if (extractionErrorEvent != null)
+            {
+                extractionErrorEvent.AddEventHandler(extractor, new EventHandler<string>((s, message) =>
+                {
+                    EnqueueMessage($"错误: {message}");
+                }));
+            }
+
+            var extractionMessageEvent = type.GetEvent("ExtractionMessage");
+            if (extractionMessageEvent != null)
+            {
+                extractionMessageEvent.AddEventHandler(extractor, new EventHandler<string>((s, message) =>
+                {
+                    EnqueueMessage(message);
+                }));
+            }
+
+            var filesExtractedEvent = type.GetEvent("FilesExtracted");
+            if (filesExtractedEvent != null)
+            {
+                filesExtractedEvent.AddEventHandler(extractor, new EventHandler<List<string>>((s, fileNames) =>
+                {
+                    foreach (var fileName in fileNames)
+                    {
+                        Interlocked.Increment(ref totalFileCount);
+                        EnqueueMessage($"已提取: {Path.GetFileName(fileName)}");
+                    }
+                    UpdateFileCountDisplay();
+                }));
+            }
+        }
         private BaseExtractor CreateExtractor(string formatName)
         {
             switch (formatName)
@@ -394,7 +448,7 @@ namespace super_toolbox
                 case "Huffman - huffman_compress": return new Huffman_Compressor();
                 case "Huffman - huffman_decompress": return new Huffman_Decompressor();
                 case "Minlz - minlz_compress": return new Minlz_Compressor();
-                case "Minlz - minlz_decompress": return new Minlz_Decompressor();               
+                case "Minlz - minlz_decompress": return new Minlz_Decompressor();
                 case "Wiiu - gtx转换器": return new Wiiu_gtxConvertor();
                 case "Wiiu - h3/app": return new Wiiu_h3appExtractor();
                 case "Nds - nds提取器": return new Nds_Extractor();
