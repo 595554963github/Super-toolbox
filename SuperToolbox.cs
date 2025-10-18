@@ -89,8 +89,8 @@ namespace super_toolbox
             { "Gzip - gzip_decompress","解压" },
             { "Lz4 - lz4_compress","压缩" },
             { "Lz4 - lz4_decompress","解压" },
-            { "Lz4c - lz4c_Compressor","压缩" },
-            { "Lz4c - lz4c_Decompressor","解压" },
+            { "Lz4c - lz4c_Compress","压缩" },
+            { "Lz4c - lz4c_Decompress","解压" },
             { "LZ77 - lz77_compress","压缩" },
             { "LZ77 - lz77_decompress","解压" },
             { "LZMA - 7-zip_lzma_compress","压缩" },
@@ -107,6 +107,10 @@ namespace super_toolbox
             { "Huffman - huffman_decompress","解压" },
             { "Minlz - minlz_compress","压缩" },
             { "Minlz - minlz_decompress","解压" },
+            { "Lzham - lzham自定义压缩","压缩" },
+            { "Lzham - lzham自定义解压","解压" },
+            { "Lzham - Lzham标准压缩","压缩" },
+            { "Lzham - Lzham标准解压","解压" },
             { "Wiiu - gtx转换器","图片" },
             { "Wiiu - h3/app","其他档案" },
             { "Nds - nds提取器","其他档案" },
@@ -431,8 +435,8 @@ namespace super_toolbox
                 case "Gzip - gzip_decompress": return new Gzip_Decompressor();
                 case "Lz4 - lz4_compress": return new Lz4_Compressor();
                 case "Lz4 - lz4_decompress": return new Lz4_Decompressor();
-                case "Lz4c - lz4c_Compressor": return new Lz4c_Compressor();
-                case "Lz4c - lz4c_Decompressor": return new Lz4c_Decompressor();
+                case "Lz4c - lz4c_Compress": return new Lz4c_Compressor();
+                case "Lz4c - lz4c_Decompress": return new Lz4c_Decompressor();
                 case "LZ77 - lz77_compress": return new Lz77_Compressor();
                 case "LZ77 - lz77_decompress": return new Lz77_Decompressor();
                 case "LZMA - 7-zip_lzma_compress": return new Lzma_Compressor();
@@ -449,6 +453,10 @@ namespace super_toolbox
                 case "Huffman - huffman_decompress": return new Huffman_Decompressor();
                 case "Minlz - minlz_compress": return new Minlz_Compressor();
                 case "Minlz - minlz_decompress": return new Minlz_Decompressor();
+                case "Lzham - lzham自定义压缩": return new LzhamCustom_Compressor();               
+                case "Lzham - lzham自定义解压": return new lzhamCustom_Decompressor();
+                case "Lzham - Lzham标准压缩": return new LzhamStandard_Compressor();
+                case "Lzham - Lzham标准解压": return new LzhamStandard_Decompressor();
                 case "Wiiu - gtx转换器": return new Wiiu_gtxConvertor();
                 case "Wiiu - h3/app": return new Wiiu_h3appExtractor();
                 case "Nds - nds提取器": return new Nds_Extractor();
