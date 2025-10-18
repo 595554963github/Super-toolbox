@@ -165,6 +165,15 @@
 		<EmbeddedResource Include="plugins\XWBTool.exe">
 			<LogicalName>embedded.XWBTool.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\example1_x64.exe">
+			<LogicalName>embedded.example1_x64.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\lzhamtest_x64.exe">
+			<LogicalName>embedded.lzhamtest_x64.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\lzham_x64.dll">
+			<LogicalName>embedded.lzham_x64.dll</LogicalName>
+		</EmbeddedResource>
 		</ItemGroup>	
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
