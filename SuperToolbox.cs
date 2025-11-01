@@ -128,10 +128,12 @@ namespace super_toolbox
             { "Mages - mpk提取器","其他档案" },
             { "Mages - mpk打包器","其他档案" },
             { "PS4 - gnf转换器","图片" },
-            { "wav2qoa - 转换qoa", "音频"},
+            { "wav2qoa - 转换qoa", "音频" },
             {"CMVS_Engine - cmv","其他档案" },
             { "SRPG_Studio - dts","其他档案" },
             { "XACT Wave Bank - xwb打包器","其他档案" },
+            { "PNG编码ASTC","图片" },
+            { "ASTC解码PNG","图片" }
         };
 
         public SuperToolbox()
@@ -478,6 +480,8 @@ namespace super_toolbox
                 case "CMVS_Engine - cmv": return new CmvDecoder();
                 case "SRPG_Studio - dts": return new DtsExtractor();
                 case "XACT Wave Bank - xwb打包器": return new XWBPacker();
+                case "PNG编码ASTC": return new Png2Astc_Converter();
+                case "ASTC解码PNG": return new Astc2Png_Converter();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
