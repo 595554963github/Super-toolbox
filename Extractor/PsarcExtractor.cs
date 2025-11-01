@@ -40,32 +40,37 @@ namespace super_toolbox
             }
 
             var psarcFiles = Directory.GetFiles(directoryPath, "*.psarc");
-            if (psarcFiles.Length == 0)
+            var pakFiles = Directory.GetFiles(directoryPath, "*.pak");
+            var archiveFiles = new string[psarcFiles.Length + pakFiles.Length];
+            psarcFiles.CopyTo(archiveFiles, 0);
+            pakFiles.CopyTo(archiveFiles, psarcFiles.Length);
+
+            if (archiveFiles.Length == 0)
             {
-                OnExtractionFailed("未找到.psarc文件");
+                OnExtractionFailed("未找到.psarc或.pak文件");
                 return;
             }
 
-            TotalFilesToExtract = psarcFiles.Length;
+            TotalFilesToExtract = archiveFiles.Length;
 
             try
             {
                 await Task.Run(() =>
                 {
-                    foreach (var psarcFilePath in psarcFiles)
+                    foreach (var archiveFilePath in archiveFiles)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        string psarcDir = Path.GetDirectoryName(psarcFilePath) ?? Directory.GetCurrentDirectory();
-                        string psarcFileName = Path.GetFileNameWithoutExtension(psarcFilePath);
+                        string archiveDir = Path.GetDirectoryName(archiveFilePath) ?? Directory.GetCurrentDirectory();
+                        string archiveFileName = Path.GetFileNameWithoutExtension(archiveFilePath);
 
                         var process = new Process
                         {
                             StartInfo = new ProcessStartInfo
                             {
                                 FileName = _tempExePath,
-                                Arguments = $"-x \"{psarcFileName}\"",
-                                WorkingDirectory = psarcDir,
+                                Arguments = $"-x \"{archiveFileName}\"",
+                                WorkingDirectory = archiveDir,
                                 UseShellExecute = false,
                                 CreateNoWindow = true,
                                 RedirectStandardOutput = true,
@@ -82,14 +87,14 @@ namespace super_toolbox
 
                         if (process.ExitCode != 0)
                         {
-                            OnExtractionFailed($"解包失败: {psarcFilePath} - 错误: {error}");
+                            OnExtractionFailed($"解包失败: {archiveFilePath} - 错误: {error}");
                             continue;
                         }
 
-                        string expectedOutputDir = Path.Combine(psarcDir, psarcFileName);
+                        string expectedOutputDir = Path.Combine(archiveDir, archiveFileName);
                         if (Directory.Exists(expectedOutputDir))
                         {
-                            OnFileExtracted(psarcFilePath);
+                            OnFileExtracted(archiveFilePath);
                         }
                         else
                         {
