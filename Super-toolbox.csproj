@@ -1,0 +1,210 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<RootNamespace>super_toolbox</RootNamespace>
+		<Nullable>enable</Nullable>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+		<NoWarn>MSB3277;MSB3026</NoWarn>
+		<GenerateDependencyFile>false</GenerateDependencyFile>
+		<Configurations>Debug;Release;x86</Configurations>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<DebugType>embedded</DebugType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Remove="libs\**" />
+		<EmbeddedResource Remove="libs\**" />
+		<None Remove="libs\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="plugins\dds-phyre-tool.exe">
+			<LogicalName>embedded.dds_phyre_tool.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\wsyster.exe">
+			<LogicalName>embedded.wsyster.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\csopak.exe">
+			<LogicalName>embedded.csopak.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\libpac.dll">
+			<LogicalName>embedded.libpac.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\pac_unpack.exe">
+			<LogicalName>embedded.pac_unpack.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\pac_repack.exe">
+			<LogicalName>embedded.pac_repack.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\gust_elixir.exe">
+			<LogicalName>embedded.gust_elixir.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\gust_ebm.exe">
+			<LogicalName>embedded.gust_ebm.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\gust_g1t.exe">
+			<LogicalName>embedded.gust_g1t.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\gust_gmpk.exe">
+			<LogicalName>embedded.gust_gmpk.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\gust_pak.exe">
+			<LogicalName>embedded.gust_pak.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\PVRTexToolCLI.exe">
+			<LogicalName>embedded.PVRTexToolCLI.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\AFUpkExtractor.exe">
+			<LogicalName>embedded.AFUpkExtractor.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\Multi-Extractor.exe">
+			<LogicalName>embedded.Multi-Extractor.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\File Formats.dll">
+			<LogicalName>embedded.File Formats.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\exlnk4.exe">
+			<LogicalName>embedded.exlnk4.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\ToBTools.exe">
+			<LogicalName>embedded.ToBTools.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\yaz0.exe">
+			<LogicalName>embedded.yaz0.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\lzma.exe">
+			<LogicalName>embedded.lzma.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\cdecrypt.exe">
+			<LogicalName>embedded.cdecrypt.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\sample.exe">
+			<LogicalName>embedded.sample.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\brotli.exe">
+			<LogicalName>embedded.brotli.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\ndstool.exe">
+			<LogicalName>embedded.ndstool.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\darctool.exe">
+			<LogicalName>embedded.darctool.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\ooz.exe">
+			<LogicalName>embedded.ooz.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\huffman.exe">
+			<LogicalName>embedded.huffman.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\LZ77.exe">
+			<LogicalName>embedded.LZ77.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\LZ77.dll">
+			<LogicalName>embedded.LZ77.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\LZ77.runtimeconfig.json">
+			<LogicalName>embedded.LZ77.runtimeconfig.json</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\Unpsarc.exe">
+			<LogicalName>embedded.Unpsarc.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\make_npdata.exe">
+			<LogicalName>embedded.make_npdata.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\afs_util.exe">
+			<LogicalName>embedded.afs_util.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\mpk.exe">
+			<LogicalName>embedded.mpk.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\GNF2PNG.exe">
+			<LogicalName>embedded.GNF2PNG.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\wav2qoa.exe">
+			<LogicalName>embedded.wav2qoa.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\CMVDecode.exe">
+			<LogicalName>embedded.CMVDecode.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\minlz.exe">
+			<LogicalName>embedded.minlz.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\lz4c.exe">
+			<LogicalName>embedded.lz4c.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\SRPG_Unpacker.exe">
+			<LogicalName>embedded.SRPG_Unpacker.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\XWBTool.exe">
+			<LogicalName>embedded.XWBTool.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\example1_x64.exe">
+			<LogicalName>embedded.example1_x64.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\lzhamtest_x64.exe">
+			<LogicalName>embedded.lzhamtest_x64.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\lzham_x64.dll">
+			<LogicalName>embedded.lzham_x64.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\astcenc-avx2.exe">
+			<LogicalName>embedded.astcenc-avx2.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\exah3pac.exe">
+			<LogicalName>embedded.exah3pac.exe</LogicalName>
+		</EmbeddedResource>
+		
+		</ItemGroup>	
+	<ItemGroup>
+		<PackageReference Include="Costura.Fody" Version="6.0.0">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="CriFsV2Lib" Version="2.1.2" />
+		<PackageReference Include="Fody" Version="6.9.2">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
+		<PackageReference Include="K4os.Compression.LZ4.Streams" Version="1.3.8" />
+		<PackageReference Include="lz4net" Version="1.0.15.93" />
+		<PackageReference Include="SharpZipLib" Version="1.4.2" />
+		<PackageReference Include="Syroot.IO.BinaryData" Version="4.0.4" />
+		<PackageReference Include="System.Net.Http" Version="4.3.4" />
+		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="AFSLib">
+			<HintPath>plugins\AFSLib.dll</HintPath>
+		</Reference>
+		<Reference Include="ByteSize">
+			<HintPath>plugins\ByteSize.dll</HintPath>
+		</Reference>
+		<Reference Include="DALLib">
+			<HintPath>plugins\DALLib.dll</HintPath>
+		</Reference>
+		<Reference Include="GXTConvert">
+			<HintPath>plugins\GXTConvert.dll</HintPath>
+		</Reference>
+		<Reference Include="Narchive">
+		  <HintPath>plugins\Narchive.dll</HintPath>
+		</Reference>
+		<Reference Include="WarTales_PakExtractor">
+		  <HintPath>plugins\WarTales_PakExtractor.dll</HintPath>
+		</Reference>
+		<Reference Include="ZstdNet">
+		  <HintPath>plugins\ZstdNet.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="Extractor说明.txt">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+</Project>
