@@ -1,4 +1,4 @@
-﻿namespace super_toolbox
+namespace super_toolbox
 {
     public partial class HelpGuideForm : Form
     {
@@ -69,6 +69,7 @@
                 "DtsExtractor——SRPG Studio的dts提取器，代表作：刻印战记2：七圣英雄\r\n" +
                 "FilenameExtractor——ps3约会大作战的pck文件提取器\r\n" +
                 "FMSG_Extractor——零濡鸦之巫女的fmsg转换器，可以把fmsg转换成txt文本\r\n" +
+                "FPAC_CF_Extractor——苍翼默示录：神观之梦的专用解包工具，可以解包压缩的pac文件和普通pac文件\r\n" +
                 "FPAC_CP_Extractor——苍翼默示录：刻之幻影的专用解包工具，无法用于苍翼默示录：神观之梦，从bin文件里提取出的pac文件可以用此提取器提取音频和图片\r\n" +
                 "Fsb5Extractor——首先可以从Fmod的bank里面提取fsb文件，也可以从steam游戏永恒轮回和女神异闻录5对决：幽灵先锋的resources.resource提取出fsb，对于正当防卫4的arc文件有专用方法提取fsb\r\n" +
                 "GDAT_Extractor——Mizuchi engine开发的游戏档案专用dat解包器，广泛用于地雷社游戏，如死亡终局轮回试炼系列、神狱塔断罪玛丽最终篇、新次元游戏海王星Ⅶr,大家也可以使用我的python脚本去解\r\n" +
@@ -114,14 +115,15 @@
                 "--------------------------------------------------------------------------------------------------------------------------------------------------\r\n" +
                 "<转换器>\r\n" +
                 "Astc2Png_Converter——astc图像到png的转换器，可批量转换成png\r\n" +
-                "GNF2PNG_Converter——PS4平台的gnf转换png的工具，受不了GFDstudio一个个手动转换，可批量转换成png\r\n" +
+                "GNF2PNG_Converter——PS4平台的gnf到png的转换器，受不了GFDstudio一个个手动转换，用它可批量转换成png\r\n" +
+                "Hip2Png_Converter——hip到png的转换器，可批量转换成png，代表作如switch平台的赛马娘\r\n" +
                 "Png2Astc_Converter——png到astc图像的转换器，可批量转换成astc\r\n" +
                 "PVR2PNG_Converter——逆战upk解包的pvr纹理使用Texturepacker可以转换成png，但是只能免费试用7天，使用此转换器可以无限使用\r\n" +
                 "Sct2Png_Converter——第七史诗的sct转换器，可批量转换成png\r\n" +
                 "SonyGxtConverter——PlayStation游戏的gxt到png的转换器，和SonyGxtExtractor不同，那个是从已打包的文件里面提取出gxt，这个是转换器，可批量把gxt转换成png\r\n" +
                 "StingTexConverter——用于解包steam和switch平台的超女神信仰诺瓦露、steam平台的约会大作战凛绪轮回HD还有传颂之物二人的白皇\r\n" +
                 "Wav2Qoa_Converter——wav到qoa的音频转换器，ffmpeg可以识别qoa，可以使用foobar2000播放\r\n" +
-                "Wiiu_gtxConvertor——任天堂wiiu平台的gtx转换器，可以把gtx转换成png图片\r\n" +
+                "Wiiu_gtxConverter——任天堂wiiu平台的gtx转换器，可以把gtx转换成png图片\r\n" +
                 "--------------------------------------------------------------------------------------------------------------------------------------------------\r\n" +
                 "<打包器>\r\n" +
                 "AfsPacker——CRIware的afs档案打包器，可以把一个文件夹里的所有文件重新打包成一个afs文件\r\n" +
