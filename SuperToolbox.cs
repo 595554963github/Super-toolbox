@@ -55,6 +55,7 @@ namespace super_toolbox
             { "超女神信仰诺瓦露 - tex","图片" },
             { "SEGS binary data - bin","其他档案" }, //代表作：苍翼默示录_刻之幻影
             { "苍翼默示录_刻之幻影 - pac","其他档案" },
+            { "苍翼默示录_神观之梦 - pac","其他档案" },
             { "断罪的玛利亚 - dat", "其他档案" },
             { "进击的巨人_自由之翼 - bin", "其他档案" },
             { "PlayStation 4 bit ADPCM - vag", "音频" },
@@ -134,9 +135,9 @@ namespace super_toolbox
             { "SRPG_Studio - dts","其他档案" },
             { "XACT Wave Bank - xwb打包器","其他档案" },
             { "PNG编码ASTC","图片" },
-            { "ASTC解码PNG","图片" }
+            { "ASTC解码PNG","图片" },
+            { "hip2png","图片" }
         };
-
         public SuperToolbox()
         {
             InitializeComponent();
@@ -146,10 +147,8 @@ namespace super_toolbox
             lblFileCount = new ToolStripStatusLabel { Text = "已提取:0个文件" };
             statusStrip1.Items.Add(lblStatus);
             statusStrip1.Items.Add(lblFileCount);
-
             statusStrip1.Dock = DockStyle.Bottom;
             this.Controls.Add(statusStrip1);
-
             InitializeTreeView();
             messageBuffers[0] = new List<string>(MaxMessagesPerUpdate);
             messageBuffers[1] = new List<string>(MaxMessagesPerUpdate);
@@ -158,7 +157,6 @@ namespace super_toolbox
             updateTimer.Start();
             extractionCancellationTokenSource = new CancellationTokenSource();
         }
-
         private void InitializeTreeView()
         {
             foreach (string category in defaultCategories.Values.Distinct())
@@ -176,7 +174,6 @@ namespace super_toolbox
             }
             treeView1.ExpandAll();
         }
-
         private TreeNode AddCategory(string categoryName)
         {
             if (categoryNodes.ContainsKey(categoryName)) return categoryNodes[categoryName];
@@ -185,20 +182,17 @@ namespace super_toolbox
             categoryNodes[categoryName] = categoryNode;
             return categoryNode;
         }
-
         private void btnSelectFolder_Click(object sender, EventArgs e)
         {
             using (FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog())
             {
                 folderBrowserDialog.Description = "选择要提取的文件夹";
                 folderBrowserDialog.ShowNewFolderButton = false;
-
                 string inputPath = txtFolderPath.Text;
                 if (!string.IsNullOrEmpty(inputPath) && Directory.Exists(inputPath))
                 {
                     folderBrowserDialog.SelectedPath = inputPath;
                 }
-
                 if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
                 {
                     txtFolderPath.Text = folderBrowserDialog.SelectedPath;
@@ -206,7 +200,13 @@ namespace super_toolbox
                 }
             }
         }
-
+        private readonly HashSet<string> _converters = new HashSet<string>
+        {
+         "PNG编码ASTC", "ASTC解码PNG", "Gnf2Png", "PowerVR转换png",
+         "第七史诗 - sct", "索尼 - gxt转换器", "超女神信仰诺瓦露 - tex",
+         "wav2qoa - 转换qoa", "Wiiu - gtx转换器", "hip2png"
+        };
+        private bool IsConverter(string formatName) => _converters.Contains(formatName);
         private async void btnExtract_Click(object sender, EventArgs e)
         {
             if (isExtracting)
@@ -214,43 +214,31 @@ namespace super_toolbox
                 EnqueueMessage("正在进行操作，请等待...");
                 return;
             }
-
             string dirPath = txtFolderPath.Text;
             if (string.IsNullOrEmpty(dirPath) || !Directory.Exists(dirPath))
             {
                 EnqueueMessage($"错误:{dirPath}不是一个有效的目录。");
                 return;
             }
-
             TreeNode selectedNode = treeView1.SelectedNode;
             if (selectedNode == null || selectedNode.Tag as string == "category")
             {
                 EnqueueMessage("请选择你的操作");
                 return;
             }
-
             string formatName = selectedNode.Text;
-
-            bool isConverter = formatName == "PNG编码ASTC" || formatName == "ASTC解码PNG" ||
-                              formatName == "Gnf2Png" || formatName == "PowerVR转换png" ||
-                              formatName == "第七史诗 - sct" || formatName == "索尼 - gxt转换器" ||
-                              formatName == "超女神信仰诺瓦露 - tex" || formatName == "wav2qoa - 转换qoa" ||
-                              formatName == "Wiiu - gtx转换器";
-
+            bool isConverter = IsConverter(formatName);
             bool isPacker = formatName.EndsWith("打包器") ||
                            formatName.Contains("_pack") ||
                            formatName.Contains("_repack") ||
                            formatName.Contains("packer") ||
                            formatName.Contains("repacker");
-
             bool isCompressor = formatName.EndsWith("_compress") ||
                                formatName.Contains("压缩") ||
                                formatName.Contains("Compressor");
-
             bool isDecompressor = formatName.EndsWith("_decompress") ||
                                  formatName.Contains("解压") ||
                                  formatName.Contains("Decompressor");
-
             if (isConverter)
             {
                 totalConvertedCount = 0;
@@ -259,10 +247,8 @@ namespace super_toolbox
             {
                 totalFileCount = 0;
             }
-
             isExtracting = true;
             UpdateUIState(true);
-
             try
             {
                 var extractor = CreateExtractor(formatName);
@@ -273,17 +259,13 @@ namespace super_toolbox
                     UpdateUIState(false);
                     return;
                 }
-
                 string operationType = "提取";
                 if (isConverter) operationType = "转换";
                 else if (isPacker) operationType = "打包";
                 else if (isCompressor) operationType = "压缩";
                 else if (isDecompressor) operationType = "解压";
-
                 EnqueueMessage($"开始{operationType}{formatName}...");
-
                 SubscribeToExtractorEvents(extractor);
-
                 await Task.Run(async () =>
                 {
                     try
@@ -331,16 +313,10 @@ namespace super_toolbox
         {
             TreeNode selectedNode = treeView1.SelectedNode;
             string selectedText = selectedNode?.Text ?? "";
-
-            bool isConverter = selectedText == "PNG编码ASTC" || selectedText == "ASTC解码PNG" ||
-                      selectedText == "Gnf2Png" || selectedText == "PowerVR转换png" ||
-                      selectedText == "第七史诗 - sct" || selectedText == "索尼 - gxt转换器" ||
-                      selectedText == "超女神信仰诺瓦露 - tex" || selectedText == "wav2qoa - 转换qoa" ||
-                      selectedText == "Wiiu - gtx转换器";
+            bool isConverter = IsConverter(selectedText);
             bool isPacker = selectedText.EndsWith("打包器") || selectedText.Contains("_repack");
             bool isCompressor = selectedText.EndsWith("_compress") || selectedText.Contains("压缩");
             bool isDecompressor = selectedText.EndsWith("_decompress") || selectedText.Contains("解压");
-
             if (isConverter)
             {
                 extractor.FileConverted += (s, fileName) =>
@@ -349,12 +325,10 @@ namespace super_toolbox
                     EnqueueMessage($"已转换:{Path.GetFileName(fileName)}");
                     UpdateFileCountDisplay();
                 };
-
                 extractor.ConversionCompleted += (s, count) =>
                 {
                     EnqueueMessage($"转换完成，共转换{count}个文件");
                 };
-
                 extractor.ConversionFailed += (s, error) =>
                 {
                     EnqueueMessage($"转换失败:{error}");
@@ -368,12 +342,10 @@ namespace super_toolbox
                     EnqueueMessage($"已打包:{Path.GetFileName(fileName)}");
                     UpdateFileCountDisplay();
                 };
-
                 extractor.PackingCompleted += (s, count) =>
                 {
                     EnqueueMessage($"打包完成，共打包{count}个文件");
                 };
-
                 extractor.PackingFailed += (s, error) =>
                 {
                     EnqueueMessage($"打包失败: {error}");
@@ -387,7 +359,6 @@ namespace super_toolbox
                     EnqueueMessage($"已压缩:{Path.GetFileName(fileName)}");
                     UpdateFileCountDisplay();
                 };
-
                 extractor.CompressionCompleted += (s, count) =>
                 {
                     EnqueueMessage($"压缩完成，共压缩{count}个文件");
@@ -406,12 +377,10 @@ namespace super_toolbox
                     EnqueueMessage($"已解压:{Path.GetFileName(fileName)}");
                     UpdateFileCountDisplay();
                 };
-
                 extractor.DecompressionCompleted += (s, count) =>
                 {
                     EnqueueMessage($"解压完成，共解压{count}个文件");
                 };
-
                 extractor.DecompressionFailed += (s, error) =>
                 {
                     EnqueueMessage($"解压失败: {error}");
@@ -425,22 +394,17 @@ namespace super_toolbox
                     EnqueueMessage($"已提取:{Path.GetFileName(fileName)}");
                     UpdateFileCountDisplay();
                 };
-
                 extractor.ExtractionCompleted += (s, count) =>
                 {
                     EnqueueMessage($"提取完成，共处理{count}个源文件");
                 };
-
                 extractor.ExtractionFailed += (s, error) =>
                 {
                     EnqueueMessage($"提取失败: {error}");
                 };
             }
-
             extractor.ProgressUpdated += (s, progress) => { };
-
             var type = extractor.GetType();
-
             BindDynamicEvent(type, extractor, "ExtractionStarted", "提取开始");
             BindDynamicEvent(type, extractor, "ExtractionProgress", "提取进度");
             BindDynamicEvent(type, extractor, "ConversionStarted", "转换开始");
@@ -451,14 +415,12 @@ namespace super_toolbox
             BindDynamicEvent(type, extractor, "CompressionProgress", "压缩进度");
             BindDynamicEvent(type, extractor, "DecompressionStarted", "解压开始");
             BindDynamicEvent(type, extractor, "DecompressionProgress", "解压进度");
-
             BindDynamicEvent(type, extractor, "ExtractionError", "错误", true);
             BindDynamicEvent(type, extractor, "ConversionError", "错误", true);
             BindDynamicEvent(type, extractor, "PackingError", "错误", true);
             BindDynamicEvent(type, extractor, "CompressionError", "错误", true);
             BindDynamicEvent(type, extractor, "DecompressionError", "错误", true);
         }
-
         private void BindDynamicEvent(Type type, BaseExtractor extractor, string eventName, string prefix, bool isError = false)
         {
             var eventInfo = type.GetEvent(eventName);
@@ -505,7 +467,8 @@ namespace super_toolbox
                 case "超女神信仰诺瓦露 - pck": return new StingPckExtractor();
                 case "超女神信仰诺瓦露 - tex": return new StingTexConverter();
                 case "SEGS binary data - bin": return new SEGS_BinExtractor();
-                case "苍翼默示录_刻之幻影 - pac": return new FPAC_CP_Extractor();               
+                case "苍翼默示录_刻之幻影 - pac": return new FPAC_CP_Extractor();
+                case "苍翼默示录_神观之梦 - pac": return new FPAC_CF_Extractor();
                 case "PlayStation 4 bit ADPCM - vag": return new VagExtractor();
                 case "断罪的玛利亚 - dat": return new DataDatExtractor();
                 case "进击的巨人_自由之翼 - bin": return new Attack_on_Titan_Wings_Extractor();
@@ -587,10 +550,10 @@ namespace super_toolbox
                 case "XACT Wave Bank - xwb打包器": return new XWBPacker();
                 case "PNG编码ASTC": return new Png2Astc_Converter();
                 case "ASTC解码PNG": return new Astc2Png_Converter();
+                case "hip2png": return new Hip2Png_Converter();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
-
         private void btnClear_Click(object sender, EventArgs e)
         {
             lock (bufferLocks[0]) { messageBuffers[0].Clear(); }
@@ -599,7 +562,6 @@ namespace super_toolbox
             totalConvertedCount = 0;
             UpdateFileCountDisplay();
         }
-
         private void EnqueueMessage(string message)
         {
             int bufferIndex = activeBufferIndex;
@@ -613,7 +575,6 @@ namespace super_toolbox
                 messageBuffers[bufferIndex].Add(message);
             }
         }
-
         private void UpdateUITimerTick(object? sender, EventArgs e)
         {
             if (isUpdatingUI) return;
@@ -632,7 +593,6 @@ namespace super_toolbox
             if (messagesToUpdate != null && messagesToUpdate.Count > 0) UpdateRichTextBox(messagesToUpdate);
             else isUpdatingUI = false;
         }
-
         private void UpdateRichTextBox(List<string> messages)
         {
             if (richTextBox1.IsDisposed || richTextBox1.Disposing) { isUpdatingUI = false; return; }
@@ -643,7 +603,6 @@ namespace super_toolbox
             }
             else UpdateRichTextBoxInternal(messages);
         }
-
         private void UpdateRichTextBoxInternal(List<string> messages)
         {
             if (statusStrip1 == null || lblFileCount == null) return;
@@ -661,7 +620,6 @@ namespace super_toolbox
             catch { }
             finally { richTextBox1.ResumeLayout(); isUpdatingUI = false; }
         }
-
         private void treeView1_AfterSelect(object sender, TreeViewEventArgs e)
         {
             if (e.Node != null && lblStatus != null)
@@ -671,7 +629,6 @@ namespace super_toolbox
                     : $"已选择: {e.Node.Text}";
             }
         }
-
         private void treeViewContextMenu_Opening(object sender, CancelEventArgs e)
         {
             if (treeView1.SelectedNode == null)
@@ -700,7 +657,6 @@ namespace super_toolbox
                 }
             }
         }
-
         private void MoveSelectedNodeToCategory(string category)
         {
             TreeNode selectedNode = treeView1.SelectedNode;
@@ -712,7 +668,6 @@ namespace super_toolbox
             treeView1.SelectedNode = selectedNode;
             EnqueueMessage($"已将{selectedNode.Text}移动到{category}分组");
         }
-
         private void UpdateUIState(bool isExtracting)
         {
             btnExtract.Enabled = !isExtracting;
@@ -720,7 +675,6 @@ namespace super_toolbox
             treeView1.Enabled = !isExtracting;
             if (lblStatus != null) lblStatus.Text = isExtracting ? "正在处理..." : "就绪";
         }
-
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             try
@@ -731,10 +685,8 @@ namespace super_toolbox
                 extractionCancellationTokenSource?.Dispose();
             }
             catch { }
-
             base.OnFormClosing(e);
         }
-
         private void UpdateFileCountDisplay()
         {
             if (lblFileCount != null)
@@ -743,27 +695,18 @@ namespace super_toolbox
                 if (selectedNode != null)
                 {
                     string selectedText = selectedNode.Text;
-
-                    bool isConverter = selectedText == "PNG编码ASTC" || selectedText == "ASTC解码PNG" ||
-                      selectedText == "Gnf2Png" || selectedText == "PowerVR转换png" ||
-                      selectedText == "第七史诗 - sct" || selectedText == "索尼 - gxt转换器" ||
-                      selectedText == "超女神信仰诺瓦露 - tex" || selectedText == "wav2qoa - 转换qoa" ||
-                      selectedText == "Wiiu - gtx转换器";
-
+                    bool isConverter = IsConverter(selectedText);
                     bool isPacker = selectedText.EndsWith("打包器") ||
                                    selectedText.Contains("_pack") ||
                                    selectedText.Contains("_repack") ||
                                    selectedText.Contains("packer") ||
                                    selectedText.Contains("repacker");
-
                     bool isCompressor = selectedText.EndsWith("_compress") ||
                                        selectedText.Contains("压缩") ||
                                        selectedText.Contains("Compressor");
-
                     bool isDecompressor = selectedText.EndsWith("_decompress") ||
                                          selectedText.Contains("解压") ||
                                          selectedText.Contains("Decompressor");
-
                     if (isConverter)
                     {
                         lblFileCount.Text = $"已转换:{totalConvertedCount}个文件";
@@ -791,7 +734,6 @@ namespace super_toolbox
                 }
             }
         }
-
         private string ShowInputDialog(string title, string prompt, string initialValue = "")
         {
             string result = string.Empty;
@@ -805,14 +747,12 @@ namespace super_toolbox
                 StartPosition = FormStartPosition.CenterParent,
                 ClientSize = new Size(330, 130)
             };
-
             Label label = new Label
             {
                 Text = prompt,
                 Location = new Point(20, 20),
                 AutoSize = true
             };
-
             TextBox textBox = new TextBox
             {
                 Text = initialValue,
@@ -820,7 +760,6 @@ namespace super_toolbox
                 Size = new Size(285, 23),
                 Anchor = AnchorStyles.Left | AnchorStyles.Right
             };
-
             Button okButton = new Button
             {
                 Text = "确定",
@@ -828,7 +767,6 @@ namespace super_toolbox
                 Location = new Point(140, 80),
                 Size = new Size(75, 23)
             };
-
             Button cancelButton = new Button
             {
                 Text = "取消",
@@ -836,20 +774,15 @@ namespace super_toolbox
                 Location = new Point(230, 80),
                 Size = new Size(75, 23)
             };
-
             dialog.AcceptButton = okButton;
             dialog.CancelButton = cancelButton;
-
             dialog.Controls.AddRange(new Control[] { label, textBox, okButton, cancelButton });
-
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 result = textBox.Text ?? string.Empty;
             }
-
             return result;
         }
-
         private void addNewCategoryMenuItem_Click(object sender, EventArgs e)
         {
             string categoryName = ShowInputDialog("添加新分组", "请输入分组名称:");
@@ -871,7 +804,6 @@ namespace super_toolbox
                 EnqueueMessage($"已添加新分组:{categoryName}");
             }
         }
-
         private void renameCategoryMenuItem_Click(object sender, EventArgs e)
         {
             TreeNode selectedNode = treeView1.SelectedNode;
@@ -905,7 +837,6 @@ namespace super_toolbox
                 EnqueueMessage($"已将分组'{oldName}'重命名为:{newName}");
             }
         }
-
         private void deleteCategoryMenuItem_Click(object sender, EventArgs e)
         {
             TreeNode selectedNode = treeView1.SelectedNode;
