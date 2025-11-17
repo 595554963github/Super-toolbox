@@ -529,7 +529,7 @@ namespace super_toolbox
                 case "Zlib - zlib_decompress": return new Zlib_Decompressor();
                 case "ZSTD - zstd_compress": return new Zstd_Compressor();
                 case "ZSTD - zstd_decompress": return new Zstd_Decompressor();
-                case "Wiiu - gtx转换器": return new Wiiu_gtxConvertor();
+                case "Wiiu - gtx转换器": return new Wiiu_gtxConverter();
                 case "Wiiu - h3/app": return new Wiiu_h3appExtractor();
                 case "Nds - nds提取器": return new Nds_Extractor();
                 case "Nds - nds打包器": return new Nds_Repacker();
