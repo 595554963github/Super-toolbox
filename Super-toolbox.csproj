@@ -17,12 +17,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Remove="libs\**" />
-		<EmbeddedResource Remove="libs\**" />
-		<None Remove="libs\**" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<EmbeddedResource Include="plugins\dds-phyre-tool.exe">
 			<LogicalName>embedded.dds_phyre_tool.exe</LogicalName>
 		</EmbeddedResource>
@@ -158,8 +152,10 @@
 		<EmbeddedResource Include="plugins\exah3pac.exe">
 			<LogicalName>embedded.exah3pac.exe</LogicalName>
 		</EmbeddedResource>
-		
-		</ItemGroup>	
+		<EmbeddedResource Include="plugins\wfLZ.exe">
+			<LogicalName>embedded.wfLZ.exe</LogicalName>
+		</EmbeddedResource>
+	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
 			<PrivateAssets>all</PrivateAssets>
@@ -177,7 +173,6 @@
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
 	</ItemGroup>
-
 	<ItemGroup>
 		<Reference Include="AFSLib">
 			<HintPath>plugins\AFSLib.dll</HintPath>
@@ -192,19 +187,13 @@
 			<HintPath>plugins\GXTConvert.dll</HintPath>
 		</Reference>
 		<Reference Include="Narchive">
-		  <HintPath>plugins\Narchive.dll</HintPath>
+			<HintPath>plugins\Narchive.dll</HintPath>
 		</Reference>
 		<Reference Include="WarTales_PakExtractor">
-		  <HintPath>plugins\WarTales_PakExtractor.dll</HintPath>
+			<HintPath>plugins\WarTales_PakExtractor.dll</HintPath>
 		</Reference>
 		<Reference Include="ZstdNet">
-		  <HintPath>plugins\ZstdNet.dll</HintPath>
+			<HintPath>plugins\ZstdNet.dll</HintPath>
 		</Reference>
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="Extractor说明.txt">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
 	</ItemGroup>
 </Project>
