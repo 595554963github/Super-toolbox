@@ -102,11 +102,15 @@ namespace super_toolbox
             { "Lzham - lzham自定义压缩","压缩" },
             { "Lzham - lzham自定义解压","解压" },
             { "Lzham - Lzham标准压缩","压缩" },
-            { "Lzham - Lzham标准解压","解压" },
+            { "Lzham - Lzham标准解压","解压" },           
             { "Minlz - minlz_compress","压缩" },
             { "Minlz - minlz_decompress","解压" },
+            { "Mio0 - mio0_compress","压缩" },
+            { "Mio0 - mio0_decompress", "解压" },
             { "Oodle - oodle_compress","压缩" },
             { "Oodle - oodle_decompress","解压" },
+            { "Wflz - wflz_compress", "压缩" },
+            { "Wflz - wflz_decompress", "解压" },
             { "Yay0 - yay0_compress","压缩" },
             { "Yay0 - yay0_decompress","解压" },
             { "Yaz0 - yaz0_compress","压缩" },
@@ -136,12 +140,16 @@ namespace super_toolbox
             { "XACT Wave Bank - xwb打包器","其他档案" },
             { "PNG编码ASTC","图片" },
             { "ASTC解码PNG","图片" },
-            { "hip2png","图片" }
+            { "hip2png","图片" },
+            { "双截龙彩虹pak提取器","其他档案" },
         };
         public SuperToolbox()
         {
             InitializeComponent();
-
+            txtFolderPath.AllowDrop = true;
+            txtFolderPath.DragEnter += TxtFolderPath_DragEnter;
+            txtFolderPath.DragDrop += TxtFolderPath_DragDrop;
+            txtFolderPath.DragLeave += TxtFolderPath_DragLeave;
             statusStrip1 = new StatusStrip();
             lblStatus = new ToolStripStatusLabel { Text = "就绪" };
             lblFileCount = new ToolStripStatusLabel { Text = "已提取:0个文件" };
@@ -519,8 +527,12 @@ namespace super_toolbox
                 case "Lzham - Lzham标准解压": return new LzhamStandard_Decompressor();
                 case "Minlz - minlz_compress": return new Minlz_Compressor();
                 case "Minlz - minlz_decompress": return new Minlz_Decompressor();
+                case "Mio0 - mio0_compress": return new Mio0_Compressor();
+                case "Mio0 - mio0_decompress": return new Mio0_Decompressor();
                 case "Oodle - oodle_compress": return new Oodle_Compressor();
                 case "Oodle - oodle_decompress": return new Oodle_Decompressor();
+                case "Wflz - wflz_compress": return new Wflz_Compressor();
+                case "Wflz - wflz_decompress": return new Wflz_Decompressor();
                 case "Yay0 - yay0_compress":return new Yay0_Compressor();
                 case "Yay0 - yay0_decompress": return new Yay0_Decompressor();
                 case "Yaz0 - yaz0_compress": return new Yaz0_Compressor();
@@ -551,6 +563,7 @@ namespace super_toolbox
                 case "PNG编码ASTC": return new Png2Astc_Converter();
                 case "ASTC解码PNG": return new Astc2Png_Converter();
                 case "hip2png": return new Hip2Png_Converter();
+                case "双截龙彩虹pak提取器": return new DoubleDragonNeon_PakExtractor();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
@@ -863,6 +876,58 @@ namespace super_toolbox
                 categoryNodes.Remove(categoryName);
                 EnqueueMessage($"已删除分组:{categoryName}");
             }
+        }
+        private void TxtFolderPath_DragEnter(object? sender, DragEventArgs e)
+        {
+            if (txtFolderPath == null) return;
+
+            if (e.Data?.GetDataPresent(DataFormats.FileDrop) == true)
+            {
+                string[]? files = e.Data.GetData(DataFormats.FileDrop) as string[];
+
+                if (files != null && files.Length == 1 && Directory.Exists(files[0]))
+                {
+                    e.Effect = DragDropEffects.Copy;
+                    txtFolderPath.BackColor = Color.Green;
+                }
+                else
+                {
+                    e.Effect = DragDropEffects.None;
+                }
+            }
+            else
+            {
+                e.Effect = DragDropEffects.None;
+            }
+        }
+
+        private void TxtFolderPath_DragDrop(object? sender, DragEventArgs e)
+        {
+            if (txtFolderPath == null) return;
+
+            txtFolderPath.BackColor = SystemColors.Window;
+
+            if (e.Data?.GetDataPresent(DataFormats.FileDrop) == true)
+            {
+                string[]? files = e.Data.GetData(DataFormats.FileDrop) as string[];
+
+                if (files != null && files.Length == 1 && Directory.Exists(files[0]))
+                {
+                    txtFolderPath.Text = files[0];
+                    EnqueueMessage($"已通过拖放选择文件夹:{files[0]}");
+                }
+                else
+                {
+                    EnqueueMessage("错误:请拖放单个文件夹");
+                }
+            }
+        }
+
+        private void TxtFolderPath_DragLeave(object? sender, EventArgs e)
+        {
+            if (txtFolderPath == null) return;
+
+            txtFolderPath.BackColor = SystemColors.Window;
         }
         private void btnHelp_Click(object sender, EventArgs e)
         {
