@@ -66,6 +66,7 @@ namespace super_toolbox
                 "Darc_Extractor——任天堂3ds平台的darc解包工具，代表作：美妙旋律七彩演唱会闪耀设计\r\n" +
                 "DataDatExtractor——ps3游戏断罪的玛利亚专用提取器，可解包data.dat文件，提取出里面的视频、音频和图片\r\n" +
                 "DdsExtractor——以二进制形式从游戏文件里面提取dds图片的提取器，亲测战场女武神4，一般的dds和DX10纹理的dds都可以提取出来\r\n" +
+                "DoubleDragonNeon_PakExtractor——双截龙彩虹的专用pak提取器\r\n" +
                 "DtsExtractor——SRPG Studio的dts提取器，代表作：刻印战记2：七圣英雄\r\n" +
                 "FilenameExtractor——ps3约会大作战的pck文件提取器\r\n" +
                 "FMSG_Extractor——零濡鸦之巫女的fmsg转换器，可以把fmsg转换成txt文本\r\n" +
@@ -157,8 +158,12 @@ namespace super_toolbox
                 "LzssCustom_Decompressor——使用自定义Lzss算法批量解压文件\r\n" +
                 "Minlz_Compressor——使用Minlz算法批量压缩文件\r\n" +
                 "Minlz_Decompressor——使用Minlz算法批量解压文件\r\n" +
+                "Mio0_Compressor——使用Mio0算法批量压缩文件\r\n" +
+                "Mio0_Decompressor——使用Mio0算法批量解压文件\r\n" +
                 "Oodle_Compressor——使用Oodle算法批量压缩文件\r\n" +
                 "Oodle_Decompressor——使用Oodle算法批量解压文件\r\n" +
+                "Wflz_Compressor——使用Wflz算法批量压缩文件\r\n" +
+                "Wflz_Decompressor——使用Wflz算法批量解压文件\r\n" +
                 "Yay0_Compressor——使用Yay0算法批量压缩文件\r\n" +
                 "Yay0_Decompressor——使用Yay0算法批量解压文件\r\n" +
                 "Yaz0_Compressor——使用Yaz0算法批量压缩文件\r\n" +
