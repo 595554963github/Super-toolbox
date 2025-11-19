@@ -142,6 +142,8 @@ namespace super_toolbox
             { "ASTC解码PNG","图片" },
             { "hip2png","图片" },
             { "双截龙彩虹pak提取器","其他档案" },
+            { "CFSI - cfsi提取器", "其他档案" },
+            { "CFSI - cfsi打包器", "其他档案" },
         };
         public SuperToolbox()
         {
@@ -564,6 +566,8 @@ namespace super_toolbox
                 case "ASTC解码PNG": return new Astc2Png_Converter();
                 case "hip2png": return new Hip2Png_Converter();
                 case "双截龙彩虹pak提取器": return new DoubleDragonNeon_PakExtractor();
+                case "CFSI - cfsi提取器": return new Cfsi_Extractor();
+                case "CFSI - cfsi打包器": return new Cfsi_Repacker();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
