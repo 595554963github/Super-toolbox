@@ -20,10 +20,12 @@ namespace super_toolbox
                 throw new InvalidOperationException("无法加载afs_util.exe，请检查嵌入资源");
             }
         }
+
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             await RepackAsync(directoryPath, cancellationToken);
         }
+
         public async Task RepackAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
@@ -32,27 +34,24 @@ namespace super_toolbox
                 OnPackingFailed("错误:目录不存在");
                 return;
             }
-            var files = Directory.GetFiles(directoryPath, "*.*", SearchOption.TopDirectoryOnly)
-                .Where(file => !file.EndsWith(".afs", StringComparison.OrdinalIgnoreCase))
-                .ToArray();
 
-            if (files.Length == 0)
-            {
-                PackingError?.Invoke(this, "所选目录中没有可打包的文件");
-                OnPackingFailed("所选目录中没有可打包的文件");
-                return;
-            }
             string parentDir = Directory.GetParent(directoryPath)?.FullName ?? directoryPath;
             string folderName = Path.GetFileName(directoryPath);
             string outputAfsPath = Path.Combine(parentDir, folderName + ".afs");
-            TotalFilesToPack = files.Length;
 
-            PackingStarted?.Invoke(this, $"开始打包{files.Length}个文件到:{Path.GetFileName(outputAfsPath)}");
-            PackingProgress?.Invoke(this, "要打包的文件列表:");
-            foreach (var file in files)
+            var allFiles = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories)
+                                   .Where(f => !f.EndsWith(".afs", StringComparison.OrdinalIgnoreCase))
+                                   .ToArray();
+
+            TotalFilesToPack = allFiles.Length;
+
+            PackingStarted?.Invoke(this, $"开始打包目录:{directoryPath}");
+            PackingProgress?.Invoke(this, $"找到 {allFiles.Length} 个文件:");
+
+            foreach (var file in allFiles)
             {
-                string fileName = Path.GetFileName(file);
-                PackingProgress?.Invoke(this, $"正在添加:{fileName}");
+                string relativePath = GetRelativePath(directoryPath, file);
+                PackingProgress?.Invoke(this, $"  {relativePath}");
             }
 
             try
@@ -82,6 +81,7 @@ namespace super_toolbox
                         {
                             throw new Exception("无法启动AFS打包进程");
                         }
+
                         process.OutputDataReceived += (sender, e) =>
                         {
                             if (!string.IsNullOrEmpty(e.Data))
@@ -100,6 +100,13 @@ namespace super_toolbox
 
                         process.BeginOutputReadLine();
                         process.BeginErrorReadLine();
+
+                        foreach (var file in allFiles)
+                        {
+                            ThrowIfCancellationRequested(cancellationToken);
+                            OnFilePacked(file);
+                        }
+
                         process.WaitForExit();
 
                         if (process.ExitCode != 0)
@@ -107,24 +114,19 @@ namespace super_toolbox
                             throw new Exception($"AFS打包失败(ExitCode:{process.ExitCode})");
                         }
                     }
+
                     if (File.Exists(outputAfsPath))
                     {
                         FileInfo fileInfo = new FileInfo(outputAfsPath);
                         PackingProgress?.Invoke(this, $"打包完成!");
-                        PackingProgress?.Invoke(this, $"输出文件: {Path.GetFileName(outputAfsPath)}");
-                        PackingProgress?.Invoke(this, $"文件大小: {FormatFileSize(fileInfo.Length)}");
-                        PackingProgress?.Invoke(this, $"压缩文件数: {files.Length}");
-                        foreach (var file in files)
-                        {
-                            OnFilePacked(file);
-                        }
+                        PackingProgress?.Invoke(this, $"输出文件:{Path.GetFileName(outputAfsPath)}");
+                        PackingProgress?.Invoke(this, $"文件大小:{FormatFileSize(fileInfo.Length)}");
+                        OnPackingCompleted();
                     }
                     else
                     {
                         throw new FileNotFoundException("AFS打包过程未生成输出文件", outputAfsPath);
                     }
-
-                    OnPackingCompleted();
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -139,6 +141,7 @@ namespace super_toolbox
                 OnPackingFailed($"打包失败:{ex.Message}");
             }
         }
+
         private string FormatFileSize(long bytes)
         {
             string[] suffixes = { "B", "KB", "MB", "GB" };
@@ -152,10 +155,28 @@ namespace super_toolbox
             }
             return $"{number:n1} {suffixes[counter]}";
         }
+
+        private string GetRelativePath(string rootPath, string fullPath)
+        {
+            Uri rootUri = new Uri(rootPath.EndsWith(Path.DirectorySeparatorChar.ToString())
+                ? rootPath
+                : rootPath + Path.DirectorySeparatorChar);
+
+            Uri fullUri = new Uri(fullPath);
+            return Uri.UnescapeDataString(rootUri.MakeRelativeUri(fullUri).ToString()
+                .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
+        }
+
+        private new void ThrowIfCancellationRequested(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+        }
+
         public void Repack(string directoryPath)
         {
             RepackAsync(directoryPath).Wait();
         }
+
         public override void Extract(string directoryPath)
         {
             Repack(directoryPath);
