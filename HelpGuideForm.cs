@@ -36,7 +36,7 @@ namespace super_toolbox
             rtbGuide.Margin = new Padding(10);
             rtbGuide.BackColor = Color.White;
 
-            string guideText = "超级工具箱使用帮助\r\n\r\n基本操作流程：\r\n1. 选择文件夹 - 点击\"选择文件夹\"按钮，选择要处理的文件所在目录，也可以直接复制路径到输入框\r\n" +
+            string guideText = "超级工具箱使用帮助\r\n\r\n基本操作流程：\r\n1. 选择文件夹 - 点击\"选择文件夹\"按钮或者拖放文件夹到路径输入框\r\n" +
                 "2. 选择操作 - 在左侧树形菜单中选择要执行的具体操作\r\n3. 开始执行 - 点击\"开始\"按钮执行选定的操作\r\n\r\n" +"功能分类说明：\r\n\r\n" +
                 "📁 音频处理\r\n  - 支持多种音频格式的提取和转换，包括WAV、OGG、HCA、ADX等格式，部分功能需要ffmpeg支持\r\n" +
                 "🖼️ 图片处理\r\n  - 支持多种图片格式的提取和转换，包括PNG、JPEG、DDS、GXT等格式\r\n📦 档案处理\r\n  - 支持多种游戏档案格式的提取和打包，" +
@@ -60,6 +60,7 @@ namespace super_toolbox
                 "Bnsf_Extractor——万代南梦宫的bnsf音频提取器，以二进制形式从TLFILE.TLDAT文件里面提取，可解情热传说和ps3平台的狂战传说，狂战传说steam版加密了无法提取\r\n" +
                 "BraExtractor——地雷社游戏常见的bra文件提取器，适用于地雷社妖精剑士F和Falcome的东京幻都EX\r\n" +
                 "CdxaExtractor——从PlayStation游戏的XA文件里面提取xa音频文件，注意区分大小写，XA是打包了一堆xa音频的包文件\r\n" +
+                "Cfsi_Extractor——cfsi文件专用提取器，适用于极限脱出3：零时困境和Re：从零开始的异世界生活虚假的王选候补\r\n" +
                 "CmvDecoder——CMVS引擎的cmv视频解码器，代表作：天津罪\r\n" +
                 "CpkExtractor——用于解包CRIWARE的cpk格式的档案，很多平台常见的打包格式，这玩意啥也存，只有你不知道的，没有他不存的\r\n" +
                 "CSO_PakExtractor——反恐精英ol的pak提取器，csol的打包格式分nar和pak两种，本提取器是用来解pak格式的\r\n" +
@@ -127,10 +128,11 @@ namespace super_toolbox
                 "Wiiu_gtxConverter——任天堂wiiu平台的gtx转换器，可以把gtx转换成png图片\r\n" +
                 "--------------------------------------------------------------------------------------------------------------------------------------------------\r\n" +
                 "<打包器>\r\n" +
-                "AfsPacker——CRIware的afs档案打包器，可以把一个文件夹里的所有文件重新打包成一个afs文件\r\n" +
+                "AfsPacker——CRIware的afs档案打包器，可以把一个文件夹及子文件夹里的所有文件重新打包成afs文件\r\n" +
+                "Cfsi_Repacker——cfsi打包器，可以把一个文件夹及子文件夹里的所有文件重新打包成cfsi文件\r\n" +
                 "Darc_Repacker——任天堂3ds平台的darc打包器，可以把一个文件夹里的文件打包成darc文件\r\n" +
                 "IdeaFactory_PacRepacker——地雷社游戏的pac打包器，可以把文件夹重新打包成pac文件\r\n" +
-                "MagesMpkRepacker——Mages的mpk打包器，可以把一个文件夹重新打包成mpk文件\r\n" +
+                "MagesMpkRepacker——Mages的mpk打包器，可以把一个文件夹及子文件夹里的所有文件重新打包成mpk文件\r\n" +
                 "Nds_Repacker——任天堂nds平台的rom打包器，可以将解包的nds文件夹重新打包成nds\r\n" +
                 "PsarcRepacker——索尼ps3平台的psarc打包器，可以把一个文件夹重新打包成psarc文件\r\n" +
                 "XWBPacker——XWB打包器，可以把一个文件夹里的所有wav打包成xwb文件，不过不是支持所有wav格式，建议使用立体声pcm_s16le的wav文件\r\n" +
