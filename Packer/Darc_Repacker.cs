@@ -85,6 +85,13 @@ namespace super_toolbox
 
             PackingProgress?.Invoke(this, $"正在创建DARC文件:{darcFileName}，包含{allFiles.Count}个文件");
 
+            foreach (var sourceFile in allFiles)
+            {
+                ThrowIfCancellationRequested(cancellationToken);
+                OnFilePacked(sourceFile);
+                PackingProgress?.Invoke(this, $"正在打包:{Path.GetFileName(sourceFile)}");
+            }
+
             string arguments = $"-cvfd \"{outputPath}\" \"{baseDirectory}\"";
 
             using (var process = new Process
@@ -138,10 +145,6 @@ namespace super_toolbox
             {
                 FileInfo fileInfo = new FileInfo(outputPath);
                 PackingProgress?.Invoke(this, $"打包完成:{darcFileName} ({FormatFileSize(fileInfo.Length)})");
-                foreach (var file in allFiles)
-                {
-                    OnFilePacked(file);
-                }
             }
             else
             {
@@ -162,6 +165,7 @@ namespace super_toolbox
             }
             return $"{number:n1} {suffixes[counter]}";
         }
+
         private string GetRelativePath(string rootPath, string fullPath)
         {
             Uri rootUri = new Uri(rootPath.EndsWith(Path.DirectorySeparatorChar.ToString())
@@ -172,9 +176,15 @@ namespace super_toolbox
             return Uri.UnescapeDataString(rootUri.MakeRelativeUri(fullUri).ToString()
                 .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
         }
+
         public override void Extract(string directoryPath)
         {
             ExtractAsync(directoryPath).Wait();
+        }
+
+        private new void ThrowIfCancellationRequested(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
         }
     }
 }
