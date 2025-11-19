@@ -1,39 +1,32 @@
 using System.Diagnostics;
-using System.Reflection;
 using System.Text;
 
 namespace super_toolbox
 {
     public class MagesMpkRepacker : BaseExtractor
     {
-        private static string _tempExePath;
         public new event EventHandler<string>? PackingStarted;
         public new event EventHandler<string>? PackingProgress;
         public new event EventHandler<string>? PackingError;
+
+        private static string _tempExePath;
+
         static MagesMpkRepacker()
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            string tempDir = Path.Combine(Path.GetTempPath(), "supertoolbox_temp");
-            Directory.CreateDirectory(tempDir);
-            _tempExePath = Path.Combine(tempDir, "mpk.exe");
+            _tempExePath = LoadEmbeddedExe("embedded.mpk.exe", "mpk.exe");
 
-            if (!File.Exists(_tempExePath))
+            if (string.IsNullOrEmpty(_tempExePath) || !File.Exists(_tempExePath))
             {
-                using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("embedded.mpk.exe"))
-                {
-                    if (stream == null)
-                        throw new FileNotFoundException("嵌入的MPK工具资源未找到");
-
-                    byte[] buffer = new byte[stream.Length];
-                    stream.Read(buffer, 0, buffer.Length);
-                    File.WriteAllBytes(_tempExePath, buffer);
-                }
+                throw new InvalidOperationException("无法加载mpk.exe，请检查嵌入资源");
             }
         }
+
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             await RepackAsync(directoryPath, cancellationToken);
         }
+
         public async Task RepackAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
@@ -79,6 +72,7 @@ namespace super_toolbox
                 OnPackingFailed($"打包失败:{ex.Message}");
             }
         }
+
         private async Task CreateSingleMpkFile(string baseDirectory, List<string> allFiles, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -99,6 +93,13 @@ namespace super_toolbox
 
             PackingProgress?.Invoke(this, $"正在创建MPK文件:{mpkFileName}，包含{allFiles.Count}个文件");
 
+            foreach (var sourceFile in allFiles)
+            {
+                ThrowIfCancellationRequested(cancellationToken);
+                OnFilePacked(sourceFile);
+                PackingProgress?.Invoke(this, $"正在打包:{Path.GetFileName(sourceFile)}");
+            }
+
             string arguments = $"-c \"{baseDirectory}\"";
 
             using (var process = new Process
@@ -118,11 +119,15 @@ namespace super_toolbox
             })
             {
                 process.Start();
+
                 var outputTask = process.StandardOutput.ReadToEndAsync();
                 var errorTask = process.StandardError.ReadToEndAsync();
+
                 await process.WaitForExitAsync(cancellationToken);
+
                 string output = await outputTask;
                 string error = await errorTask;
+
                 if (!string.IsNullOrEmpty(output))
                 {
                     foreach (string line in output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
@@ -133,16 +138,18 @@ namespace super_toolbox
                         }
                     }
                 }
+
                 if (!string.IsNullOrEmpty(error))
                 {
-                    foreach (string line in error.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                    var errorLines = error.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                        .ToList();
+
+                    foreach (string line in errorLines)
                     {
-                        if (!string.IsNullOrEmpty(line))
-                        {
-                            PackingError?.Invoke(this, $"错误:{line}");
-                        }
+                        PackingError?.Invoke(this, $"错误:{line}");
                     }
                 }
+
                 if (process.ExitCode != 0)
                 {
                     throw new Exception($"打包失败(ExitCode:{process.ExitCode})");
@@ -153,16 +160,13 @@ namespace super_toolbox
             {
                 FileInfo fileInfo = new FileInfo(outputPath);
                 PackingProgress?.Invoke(this, $"打包完成:{mpkFileName} ({FormatFileSize(fileInfo.Length)})");
-                foreach (var file in allFiles)
-                {
-                    OnFilePacked(file); 
-                }
             }
             else
             {
                 throw new FileNotFoundException("打包过程未生成输出文件", outputPath);
             }
         }
+
         private string FormatFileSize(long bytes)
         {
             string[] suffixes = { "B", "KB", "MB", "GB" };
@@ -176,6 +180,7 @@ namespace super_toolbox
             }
             return $"{number:n1} {suffixes[counter]}";
         }
+
         private string GetRelativePath(string rootPath, string fullPath)
         {
             Uri rootUri = new Uri(rootPath.EndsWith(Path.DirectorySeparatorChar.ToString())
@@ -186,13 +191,20 @@ namespace super_toolbox
             return Uri.UnescapeDataString(rootUri.MakeRelativeUri(fullUri).ToString()
                 .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
         }
+
         public void Repack(string directoryPath)
         {
             RepackAsync(directoryPath).Wait();
         }
+
         public override void Extract(string directoryPath)
         {
             Repack(directoryPath);
+        }
+
+        private new void ThrowIfCancellationRequested(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
         }
     }
 }
