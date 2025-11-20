@@ -144,6 +144,7 @@ namespace super_toolbox
             { "双截龙彩虹pak提取器","其他档案" },
             { "CFSI - cfsi提取器", "其他档案" },
             { "CFSI - cfsi打包器", "其他档案" },
+            { "消逝的光芒 - rpack","其他档案" },
         };
         public SuperToolbox()
         {
@@ -568,6 +569,7 @@ namespace super_toolbox
                 case "双截龙彩虹pak提取器": return new DoubleDragonNeon_PakExtractor();
                 case "CFSI - cfsi提取器": return new Cfsi_Extractor();
                 case "CFSI - cfsi打包器": return new Cfsi_Repacker();
+                case "消逝的光芒 - rpack": return new DyingLightExtractor();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
