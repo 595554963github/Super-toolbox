@@ -192,9 +192,6 @@
 		<Reference Include="WarTales_PakExtractor">
 			<HintPath>plugins\WarTales_PakExtractor.dll</HintPath>
 		</Reference>
-		<Reference Include="ZE_CFSI_Lib">
-		  <HintPath>plugins\ZE_CFSI_Lib.dll</HintPath>
-		</Reference>
 		<Reference Include="ZstdNet">
 			<HintPath>plugins\ZstdNet.dll</HintPath>
 		</Reference>
