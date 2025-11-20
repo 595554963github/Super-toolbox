@@ -155,6 +155,12 @@
 		<EmbeddedResource Include="plugins\wfLZ.exe">
 			<LogicalName>embedded.wfLZ.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\DyingLight.exe">
+			<LogicalName>embedded.DyingLight.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\zlib.net.dll">
+			<LogicalName>embedded.zlib.net.dll</LogicalName>
+		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
