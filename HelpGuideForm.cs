@@ -69,6 +69,7 @@ namespace super_toolbox
                 "DdsExtractor——以二进制形式从游戏文件里面提取dds图片的提取器，亲测战场女武神4，一般的dds和DX10纹理的dds都可以提取出来\r\n" +
                 "DoubleDragonNeon_PakExtractor——双截龙彩虹的专用pak提取器\r\n" +
                 "DtsExtractor——SRPG Studio的dts提取器，代表作：刻印战记2：七圣英雄\r\n" +
+                "DyingLightExtractor——消逝的光芒rpack专用提取器\r\n" +
                 "FilenameExtractor——ps3约会大作战的pck文件提取器\r\n" +
                 "FMSG_Extractor——零濡鸦之巫女的fmsg转换器，可以把fmsg转换成txt文本\r\n" +
                 "FPAC_CF_Extractor——苍翼默示录：神观之梦的专用解包工具，可以解包压缩的pac文件和普通pac文件\r\n" +
