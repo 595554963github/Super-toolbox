@@ -5,9 +5,11 @@ namespace super_toolbox
         private readonly object _lockObject = new object();
         private const int BufferSize = 8192;
 
+        public new event EventHandler<string>? ExtractionStarted;
         public new event EventHandler<string>? ExtractionProgress;
+        public new event EventHandler<string>? ExtractionError;
 
-        private const uint DDS_MAGIC = 0x20534444; // "DDS "
+        private const uint DDS_MAGIC = 0x20534444;
         private const int DDS_HEADER_SIZE = 124;
         private const int DX10_HEADER_SIZE = 20;
 
@@ -20,20 +22,20 @@ namespace super_toolbox
         {
             if (!Directory.Exists(directoryPath))
             {
-                ExtractionProgress?.Invoke(this, $"错误:{directoryPath}不是有效的目录");
-                OnExtractionFailed($"错误:{directoryPath}不是有效的目录");
+                ExtractionError?.Invoke(this, $"源文件夹{directoryPath}不存在");
+                OnExtractionFailed($"源文件夹{directoryPath}不存在");
                 return;
             }
 
             string extractedFolder = Path.Combine(directoryPath, "Extracted");
-            if (!Directory.Exists(extractedFolder))
-            {
-                Directory.CreateDirectory(extractedFolder);
-            }
+            Directory.CreateDirectory(extractedFolder);
 
             var files = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
             TotalFilesToExtract = files.Length;
+
+            ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
             ExtractionProgress?.Invoke(this, $"开始处理{files.Length}个文件...");
+
             int totalExtractedFiles = 0;
 
             foreach (var file in files)
@@ -47,19 +49,18 @@ namespace super_toolbox
                 }
                 catch (OperationCanceledException)
                 {
-                    ExtractionProgress?.Invoke(this, "提取操作已取消");
+                    ExtractionError?.Invoke(this, "提取操作已取消");
                     OnExtractionFailed("提取操作已取消");
                     throw;
                 }
                 catch (Exception ex)
                 {
-                    ExtractionProgress?.Invoke(this, $"处理文件{file} 时出错:{ex.Message}");
-                    OnExtractionFailed($"处理文件{file} 时出错:{ex.Message}");
+                    ExtractionError?.Invoke(this, $"处理文件{file}时出错:{ex.Message}");
+                    OnExtractionFailed($"处理文件{file}时出错:{ex.Message}");
                 }
             }
 
             ExtractionProgress?.Invoke(this, $"提取完成:共提取{totalExtractedFiles}个DDS文件");
-
             OnExtractionCompleted();
         }
 
@@ -67,6 +68,8 @@ namespace super_toolbox
         {
             string fileName = Path.GetFileName(filePath);
             int filesExtractedFromThisFile = 0;
+
+            ExtractionProgress?.Invoke(this, $"正在处理文件:{fileName}");
 
             using FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
             var buffer = new byte[BufferSize];
@@ -148,13 +151,13 @@ namespace super_toolbox
                 string message = $"已提取:{newFileName} (尺寸:{header.Width}x{header.Height},格式:{formatStr})";
                 ExtractionProgress?.Invoke(this, message);
 
-                OnFileExtracted(newFileName); 
+                OnFileExtracted(newFileName);
 
                 return true;
             }
             catch (Exception ex)
             {
-                ExtractionProgress?.Invoke(this, $"保存文件{newFileName}时出错:{ex.Message}");
+                ExtractionError?.Invoke(this, $"保存文件{newFileName}时出错:{ex.Message}");
                 return false;
             }
         }
@@ -178,7 +181,6 @@ namespace super_toolbox
             return -1;
         }
     }
-
 
     public class DdsHeader
     {
@@ -245,10 +247,19 @@ namespace super_toolbox
         private const int DDS_HEADER_SIZE = 124;
         public bool IsValid()
         {
-            return (Size == DDS_HEADER_SIZE &&
-                    (Flags & 0x1007) != 0 &&  // DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT
-                    Width > 0 && Height > 0 &&
-                    PfSize == 32);
+            if (Size != DDS_HEADER_SIZE || Width == 0 || Height == 0 || PfSize != 32)
+                return false;
+
+            if ((Flags & 0x1007) == 0)
+                return false;
+
+            if (string.IsNullOrEmpty(PfFourCC) || PfFourCC.Trim() == "" || PfFourCC == "\0\0\0\0")
+            {
+                if ((PfFlags & 0x40) == 0)
+                    return false;
+            }
+
+            return true;
         }
 
         public bool HasDx10Extension()
@@ -259,12 +270,67 @@ namespace super_toolbox
         public string GetDxgiFormat(byte[]? dx10Data)
         {
             if (!HasDx10Extension())
+            {
+                if (string.IsNullOrEmpty(PfFourCC) || PfFourCC.Trim() == "" || PfFourCC == "\0\0\0\0")
+                {
+                    if (PfBitCount == 32)
+                    {
+                        if (PfRmask == 0x00FF0000 && PfGmask == 0x0000FF00 &&
+                            PfBmask == 0x000000FF && PfAmask == 0xFF000000)
+                            return "A8R8G8B8";
+
+                        if (PfRmask == 0x000000FF && PfGmask == 0x0000FF00 &&
+                            PfBmask == 0x00FF0000 && PfAmask == 0xFF000000)
+                            return "A8B8G8R8";
+
+                        if (PfRmask == 0xFF000000 && PfGmask == 0x00FF0000 &&
+                            PfBmask == 0x0000FF00 && PfAmask == 0x000000FF)
+                            return "R8G8B8A8";
+
+                        if (PfRmask == 0x00FF0000 && PfGmask == 0x0000FF00 &&
+                            PfBmask == 0x000000FF && PfAmask == 0x00000000)
+                            return "X8R8G8B8";
+
+                        return $"RGB32(R:0x{PfRmask:X8},G:0x{PfGmask:X8},B:0x{PfBmask:X8},A:0x{PfAmask:X8})";
+                    }
+                    else if (PfBitCount == 24)
+                    {
+                        if (PfRmask == 0xFF0000 && PfGmask == 0x00FF00 && PfBmask == 0x0000FF)
+                            return "R8G8B8";
+
+                        if (PfRmask == 0x0000FF && PfGmask == 0x00FF00 && PfBmask == 0xFF0000)
+                            return "B8G8R8";
+
+                        return $"RGB24(R:0x{PfRmask:X6},G:0x{PfGmask:X6},B:0x{PfBmask:X6})";
+                    }
+                    else if (PfBitCount == 16)
+                    {
+                        if (PfRmask == 0xF800 && PfGmask == 0x07E0 && PfBmask == 0x001F)
+                            return "R5G6B5";
+
+                        if (PfRmask == 0x7C00 && PfGmask == 0x03E0 && PfBmask == 0x001F && PfAmask == 0x8000)
+                            return "A1R5G5B5";
+
+                        if (PfRmask == 0x7C00 && PfGmask == 0x03E0 && PfBmask == 0x001F && PfAmask == 0x0000)
+                            return "X1R5G5B5";
+
+                        return $"RGB16(R:0x{PfRmask:X4},G:0x{PfGmask:X4},B:0x{PfBmask:X4},A:0x{PfAmask:X4})";
+                    }
+                    else if (PfBitCount == 8)
+                    {
+                        return "PAL8_or_L8";
+                    }
+
+                    return $"RGB{PfBitCount}";
+                }
+
                 return PfFourCC;
+            }
 
             byte[] safeData = dx10Data ?? Array.Empty<byte>();
 
             if (safeData.Length < 4)
-                return "未知格式";
+                return "未知DX10格式";
 
             uint dxgiFormat = BitConverter.ToUInt32(safeData, 0);
             return DxgiFormatNames.TryGetValue(dxgiFormat, out string? format) ? format : $"未知格式({dxgiFormat})";
@@ -272,8 +338,15 @@ namespace super_toolbox
 
         public int CalculateDataSize()
         {
-            if ((Flags & 0x80000) != 0)  // DDSD_LINEARSIZE
+            if ((Flags & 0x80000) != 0)
                 return (int)PitchOrLinearSize;
+
+            if (string.IsNullOrEmpty(PfFourCC) || PfFourCC.Trim() == "" || PfFourCC == "\0\0\0\0")
+            {
+                int bytesPerPixel = (int)Math.Max(1, (PfBitCount + 7) / 8);
+                int pitch = (int)(Width * bytesPerPixel + 3) & ~3;
+                return (int)(pitch * Height);
+            }
 
             int blockSize;
             switch (PfFourCC)
@@ -299,8 +372,9 @@ namespace super_toolbox
                     blockSize = 8;
                     break;
                 default:
-                    blockSize = (int)Math.Max(1, (PfBitCount + 7) / 8) * 4;
-                    break;
+                    int fallbackBytesPerPixel = (int)Math.Max(1, (PfBitCount + 7) / 8);
+                    int fallbackPitch = (int)(Width * fallbackBytesPerPixel + 3) & ~3;
+                    return (int)(fallbackPitch * Height);
             }
 
             int totalSize = 0;
