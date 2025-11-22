@@ -99,42 +99,47 @@ namespace super_toolbox
             var extractedFiles = new System.Collections.Concurrent.ConcurrentDictionary<string, bool>();
             int lastReportedCount = 0;
 
+            Directory.CreateDirectory(extractFolder);
+
             using (var fileWatcher = new FileSystemWatcher())
             {
-                fileWatcher.Path = Path.GetDirectoryName(filePath) ?? Environment.CurrentDirectory;
+                fileWatcher.Path = extractFolder;
                 fileWatcher.Filter = "*.*";
                 fileWatcher.IncludeSubdirectories = true;
-                fileWatcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.Size;
+                fileWatcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.Size | NotifyFilters.CreationTime;
                 fileWatcher.InternalBufferSize = 65536;
 
                 var extractCompleted = new TaskCompletionSource<bool>();
 
                 void OnFileCreated(object sender, FileSystemEventArgs e)
                 {
-                    if (File.Exists(e.FullPath) && IsFileInExtractFolder(e.FullPath, extractFolder))
+                    if (File.Exists(e.FullPath))
                     {
                         if (extractedFiles.TryAdd(e.FullPath, true))
                         {
                             base.OnFileExtracted(e.FullPath);
                             UpdateProgressDisplay();
+
+                            if (extractedFiles.Count % 10 == 0 || extractedFiles.Count <= 5)
+                            {
+                                string relativePath = GetRelativePath(e.FullPath, extractFolder);
+                                ExtractionProgress?.Invoke(this, $"提取文件:{relativePath}");
+                            }
                         }
                     }
                 }
 
                 void OnFileChanged(object sender, FileSystemEventArgs e)
                 {
-                    if (File.Exists(e.FullPath) && IsFileInExtractFolder(e.FullPath, extractFolder))
+                    if (File.Exists(e.FullPath))
                     {
                         try
                         {
                             var fileInfo = new FileInfo(e.FullPath);
-                            if (fileInfo.Length > 0)
+                            if (fileInfo.Length > 0 && extractedFiles.TryAdd(e.FullPath, true))
                             {
-                                if (extractedFiles.TryAdd(e.FullPath, true))
-                                {
-                                    base.OnFileExtracted(e.FullPath);
-                                    UpdateProgressDisplay();
-                                }
+                                base.OnFileExtracted(e.FullPath);
+                                UpdateProgressDisplay();
                             }
                         }
                         catch
@@ -146,7 +151,7 @@ namespace super_toolbox
                 void UpdateProgressDisplay()
                 {
                     int currentCount = extractedFiles.Count;
-                    if (currentCount > lastReportedCount)
+                    if (currentCount != lastReportedCount)
                     {
                         lastReportedCount = currentCount;
                         ExtractionProgress?.Invoke(this, $"已提取文件:{currentCount}个");
@@ -155,37 +160,45 @@ namespace super_toolbox
 
                 async Task StartPolling()
                 {
+                    int consecutiveNoChangeCount = 0;
+
                     while (!extractCompleted.Task.IsCompleted && !cancellationToken.IsCancellationRequested)
                     {
-                        await Task.Delay(1000, cancellationToken);
+                        await Task.Delay(2000, cancellationToken);
 
                         try
                         {
                             if (Directory.Exists(extractFolder))
                             {
-                                var currentFiles = Directory.GetFiles(extractFolder, "*.*", SearchOption.AllDirectories);
-                                int newFilesCount = 0;
+                                var allFiles = Directory.GetFiles(extractFolder, "*.*", SearchOption.AllDirectories);
+                                int previousCount = extractedFiles.Count;
 
-                                foreach (var file in currentFiles)
+                                foreach (var file in allFiles)
                                 {
-                                    if (extractedFiles.TryAdd(file, true))
+                                    if (File.Exists(file) && extractedFiles.TryAdd(file, true))
                                     {
-                                        newFilesCount++;
                                         base.OnFileExtracted(file);
-
-                                        if (newFilesCount <= 5)
-                                        {
-                                            string relativePath = GetRelativePath(file, Path.GetDirectoryName(filePath) ?? string.Empty);
-                                            ExtractionProgress?.Invoke(this, $"发现文件:{relativePath}");
-                                        }
                                     }
                                 }
 
+                                int newFilesCount = extractedFiles.Count - previousCount;
+
                                 if (newFilesCount > 0)
                                 {
+                                    consecutiveNoChangeCount = 0;
                                     int totalCount = extractedFiles.Count;
-                                    ExtractionProgress?.Invoke(this, $"发现{newFilesCount}个新文件，总计:{totalCount}个文件");
+                                    ExtractionProgress?.Invoke(this, $"轮询发现{newFilesCount}个新文件，总计:{totalCount}个文件");
                                 }
+                                else
+                                {
+                                    consecutiveNoChangeCount++;
+                                    if (consecutiveNoChangeCount >= 3)
+                                    {
+                                        ExtractionProgress?.Invoke(this, $"文件数量稳定:{extractedFiles.Count}个文件");
+                                    }
+                                }
+
+                                UpdateProgressDisplay();
                             }
                         }
                         catch (Exception ex)
@@ -222,14 +235,40 @@ namespace super_toolbox
                         throw new Exception($"文件{Path.GetFileName(filePath)}提取失败");
                     }
 
-                    extractCompleted.TrySetResult(true);
+                    await Task.Delay(3000, cancellationToken);
 
+                    if (Directory.Exists(extractFolder))
+                    {
+                        var finalFiles = Directory.GetFiles(extractFolder, "*.*", SearchOption.AllDirectories);
+                        int finalNewCount = 0;
+
+                        foreach (var file in finalFiles)
+                        {
+                            if (File.Exists(file) && extractedFiles.TryAdd(file, true))
+                            {
+                                finalNewCount++;
+                                base.OnFileExtracted(file);
+                            }
+                        }
+
+                        if (finalNewCount > 0)
+                        {
+                            ExtractionProgress?.Invoke(this, $"最终扫描发现{finalNewCount}个文件");
+                        }
+                    }
+
+                    extractCompleted.TrySetResult(true);
                     await pollingTask;
 
                     int finalCount = extractedFiles.Count;
                     ExtractionProgress?.Invoke(this, $"{Path.GetFileName(filePath)}提取完成，最终数量:{finalCount}个文件");
 
                     return finalCount;
+                }
+                catch
+                {
+                    extractCompleted.TrySetResult(false);
+                    throw;
                 }
                 finally
                 {
@@ -238,13 +277,6 @@ namespace super_toolbox
                     fileWatcher.Changed -= OnFileChanged;
                 }
             }
-        }
-
-        private bool IsFileInExtractFolder(string filePath, string extractFolder)
-        {
-            string? fileDir = Path.GetDirectoryName(filePath);
-            return !string.IsNullOrEmpty(fileDir) &&
-                   fileDir.StartsWith(extractFolder, StringComparison.OrdinalIgnoreCase);
         }
 
         private string GetRelativePath(string fullPath, string basePath)
@@ -262,7 +294,21 @@ namespace super_toolbox
             }
             catch
             {
-                return Path.GetFileName(fullPath);
+                try
+                {
+                    string full = Path.GetFullPath(fullPath);
+                    string baseFull = Path.GetFullPath(basePath);
+
+                    if (full.StartsWith(baseFull, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return full.Substring(baseFull.Length).TrimStart(Path.DirectorySeparatorChar);
+                    }
+                    return Path.GetFileName(fullPath);
+                }
+                catch
+                {
+                    return Path.GetFileName(fullPath);
+                }
             }
         }
     }
