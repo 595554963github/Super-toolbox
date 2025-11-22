@@ -145,6 +145,7 @@ namespace super_toolbox
             { "CFSI - cfsi提取器", "其他档案" },
             { "CFSI - cfsi打包器", "其他档案" },
             { "消逝的光芒 - rpack","其他档案" },
+            { "传颂之物二人的白皇 - sdat","其他档案" },
         };
         public SuperToolbox()
         {
@@ -570,6 +571,7 @@ namespace super_toolbox
                 case "CFSI - cfsi提取器": return new Cfsi_Extractor();
                 case "CFSI - cfsi打包器": return new Cfsi_Repacker();
                 case "消逝的光芒 - rpack": return new DyingLightExtractor();
+                case "传颂之物二人的白皇 - sdat": return new Sdat_Extractor();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
@@ -624,20 +626,57 @@ namespace super_toolbox
         }
         private void UpdateRichTextBoxInternal(List<string> messages)
         {
-            if (statusStrip1 == null || lblFileCount == null) return;
+            if (statusStrip1 == null || lblFileCount == null || richTextBox1.IsDisposed)
+            {
+                isUpdatingUI = false;
+                return;
+            }
+
             try
             {
                 richTextBox1.SuspendLayout();
+
+                int currentSelectionStart = richTextBox1.SelectionStart;
+                int currentSelectionLength = richTextBox1.SelectionLength;
+
+                bool isAtBottom = IsRichTextBoxAtBottom();
+
                 StringBuilder sb = new StringBuilder();
-                foreach (string message in messages) sb.AppendLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - {message}");
-                int scrollPosition = richTextBox1.SelectionStart;
-                bool isAtBottom = scrollPosition >= richTextBox1.TextLength - 10;
+                foreach (string message in messages)
+                {
+                    sb.AppendLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - {message}");
+                }
+
                 richTextBox1.AppendText(sb.ToString());
-                if (isAtBottom) richTextBox1.ScrollToCaret();
-                else { richTextBox1.SelectionStart = scrollPosition; richTextBox1.SelectionLength = 0; }
+
+                if (isAtBottom)
+                {
+                    richTextBox1.ScrollToCaret();
+                }
+                else
+                {
+                    richTextBox1.SelectionStart = currentSelectionStart;
+                    richTextBox1.SelectionLength = currentSelectionLength;
+                    richTextBox1.ScrollToCaret();
+                }
             }
-            catch { }
-            finally { richTextBox1.ResumeLayout(); isUpdatingUI = false; }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"UpdateRichTextBoxInternal错误:{ex.Message}");
+            }
+            finally
+            {
+                richTextBox1.ResumeLayout();
+                isUpdatingUI = false;
+            }
+        }
+
+        private bool IsRichTextBoxAtBottom()
+        {
+            int firstVisibleCharIndex = richTextBox1.GetCharIndexFromPosition(new Point(0, 0));
+            int lastVisibleCharIndex = richTextBox1.GetCharIndexFromPosition(new Point(0, richTextBox1.ClientSize.Height));
+
+            return lastVisibleCharIndex >= richTextBox1.TextLength - 50;
         }
         private void treeView1_AfterSelect(object sender, TreeViewEventArgs e)
         {
