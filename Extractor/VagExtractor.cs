@@ -1,10 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace super_toolbox
 {
     public class VagExtractor : BaseExtractor
@@ -39,12 +32,10 @@ namespace super_toolbox
             }
             return -1;
         }
-
         public override void Extract(string directoryPath)
         {
             ExtractAsync(directoryPath).Wait();
         }
-
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             List<string> extractedFiles = new List<string>();
@@ -69,7 +60,6 @@ namespace super_toolbox
             int processedSourceFiles = 0;
             int totalExtractedFiles = 0;
 
-            // 设置总文件数为源文件数量
             TotalFilesToExtract = totalSourceFiles;
 
             foreach (var filePath in filePaths)
