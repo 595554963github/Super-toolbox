@@ -104,6 +104,7 @@ namespace super_toolbox
                 "PngExtractor——以二进制形式从游戏文件里面提取png图片的提取器，png是标准的计算机文件，有固定文件头和文件尾\r\n" +
                 "PsarcExtractor——索尼ps3平台的psarc解包工具，代表作：第二次超级机器人大战OG，也可以解包无人深空的pak文件\r\n" +
                 "RifxExtractor——以二进制形式从xbox360游戏里面提取大端序的wem文件，RIFX和RIFF都是资源交换文件格式\r\n" +
+                "Sdat_Extractor——传颂之物二人的白皇的sdat文件专用提取器\r\n" +
                 "SEGS_BinExtractor——苍翼默示录：刻之幻影专用bin文件解包工具，可提取出里面的所有pac文件\r\n" +
                 "SonyGxtExtractor——从索尼的psv、psp等平台游戏里面提取gxt文件，很多游戏喜欢把一堆gxt文件打包\r\n" +
                 "StingPckExtractor——用于解包steam和switch平台的超女神信仰诺瓦露、psv平台的约会大作战凛绪轮回、steam平台的约会大作战凛绪轮回HD\r\n" +
