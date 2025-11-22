@@ -195,6 +195,9 @@
 		<Reference Include="WarTales_PakExtractor">
 			<HintPath>plugins\WarTales_PakExtractor.dll</HintPath>
 		</Reference>
+		<Reference Include="zlib.net">
+		  <HintPath>plugins\zlib.net.dll</HintPath>
+		</Reference>
 		<Reference Include="ZstdNet">
 			<HintPath>plugins\ZstdNet.dll</HintPath>
 		</Reference>
