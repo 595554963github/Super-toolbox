@@ -35,10 +35,15 @@ namespace super_toolbox
             var filePaths = Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories)
                 .Where(file => Path.GetExtension(file).ToLower() != ".extracted");
 
+            var cfsiFiles = filePaths.Where(file =>
+                Path.GetExtension(file).Equals(".cfsi", StringComparison.OrdinalIgnoreCase)).ToList();
+
+            TotalFilesToExtract = cfsiFiles.Count; 
+
             int totalExtractedFromCfsi = 0;
             int processedCfsiFiles = 0;
 
-            foreach (var filePath in filePaths)
+            foreach (var filePath in cfsiFiles)
             {
                 ThrowIfCancellationRequested(cancellationToken);
 
@@ -131,7 +136,7 @@ namespace super_toolbox
                 }
 
                 long baseOffset = fs.Position;
-                baseOffset = (baseOffset + 0x0F) & ~0x0F; 
+                baseOffset = (baseOffset + 0x0F) & ~0x0F;
 
                 foreach (var entry in fileEntries)
                 {
@@ -296,6 +301,7 @@ namespace super_toolbox
                 ExtractionError?.Invoke(this, $"生成JSON结构文件时出错:{ex.Message}");
             }
         }
+
         private int GetNum(BinaryReader reader)
         {
             byte firstByte = reader.ReadByte();
@@ -310,6 +316,7 @@ namespace super_toolbox
             }
         }
     }
+
     internal class CfsiFileEntry
     {
         public string FullPath { get; set; } = string.Empty;
