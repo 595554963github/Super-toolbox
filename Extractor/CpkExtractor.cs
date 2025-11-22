@@ -1,6 +1,5 @@
 using CriFsV2Lib;
-using CriFsV2Lib.Definitions.Interfaces;
-using CriFsV2Lib.Definitions.Structs;
+using CriFsV2Lib.Definitions.Utilities;
 
 namespace super_toolbox
 {
@@ -14,8 +13,8 @@ namespace super_toolbox
         {
             if (!Directory.Exists(directoryPath))
             {
-                ExtractionError?.Invoke(this, $"错误: {directoryPath} 不是有效的目录");
-                OnExtractionFailed($"错误: {directoryPath} 不是有效的目录");
+                ExtractionError?.Invoke(this, $"错误:{directoryPath} 不是有效的目录");
+                OnExtractionFailed($"错误:{directoryPath} 不是有效的目录");
                 return;
             }
 
@@ -43,7 +42,7 @@ namespace super_toolbox
                             string cpkExtractDir = Path.Combine(extractedRootDir, cpkFileName);
                             Directory.CreateDirectory(cpkExtractDir);
 
-                            ExtractionProgress?.Invoke(this, $"正在处理: {Path.GetFileName(cpkFilePath)}");
+                            ExtractionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(cpkFilePath)}");
 
                             using (var fileStream = new FileStream(cpkFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                             {
@@ -54,55 +53,41 @@ namespace super_toolbox
                                 int processedFiles = 0;
 
                                 ExtractionProgress?.Invoke(this, $"CPK内包含{totalFiles}个文件");
+
                                 foreach (var file in files)
                                 {
+                                    cancellationToken.ThrowIfCancellationRequested();
+
                                     string relativePath = !string.IsNullOrEmpty(file.Directory)
                                         ? Path.Combine(file.Directory, file.FileName)
                                         : file.FileName;
-                                    ExtractionProgress?.Invoke(this, $"发现文件: {relativePath}");
-                                }
-                                using (var extractor = CriFsLib.Instance.CreateBatchExtractor<CpkFileExtractorItem>(cpkFilePath))
-                                {
-                                    foreach (var file in files)
+
+                                    string outputPath = Path.Combine(cpkExtractDir, relativePath);
+                                    string? outputDir = Path.GetDirectoryName(outputPath);
+                                    if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+                                        Directory.CreateDirectory(outputDir);
+
+                                    try
                                     {
-                                        cancellationToken.ThrowIfCancellationRequested();
+                                        using (ArrayRental fileData = cpk.ExtractFile(file))
+                                        {
+                                            byte[] data = new byte[fileData.Count];
+                                            Array.Copy(fileData.RawArray, 0, data, 0, fileData.Count);
+                                            File.WriteAllBytes(outputPath, data);
+                                        }
 
-                                        string relativePath = !string.IsNullOrEmpty(file.Directory)
-                                            ? Path.Combine(file.Directory, file.FileName)
-                                            : file.FileName;
+                                        processedFiles++;
 
-                                        string outputPath = Path.Combine(cpkExtractDir, relativePath);
-                                        string? outputDir = Path.GetDirectoryName(outputPath);
-                                        if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
-                                            Directory.CreateDirectory(outputDir);
-
-                                        extractor.QueueItem(new CpkFileExtractorItem(outputPath, file));
+                                        OnFileExtracted(outputPath);
+                                        ExtractionProgress?.Invoke(this, $"已提取:{relativePath} ({processedFiles}/{totalFiles})");
                                     }
-                                    ExtractionProgress?.Invoke(this, "开始提取文件...");
-
-                                    extractor.WaitForCompletion();
-                                    foreach (var file in files)
+                                    catch (Exception ex)
                                     {
-                                        string relativePath = !string.IsNullOrEmpty(file.Directory)
-                                            ? Path.Combine(file.Directory, file.FileName)
-                                            : file.FileName;
-
-                                        string outputPath = Path.Combine(cpkExtractDir, relativePath);
-
-                                        if (File.Exists(outputPath))
-                                        {
-                                            processedFiles++;
-                                            ExtractionProgress?.Invoke(this, $"已提取: {relativePath} ({processedFiles}/{totalFiles})");
-                                            OnFileExtracted(outputPath);
-                                        }
-                                        else
-                                        {
-                                            ExtractionError?.Invoke(this, $"提取失败: {relativePath}");
-                                        }
+                                        ExtractionError?.Invoke(this, $"提取失败:{relativePath} - {ex.Message}");
                                     }
                                 }
 
-                                ExtractionProgress?.Invoke(this, $"完成处理: {Path.GetFileName(cpkFilePath)} -> {processedFiles}/{totalFiles} 个文件");
+                                ExtractionProgress?.Invoke(this, $"完成处理:{Path.GetFileName(cpkFilePath)} -> {processedFiles}/{totalFiles}个文件");
                             }
                         }
                         catch (OperationCanceledException)
@@ -111,8 +96,8 @@ namespace super_toolbox
                         }
                         catch (Exception ex)
                         {
-                            ExtractionError?.Invoke(this, $"处理 {Path.GetFileName(cpkFilePath)} 时出错: {ex.Message}");
-                            OnExtractionFailed($"处理 {Path.GetFileName(cpkFilePath)} 时出错: {ex.Message}");
+                            ExtractionError?.Invoke(this, $"处理{Path.GetFileName(cpkFilePath)}时出错:{ex.Message}");
+                            OnExtractionFailed($"处理{Path.GetFileName(cpkFilePath)}时出错:{ex.Message}");
                         }
                     }
                 }, cancellationToken);
@@ -127,26 +112,14 @@ namespace super_toolbox
             }
             catch (Exception ex)
             {
-                ExtractionError?.Invoke(this, $"提取失败: {ex.Message}");
-                OnExtractionFailed($"提取失败: {ex.Message}");
+                ExtractionError?.Invoke(this, $"提取失败:{ex.Message}");
+                OnExtractionFailed($"提取失败:{ex.Message}");
             }
         }
 
         public override void Extract(string directoryPath)
         {
             ExtractAsync(directoryPath).Wait();
-        }
-
-        private class CpkFileExtractorItem : IBatchFileExtractorItem
-        {
-            public string FullPath { get; }
-            public CpkFile File { get; }
-
-            public CpkFileExtractorItem(string fullPath, CpkFile file)
-            {
-                FullPath = fullPath;
-                File = file;
-            }
         }
     }
 }
