@@ -1,10 +1,3 @@
-using System;
-using System.Collections.Concurrent;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace super_toolbox
 {
     public class Bnsf_Extractor : BaseExtractor
@@ -15,59 +8,78 @@ namespace super_toolbox
         private const int SFMT_OFFSET = 12;
         private const int MIN_BNSF_SIZE = 16;
 
+        public new event EventHandler<string>? ExtractionStarted;
+        public new event EventHandler<string>? ExtractionProgress;
+        public new event EventHandler<string>? ExtractionError;
+
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
             {
-                OnExtractionFailed($"目录不存在: {directoryPath}");
+                ExtractionError?.Invoke(this, $"错误:{directoryPath} 不是有效的目录");
+                OnExtractionFailed($"错误:{directoryPath} 不是有效的目录");
                 return;
             }
 
-            string outputDir = Path.Combine(directoryPath, "Extracted");
-            Directory.CreateDirectory(outputDir);
+            string extractedRootDir = Path.Combine(directoryPath, "Extracted");
+            Directory.CreateDirectory(extractedRootDir);
 
-            var tldatFiles = Directory.GetFiles(directoryPath, "*.TLDAT", SearchOption.AllDirectories);
-            TotalFilesToExtract = tldatFiles.Length;
+            var tldatFiles = Directory.GetFiles(directoryPath, "*.TLDAT", SearchOption.AllDirectories)
+                .Where(file => !file.StartsWith(extractedRootDir, StringComparison.OrdinalIgnoreCase))
+                .ToList();
 
-            var semaphore = new SemaphoreSlim(Environment.ProcessorCount);
+            TotalFilesToExtract = tldatFiles.Count;
+            ExtractionStarted?.Invoke(this, $"开始处理{tldatFiles.Count}个TLDAT文件");
 
             try
             {
-                await Task.WhenAll(tldatFiles.Select(async filePath =>
+                await Task.Run(() =>
                 {
-                    await semaphore.WaitAsync(cancellationToken);
-                    try
+                    foreach (var tldatFilePath in tldatFiles)
                     {
-                        await Task.Run(() => ProcessFileByChunks(filePath, outputDir, cancellationToken), cancellationToken);
+                        try
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+
+                            ExtractionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(tldatFilePath)}");
+
+                            int extractedCount = ProcessFileByChunks(tldatFilePath, extractedRootDir, cancellationToken);
+
+                            if (extractedCount > 0)
+                            {
+                                ExtractionProgress?.Invoke(this, $"从{Path.GetFileName(tldatFilePath)}中提取出{extractedCount}个BNSF文件");
+                            }
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            ExtractionError?.Invoke(this, $"处理{Path.GetFileName(tldatFilePath)}时出错:{ex.Message}");
+                            OnExtractionFailed($"处理{Path.GetFileName(tldatFilePath)}时出错:{ex.Message}");
+                        }
                     }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        OnExtractionFailed($"{Path.GetFileName(filePath)} 处理失败: {ex.Message}");
-                    }
-                    finally
-                    {
-                        semaphore.Release();
-                    }
-                }));
+                }, cancellationToken);
 
                 OnExtractionCompleted();
             }
             catch (OperationCanceledException)
             {
-                OnExtractionFailed("操作被用户取消");
+                ExtractionError?.Invoke(this, "操作已取消");
+                OnExtractionFailed("操作已取消");
+                throw;
             }
             catch (Exception ex)
             {
-                OnExtractionFailed($"提取过程中发生错误: {ex.Message}");
+                ExtractionError?.Invoke(this, $"提取失败:{ex.Message}");
+                OnExtractionFailed($"提取失败:{ex.Message}");
             }
         }
 
-        private void ProcessFileByChunks(string filePath, string outputDir, CancellationToken cancellationToken)
+        private int ProcessFileByChunks(string filePath, string outputDir, CancellationToken cancellationToken)
         {
+            int extractedCount = 0;
             byte[] buffer = new byte[BUFFER_SIZE];
             byte[] overlapBuffer = new byte[BNSF_HEADER.Length - 1];
             int overlapSize = 0;
@@ -99,7 +111,8 @@ namespace super_toolbox
                                 if (endPos - startPos >= MIN_BNSF_SIZE)
                                 {
                                     SaveBNSFChunk(fs, outputDir, Path.GetFileNameWithoutExtension(filePath),
-                                        startPos, endPos);
+                                        startPos, endPos, extractedCount + 1);
+                                    extractedCount++;
                                     i = (int)(endPos - (fs.Position - totalBytes)) - 1;
                                 }
                             }
@@ -111,6 +124,8 @@ namespace super_toolbox
                     Array.Copy(overlapBuffer, buffer, overlapSize);
                 }
             }
+
+            return extractedCount;
         }
 
         private long FindNextHeader(FileStream fs, long startSearchPos)
@@ -136,9 +151,10 @@ namespace super_toolbox
         }
 
         private void SaveBNSFChunk(FileStream sourceFs, string outputDir,
-            string baseName, long startPos, long endPos)
+            string baseName, long startPos, long endPos, int fileNumber)
         {
-            string outputPath = Path.Combine(outputDir, $"{baseName}_{ExtractedFileCount + 1}.bnsf");
+            string outputPath = Path.Combine(outputDir, $"{baseName}_{fileNumber}.bnsf");
+            outputPath = GetUniqueFilePath(outputPath);
 
             try
             {
@@ -157,11 +173,39 @@ namespace super_toolbox
                     }
                 }
                 OnFileExtracted(outputPath);
+                ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(outputPath)}");
             }
             catch (Exception ex)
             {
-                OnExtractionFailed($"保存失败 {outputPath}: {ex.Message}");
+                ExtractionError?.Invoke(this, $"保存失败{outputPath}: {ex.Message}");
             }
+        }
+
+        private string GetUniqueFilePath(string filePath)
+        {
+            if (!File.Exists(filePath))
+            {
+                return filePath;
+            }
+
+            string directory = Path.GetDirectoryName(filePath) ?? string.Empty;
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
+            string fileExtension = Path.GetExtension(filePath);
+            int duplicateCount = 1;
+            string newFilePath;
+
+            do
+            {
+                newFilePath = Path.Combine(directory, $"{fileNameWithoutExtension}_dup{duplicateCount}{fileExtension}");
+                duplicateCount++;
+            } while (File.Exists(newFilePath));
+
+            return newFilePath;
+        }
+
+        public override void Extract(string directoryPath)
+        {
+            ExtractAsync(directoryPath).Wait();
         }
     }
 }
