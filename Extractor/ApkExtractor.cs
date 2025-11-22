@@ -5,6 +5,10 @@ namespace super_toolbox
 {
     public class ApkExtractor : BaseExtractor
     {
+        public new event EventHandler<string>? ExtractionStarted;
+        public new event EventHandler<string>? ExtractionProgress;
+        public new event EventHandler<string>? ExtractionError;
+
         private string _existsMode = "skip";
         private bool _isDebug = false;
 
@@ -18,9 +22,12 @@ namespace super_toolbox
         {
             if (!Directory.Exists(directoryPath))
             {
-                OnExtractionFailed("目录不存在");
+                ExtractionError?.Invoke(this, $"错误:目录{directoryPath}不存在");
+                OnExtractionFailed($"错误:目录{directoryPath}不存在");
                 return;
             }
+
+            ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
             try
             {
@@ -29,85 +36,102 @@ namespace super_toolbox
 
                 foreach (string apkFile in apkFiles)
                 {
+                    ThrowIfCancellationRequested(cancellationToken);
+
                     if (IsEndiltleApk(apkFile))
                     {
                         validApkFiles.Add(apkFile);
+                        ExtractionProgress?.Invoke(this, $"找到有效APK文件:{Path.GetFileName(apkFile)}");
                     }
                 }
 
                 if (validApkFiles.Count == 0)
                 {
-                    OnExtractionFailed("没有找到有效的APK文件");
+                    ExtractionError?.Invoke(this, "未找到任何有效的APK文件");
+                    OnExtractionFailed("未找到任何有效的APK文件");
                     return;
                 }
-                TotalFilesToExtract = validApkFiles.Count * 10;
 
-                await Task.Run(() => ProcessFiles(validApkFiles, directoryPath, cancellationToken), cancellationToken);
+                TotalFilesToExtract = validApkFiles.Count;
+                ExtractionProgress?.Invoke(this, $"找到{validApkFiles.Count}个有效APK文件，开始提取...");
 
+                int totalExtractedFiles = 0;
+                foreach (string apkFile in validApkFiles)
+                {
+                    ThrowIfCancellationRequested(cancellationToken);
+
+                    try
+                    {
+                        ExtractionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(apkFile)}");
+                        int extractedCount = await ProcessApkFile(apkFile, directoryPath, cancellationToken);
+                        totalExtractedFiles += extractedCount;
+                        ExtractionProgress?.Invoke(this, $"完成处理:{Path.GetFileName(apkFile)} -> 提取{extractedCount}个文件");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        ExtractionError?.Invoke(this, $"处理{Path.GetFileName(apkFile)}时出错:{ex.Message}");
+                        OnExtractionFailed($"处理{Path.GetFileName(apkFile)}时出错:{ex.Message}");
+                    }
+                }
+
+                ExtractionProgress?.Invoke(this, $"APK提取完成，共提取{totalExtractedFiles}个文件");
                 OnExtractionCompleted();
             }
             catch (OperationCanceledException)
             {
-                OnExtractionFailed("提取操作已取消");
+                ExtractionError?.Invoke(this, "APK提取操作已取消");
+                OnExtractionFailed("APK提取操作已取消");
+                throw;
             }
             catch (Exception ex)
             {
-                OnExtractionFailed($"提取时出错: {ex.Message}");
+                ExtractionError?.Invoke(this, $"APK提取失败:{ex.Message}");
+                OnExtractionFailed($"APK提取失败:{ex.Message}");
             }
         }
 
-        private void ProcessFiles(List<string> apkFiles, string baseDirectory, CancellationToken cancellationToken)
+        private async Task<int> ProcessApkFile(string apkFilePath, string baseDirectory, CancellationToken cancellationToken)
         {
-            string outputDir = Path.Combine(baseDirectory ?? Directory.GetCurrentDirectory(), "Extracted");
-            Directory.CreateDirectory(outputDir);
-
-            foreach (string apkFile in apkFiles)
+            return await Task.Run(() =>
             {
-                ThrowIfCancellationRequested(cancellationToken);
+                int fileCount = 0;
+                string apkName = Path.GetFileNameWithoutExtension(apkFilePath);
+                string outputDir = Path.Combine(baseDirectory, "Extracted", apkName ?? "Unnamed");
+                Directory.CreateDirectory(outputDir);
 
                 try
                 {
-                    string apkName = Path.GetFileNameWithoutExtension(apkFile);
-                    string currentOutputDir = Path.Combine(outputDir, apkName ?? "Unnamed");
-                    Directory.CreateDirectory(currentOutputDir);
-
-                    using var stream = new FileStream(apkFile, FileMode.Open, FileAccess.Read);
+                    using var stream = new FileStream(apkFilePath, FileMode.Open, FileAccess.Read);
                     using var reader = new System.IO.BinaryReader(stream);
 
-                    var unpacker = new UnpackApk(reader, currentOutputDir, _existsMode, _isDebug);
+                    var unpacker = new UnpackApk(reader, outputDir, _existsMode, _isDebug);
 
-                    int fileCount = 0;
                     unpacker.FileExtracted += (sender, filePath) =>
                     {
                         fileCount++;
                         OnFileExtracted(filePath);
+                        ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(filePath)}");
                     };
 
                     unpacker.ErrorOccurred += (sender, errorMessage) =>
                     {
-                        OnExtractionFailed(errorMessage);
-                    };
-
-                    unpacker.ProcessCompletedWithCount += (sender, count) =>
-                    {
-                        if (count > TotalFilesToExtract)
-                        {
-                            TotalFilesToExtract = count;
-                        }
+                        ExtractionError?.Invoke(this, errorMessage);
                     };
 
                     unpacker.Extract();
 
-                    if (fileCount > 0)
-                    {
-                        TotalFilesToExtract += fileCount;
-                    }
+                    return fileCount;
                 }
                 catch (Exception ex)
                 {
-                    OnExtractionFailed($"处理失败 {Path.GetFileName(apkFile)}: {ex.Message}");
+                    ExtractionError?.Invoke(this, $"处理APK文件失败:{Path.GetFileName(apkFilePath)} - {ex.Message}");
+                    return 0;
                 }
-            }
+            }, cancellationToken);
         }
 
         private bool IsEndiltleApk(string filePath)
@@ -117,7 +141,8 @@ namespace super_toolbox
                 byte[] header = new byte[8];
                 using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
                 {
-                    fs.Read(header, 0, 8);
+                    if (fs.Read(header, 0, 8) != 8)
+                        return false;
                 }
                 return Encoding.ASCII.GetString(header) == "ENDILTLE";
             }
@@ -125,6 +150,11 @@ namespace super_toolbox
             {
                 return false;
             }
+        }
+
+        public override void Extract(string directoryPath)
+        {
+            ExtractAsync(directoryPath).Wait();
         }
     }
 
@@ -162,6 +192,7 @@ namespace super_toolbox
             string processStartedMessage = _reader.BaseStream?.ToString() ?? "Unknown Stream";
             ProcessStarted?.Invoke(this, processStartedMessage);
             Directory.CreateDirectory(OutputDirPath);
+
             try
             {
                 _reader!.BaseStream!.Seek(0, SeekOrigin.Begin);
@@ -281,7 +312,7 @@ namespace super_toolbox
                         }
                         catch (Exception e)
                         {
-                            string errorMessage = $"字符串解码错误: {e.Message}";
+                            string errorMessage = $"字符串解码错误:{e.Message}";
                             ErrorOccurred?.Invoke(this, errorMessage);
                             stringList.Add(new ByteSegment("str", string.Empty));
                         }
@@ -410,7 +441,7 @@ namespace super_toolbox
                             }
                             catch (Exception e)
                             {
-                                string errorMessage = $"字符串解码错误: {e.Message}";
+                                string errorMessage = $"字符串解码错误:{e.Message}";
                                 ErrorOccurred?.Invoke(this, errorMessage);
                                 archiveStringList.Add(new ByteSegment("str", string.Empty));
                             }
@@ -479,13 +510,13 @@ namespace super_toolbox
                 }
                 catch (Exception e)
                 {
-                    string errorMessage = $"解析错误: {e.Message}";
+                    string errorMessage = $"解析错误:{e.Message}";
                     ErrorOccurred?.Invoke(this, errorMessage);
                 }
             }
             catch (Exception e)
             {
-                string errorMessage = $"提取时出错: {e.Message}";
+                string errorMessage = $"提取时出错:{e.Message}";
                 ErrorOccurred?.Invoke(this, errorMessage);
             }
         }
@@ -506,7 +537,7 @@ namespace super_toolbox
                 }
                 catch (Exception e)
                 {
-                    string errorMessage = $"解压错误: {e.Message}";
+                    string errorMessage = $"解压错误:{e.Message}";
                     ErrorOccurred?.Invoke(this, errorMessage);
                     return false;
                 }
@@ -543,7 +574,7 @@ namespace super_toolbox
             }
             catch (Exception e)
             {
-                string errorMessage = $"写入错误: {e.Message}";
+                string errorMessage = $"写入错误:{e.Message}";
                 ErrorOccurred?.Invoke(this, errorMessage);
                 return false;
             }
