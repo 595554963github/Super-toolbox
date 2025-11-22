@@ -4,6 +4,10 @@ namespace super_toolbox
 {
     public class Attack_on_Titan_Wings_Extractor : BaseExtractor
     {
+        public new event EventHandler<string>? ExtractionStarted;
+        public new event EventHandler<string>? ExtractionProgress;
+        public new event EventHandler<string>? ExtractionError;
+
         private const int BLOCK_SIZE = 0x800; // 2048
         private static readonly byte[] G1T_SIGNATURE = { 0x47, 0x54, 0x31, 0x47 };
         private static readonly byte[] G1M_SIGNATURE = { 0x5F, 0x4D, 0x31, 0x47 };
@@ -20,72 +24,75 @@ namespace super_toolbox
         private static readonly byte[] CBXD_SIGNATURE = { 0x44, 0x58, 0x42, 0x43 };
         private static readonly byte[] KHM_SIGNATURE = { 0x5F, 0x4D, 0x48, 0x4B, 0x30, 0x31, 0x30, 0x30 };
         private static readonly byte[] ZLIB_HEADER = { 0x78, 0xDA };
-        private static readonly Dictionary<byte[], string> SignatureMap = new(new ByteArrayComparer())
+
+        public override void Extract(string directoryPath)
         {
-            [G1T_SIGNATURE] = ".g1t",
-            [G1M_SIGNATURE] = ".g1m",
-            [G1A_SIGNATURE] = ".g1a",
-            [KTSL2ASBIN_SIGNATURE] = ".ktsl2asbin",
-            [KTSC_SIGNATURE] = ".ktsc",
-            [SWG_SIGNATURE] = ".swg",
-            [G1EM_SIGNATURE] = ".g1em",
-            [WMV_SIGNATURE] = ".wmv",
-            [G2S_SIGNATURE] = ".g2s",
-            [KSHL_SIGNATURE] = ".kshl",
-            [SLO_SIGNATURE] = ".slod",
-            [KPS_SIGNATURE] = ".kps",
-            [CBXD_SIGNATURE] = ".cbxd",
-            [KHM_SIGNATURE] = ".khm",
-            [ZLIB_HEADER] = ".zlib"
-        };
-        private class ByteArrayComparer : IEqualityComparer<byte[]>
-        {
-            public bool Equals(byte[]? x, byte[]? y) => x != null && y != null && x.SequenceEqual(y);
-            public int GetHashCode(byte[] obj) => obj.Aggregate(0, (hash, b) => hash ^ b.GetHashCode());
+            ExtractAsync(directoryPath).Wait();
         }
+
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
             {
-                OnExtractionFailed("目录不存在");
+                ExtractionError?.Invoke(this, $"错误:{directoryPath}不是有效的目录");
+                OnExtractionFailed($"错误:{directoryPath}不是有效的目录");
                 return;
             }
+
             try
             {
                 string extractedDir = Path.Combine(directoryPath, "Extracted");
                 Directory.CreateDirectory(extractedDir);
-                var sw = System.Diagnostics.Stopwatch.StartNew();
+
                 var files = Directory.EnumerateFiles(directoryPath, "*.bin", SearchOption.TopDirectoryOnly)
-                    .Where(f => !f.Contains("Extracted"))
+                    .Where(f => !f.Contains("Extracted", StringComparison.OrdinalIgnoreCase))
                     .ToList();
-                TotalFilesToExtract = await CalculateTotalFilesAsync(files, cancellationToken);
-                if (TotalFilesToExtract == 0)
+
+                if (files.Count == 0)
                 {
-                    OnExtractionFailed("没有找到可提取的文件");
+                    ExtractionError?.Invoke(this, "没有找到BIN文件");
+                    OnExtractionFailed("没有找到BIN文件");
                     return;
                 }
+                TotalFilesToExtract = files.Count;
+                ExtractionStarted?.Invoke(this, $"开始处理{files.Count}个BIN文件");
+                int totalEntries = await CalculateTotalEntriesAsync(files, cancellationToken);
+                ExtractionProgress?.Invoke(this, $"预计提取{totalEntries}个文件");
+
                 await ProcessBinFilesAsync(files, extractedDir, cancellationToken);
                 var datFiles = Directory.EnumerateFiles(extractedDir, "*.dat", SearchOption.AllDirectories).ToList();
-                await ProcessDatFilesAsync(datFiles, extractedDir, cancellationToken);
+                if (datFiles.Count > 0)
+                {
+                    ExtractionProgress?.Invoke(this, $"处理{datFiles.Count}个DAT文件");
+                    await ProcessDatFilesAsync(datFiles, extractedDir, cancellationToken);
+                }
+
                 var zlibFiles = Directory.EnumerateFiles(extractedDir, "*.zlib", SearchOption.AllDirectories).ToList();
-                await ProcessZlibFilesAsync(zlibFiles, cancellationToken);
-                sw.Stop();
+                if (zlibFiles.Count > 0)
+                {
+                    ExtractionProgress?.Invoke(this, $"处理{zlibFiles.Count}个ZLIB文件");
+                    await ProcessZlibFilesAsync(zlibFiles, cancellationToken);
+                }
+
+                ExtractionProgress?.Invoke(this, $"提取完成:共处理{files.Count}个BIN文件，提取出{ExtractedFileCount}个文件");
                 OnExtractionCompleted();
-                Console.WriteLine($"提取完成，耗时{sw.Elapsed.TotalSeconds:F2}秒");
             }
             catch (OperationCanceledException)
             {
+                ExtractionError?.Invoke(this, "提取操作已取消");
                 OnExtractionFailed("提取操作已取消");
+                throw;
             }
             catch (Exception ex)
             {
-                OnExtractionFailed($"提取时出错:{ex.Message}");
+                ExtractionError?.Invoke(this, $"提取失败:{ex.Message}");
+                OnExtractionFailed($"提取失败:{ex.Message}");
             }
         }
-        private async Task<int> CalculateTotalFilesAsync(List<string> binFiles, CancellationToken ct)
+
+        private async Task<int> CalculateTotalEntriesAsync(List<string> binFiles, CancellationToken ct)
         {
             int total = 0;
-
             foreach (var filePath in binFiles)
             {
                 ct.ThrowIfCancellationRequested();
@@ -96,12 +103,14 @@ namespace super_toolbox
                     var header = ReadFileHeader(reader);
                     total += header.FileCount;
                 }
-                catch
+                catch (Exception ex)
                 {
+                    ExtractionError?.Invoke(this, $"扫描文件{Path.GetFileName(filePath)}时出错:{ex.Message}");
                 }
             }
             return total;
         }
+
         private async Task ProcessBinFilesAsync(List<string> binFiles, string extractedDir, CancellationToken ct)
         {
             await Parallel.ForEachAsync(binFiles, new ParallelOptions
@@ -112,21 +121,33 @@ namespace super_toolbox
             {
                 try
                 {
+                    ExtractionProgress?.Invoke(this, $"正在处理BIN文件:{Path.GetFileName(filePath)}");
+
                     await using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read);
                     using var reader = new BinaryReader(fs);
                     var header = ReadFileHeader(reader);
                     var entries = ReadFileEntries(reader, header.FileCount).ToList();
+
                     string baseName = Path.GetFileNameWithoutExtension(filePath);
                     string outputDir = Path.Combine(extractedDir, baseName);
                     Directory.CreateDirectory(outputDir);
+
                     await ProcessEntriesAsync(reader, entries, outputDir, ct);
+                    OnFileExtracted(filePath);
+                    ExtractionProgress?.Invoke(this, $"完成处理BIN文件:{Path.GetFileName(filePath)}");
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
-                    OnExtractionFailed($"处理文件{Path.GetFileName(filePath)} 时出错:{ex.Message}");
+                    ExtractionError?.Invoke(this, $"处理BIN文件{Path.GetFileName(filePath)}时出错:{ex.Message}");
+                    OnExtractionFailed($"处理BIN文件{Path.GetFileName(filePath)}时出错:{ex.Message}");
                 }
             });
         }
+
         private async Task ProcessZlibFilesAsync(List<string> zlibFiles, CancellationToken ct)
         {
             await Parallel.ForEachAsync(zlibFiles, new ParallelOptions
@@ -139,11 +160,11 @@ namespace super_toolbox
                 {
                     string newFilePath = Path.ChangeExtension(zlibFilePath, ".zlib");
                     await Task.Run(() => File.Move(zlibFilePath, newFilePath), ct);
-                    Console.WriteLine($"已重命名文件:{Path.GetFileName(zlibFilePath)} -> {Path.GetFileName(newFilePath)}");
+                    ExtractionProgress?.Invoke(this, $"已重命名文件:{Path.GetFileName(zlibFilePath)} -> {Path.GetFileName(newFilePath)}");
                 }
                 catch (Exception ex)
                 {
-                    OnExtractionFailed($"处理文件{Path.GetFileName(zlibFilePath)}时出错:{ex.Message}");
+                    ExtractionError?.Invoke(this, $"处理ZLIB文件{Path.GetFileName(zlibFilePath)}时出错:{ex.Message}");
                 }
             });
         }
@@ -166,20 +187,22 @@ namespace super_toolbox
                     {
                         string newFilePath = Path.ChangeExtension(datFilePath, ".zlib");
                         File.Move(datFilePath, newFilePath);
-                        Console.WriteLine($"已重命名文件:{Path.GetFileName(datFilePath)} -> {Path.GetFileName(newFilePath)}");
+                        ExtractionProgress?.Invoke(this, $"已重命名文件:{Path.GetFileName(datFilePath)} -> {Path.GetFileName(newFilePath)}");
                         return;
                     }
 
-                    Console.WriteLine($"保留文件(未处理):{Path.GetFileName(datFilePath)}");
+                    ExtractionProgress?.Invoke(this, $"保留文件(未处理):{Path.GetFileName(datFilePath)}");
                 }
                 catch (Exception ex)
                 {
-                    OnExtractionFailed($"处理文件{Path.GetFileName(datFilePath)}时出错:{ex.Message}");
+                    ExtractionError?.Invoke(this, $"处理DAT文件{Path.GetFileName(datFilePath)}时出错:{ex.Message}");
                 }
             });
         }
+
         private record FileHeader(int Magic, int FileCount, int Type, int Blank);
         private record FileEntry(long Position, int Size, int Compression);
+
         private static FileHeader ReadFileHeader(BinaryReader reader)
         {
             return new FileHeader(
@@ -189,6 +212,7 @@ namespace super_toolbox
                 reader.ReadInt32()
             );
         }
+
         private static IEnumerable<FileEntry> ReadFileEntries(BinaryReader reader, int count)
         {
             for (int i = 0; i < count; i++)
@@ -200,9 +224,10 @@ namespace super_toolbox
                 );
             }
         }
+
         private async Task ProcessEntriesAsync(BinaryReader reader, List<FileEntry> entries, string outputDir, CancellationToken ct)
         {
-            int fileIndex = 1; 
+            int fileIndex = 1;
             foreach (var entry in entries)
             {
                 ct.ThrowIfCancellationRequested();
@@ -212,20 +237,25 @@ namespace super_toolbox
                     byte[] data = reader.ReadBytes(entry.Size);
                     string extension = DetectFileExtension(data);
                     string outputPath = Path.Combine(outputDir, $"{fileIndex}{extension}");
+
                     if (entry.Compression != 0)
                     {
                         data = await DecompressDataAsync(data, ct);
                     }
+
                     await File.WriteAllBytesAsync(outputPath, data, ct);
                     OnFileExtracted(outputPath);
+                    ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(outputPath)}");
                     fileIndex++;
                 }
                 catch (Exception ex)
                 {
+                    ExtractionError?.Invoke(this, $"处理条目{entry.Position}时出错:{ex.Message}");
                     OnExtractionFailed($"处理条目{entry.Position}时出错:{ex.Message}");
                 }
             }
         }
+
         private static async Task<byte[]> DecompressDataAsync(byte[] compressedData, CancellationToken ct)
         {
             try
@@ -240,7 +270,7 @@ namespace super_toolbox
                 }
                 return compressedData;
             }
-            catch
+            catch (Exception)
             {
                 return compressedData;
             }
