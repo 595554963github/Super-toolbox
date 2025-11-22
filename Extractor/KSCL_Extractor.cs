@@ -4,6 +4,10 @@ namespace super_toolbox
 {
     public class KSCL_Extractor : BaseExtractor
     {
+        public new event EventHandler<string>? ExtractionStarted;
+        public new event EventHandler<string>? ExtractionProgress;
+        public new event EventHandler<string>? ExtractionError;
+
         private struct Header
         {
             public long KSCLLength;
@@ -57,49 +61,40 @@ namespace super_toolbox
         {
             if (!Directory.Exists(directoryPath))
             {
-                OnExtractionFailed($"错误:目录不存在 {directoryPath}");
+                ExtractionError?.Invoke(this, $"错误:{directoryPath} 不是有效的目录");
+                OnExtractionFailed($"错误:{directoryPath}不是有效的目录");
                 return;
             }
 
             string extractedRootDir = Path.Combine(directoryPath, "Extracted");
             Directory.CreateDirectory(extractedRootDir);
 
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-
             var ksclFiles = Directory.GetFiles(directoryPath, "*.kscl", SearchOption.AllDirectories)
                 .Where(file => !file.StartsWith(extractedRootDir, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             TotalFilesToExtract = ksclFiles.Count;
+            ExtractionStarted?.Invoke(this, $"开始处理{ksclFiles.Count}个KSCL文件");
 
             try
             {
                 await Task.Run(() =>
                 {
-                    Parallel.ForEach(ksclFiles, new ParallelOptions
-                    {
-                        MaxDegreeOfParallelism = Environment.ProcessorCount,
-                        CancellationToken = cancellationToken
-                    }, ksclFilePath =>
+                    foreach (var ksclFilePath in ksclFiles)
                     {
                         try
                         {
                             cancellationToken.ThrowIfCancellationRequested();
 
-                            string exportPath = Path.Combine(extractedRootDir, Path.GetFileNameWithoutExtension(ksclFilePath));
-                            Directory.CreateDirectory(exportPath);
+                            string ksclFileName = Path.GetFileNameWithoutExtension(ksclFilePath);
+                            string ksclExtractDir = Path.Combine(extractedRootDir, ksclFileName);
+                            Directory.CreateDirectory(ksclExtractDir);
 
-                            int extractedCount = UnpackSingleKSCL(ksclFilePath, exportPath);
+                            ExtractionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(ksclFilePath)}");
 
-                            // 为每个生成的DDS文件调用OnFileExtracted（参考G1T提取器的做法）
-                            var ddsFiles = Directory.GetFiles(exportPath, "*.dds", SearchOption.AllDirectories);
-                            foreach (var ddsFile in ddsFiles)
-                            {
-                                OnFileExtracted(ddsFile);
-                            }
+                            int extractedCount = UnpackSingleKSCL(ksclFilePath, ksclExtractDir, cancellationToken);
 
-                            // 可选：添加进度信息
-                            System.Diagnostics.Debug.WriteLine($"处理完成: {Path.GetFileName(ksclFilePath)} -> 生成 {ddsFiles.Length} 个DDS文件");
+                            ExtractionProgress?.Invoke(this, $"完成处理:{Path.GetFileName(ksclFilePath)} -> 生成{extractedCount}个DDS文件");
                         }
                         catch (OperationCanceledException)
                         {
@@ -107,56 +102,77 @@ namespace super_toolbox
                         }
                         catch (Exception ex)
                         {
-                            OnExtractionFailed($"处理文件 {Path.GetFileName(ksclFilePath)} 失败: {ex.Message}");
+                            ExtractionError?.Invoke(this, $"处理{Path.GetFileName(ksclFilePath)}时出错:{ex.Message}");
+                            OnExtractionFailed($"处理{Path.GetFileName(ksclFilePath)}时出错:{ex.Message}");
                         }
-                    });
+                    }
                 }, cancellationToken);
 
                 OnExtractionCompleted();
             }
             catch (OperationCanceledException)
             {
-                OnExtractionFailed("用户取消了操作");
+                ExtractionError?.Invoke(this, "操作已取消");
+                OnExtractionFailed("操作已取消");
+                throw;
             }
             catch (Exception ex)
             {
-                OnExtractionFailed($"提取过程出错: {ex.Message}");
-            }
-            finally
-            {
-                sw.Stop();
+                ExtractionError?.Invoke(this, $"提取失败:{ex.Message}");
+                OnExtractionFailed($"提取失败:{ex.Message}");
             }
         }
 
-        private int UnpackSingleKSCL(string filePath, string exportPath)
+        private int UnpackSingleKSCL(string filePath, string exportPath, CancellationToken cancellationToken)
         {
+            int extractedCount = 0;
+
             using (FileStream stream = File.OpenRead(filePath))
             {
                 BinaryReader reader = new BinaryReader(stream);
                 Header header = ReadHeader(ref reader);
                 KSLT_Texture[] textures = GetTextures(ref reader, header);
 
+                ExtractionProgress?.Invoke(this, $"KSCL内包含{textures.Length}个纹理");
+
                 for (int i = 0; i < textures.Length; i++)
                 {
-                    byte[] texBytes = new byte[0x80 + textures[i].RawSize];
-                    byte[] ddsHeader = GetDDSHeader(textures[i].FormatType);
-                    ddsHeader.CopyTo(texBytes, 0);
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                    using (MemoryStream texStream = new MemoryStream(texBytes))
-                    using (BinaryWriter writer = new BinaryWriter(texStream))
+                    try
                     {
-                        writer.BaseStream.Seek(0xC, SeekOrigin.Begin);
-                        writer.Write((int)textures[i].Height);
-                        writer.Write((int)textures[i].Width);
-                        writer.Write(textures[i].RawSize);
-                        writer.BaseStream.Position = 0x80;
-                        writer.Write(textures[i].RawData);
-                        File.WriteAllBytes(Path.Combine(exportPath, $"{textures[i].Name}.dds"), texStream.ToArray());
+                        byte[] texBytes = new byte[0x80 + textures[i].RawSize];
+                        byte[] ddsHeader = GetDDSHeader(textures[i].FormatType);
+                        ddsHeader.CopyTo(texBytes, 0);
+
+                        using (MemoryStream texStream = new MemoryStream(texBytes))
+                        using (BinaryWriter writer = new BinaryWriter(texStream))
+                        {
+                            writer.BaseStream.Seek(0xC, SeekOrigin.Begin);
+                            writer.Write((int)textures[i].Height);
+                            writer.Write((int)textures[i].Width);
+                            writer.Write(textures[i].RawSize);
+                            writer.BaseStream.Position = 0x80;
+                            writer.Write(textures[i].RawData);
+
+                            string outputPath = Path.Combine(exportPath, $"{textures[i].Name}.dds");
+                            outputPath = GetUniqueFilePath(outputPath);
+
+                            File.WriteAllBytes(outputPath, texStream.ToArray());
+
+                            extractedCount++;
+                            OnFileExtracted(outputPath);
+                            ExtractionProgress?.Invoke(this, $"已提取:{textures[i].Name}.dds({extractedCount}/{textures.Length})");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        ExtractionError?.Invoke(this, $"提取纹理{textures[i].Name}失败:{ex.Message}");
                     }
                 }
-
-                return textures.Length;
             }
+
+            return extractedCount;
         }
 
         private static Header ReadHeader(ref BinaryReader reader)
@@ -197,7 +213,7 @@ namespace super_toolbox
             {
                 case 0: return R8G8B8A8_Header;
                 case 3: return BC3DXT5_Header;
-                default: throw new Exception($"不支持的格式类型: {format}");
+                default: throw new Exception($"不支持的格式类型:{format}");
             }
         }
 
@@ -228,6 +244,28 @@ namespace super_toolbox
                 reader.BaseStream.Position = temp;
             }
             return textures;
+        }
+
+        private string GetUniqueFilePath(string filePath)
+        {
+            if (!File.Exists(filePath))
+            {
+                return filePath;
+            }
+
+            string directory = Path.GetDirectoryName(filePath) ?? string.Empty;
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
+            string fileExtension = Path.GetExtension(filePath);
+            int duplicateCount = 1;
+            string newFilePath;
+
+            do
+            {
+                newFilePath = Path.Combine(directory, $"{fileNameWithoutExtension}_dup{duplicateCount}{fileExtension}");
+                duplicateCount++;
+            } while (File.Exists(newFilePath));
+
+            return newFilePath;
         }
 
         public override void Extract(string directoryPath)
