@@ -5,13 +5,16 @@ namespace super_toolbox
 {
     public class BraExtractor : BaseExtractor
     {
-        private readonly object _lockObject = new object();
+        public new event EventHandler<string>? ExtractionStarted;
+        public new event EventHandler<string>? ExtractionProgress;
+        public new event EventHandler<string>? ExtractionError;
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
             {
-                OnExtractionFailed($"错误: {directoryPath} 不是有效的目录");
+                ExtractionError?.Invoke(this, $"错误:{directoryPath} 不是有效的目录");
+                OnExtractionFailed($"错误:{directoryPath} 不是有效的目录");
                 return;
             }
 
@@ -19,31 +22,14 @@ namespace super_toolbox
                 .Where(file => !Directory.Exists(Path.ChangeExtension(file, null)))
                 .ToList();
 
-            int totalFilesCount = 0;
-            foreach (var braFile in braFiles)
-            {
-                try
-                {
-                    byte[] archiveData = File.ReadAllBytes(braFile);
-                    var header = ParseHeader(archiveData);
-                    totalFilesCount += (int)header.fileCount;
-                }
-                catch
-                {
-                }
-            }
-
-            TotalFilesToExtract = totalFilesCount;
+            TotalFilesToExtract = braFiles.Count;
+            ExtractionStarted?.Invoke(this, $"开始处理{braFiles.Count}个BRA文件");
 
             try
             {
                 await Task.Run(() =>
                 {
-                    Parallel.ForEach(braFiles, new ParallelOptions
-                    {
-                        MaxDegreeOfParallelism = Environment.ProcessorCount,
-                        CancellationToken = cancellationToken
-                    }, braFilePath =>
+                    foreach (var braFilePath in braFiles)
                     {
                         try
                         {
@@ -53,10 +39,15 @@ namespace super_toolbox
                             string braExtractDir = Path.Combine(Path.GetDirectoryName(braFilePath)!, braFileName);
                             Directory.CreateDirectory(braExtractDir);
 
+                            ExtractionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(braFilePath)}");
+
                             byte[] archiveData = File.ReadAllBytes(braFilePath);
                             var header = ParseHeader(archiveData);
                             var fileEntries = ParseFileEntries(archiveData, header);
 
+                            ExtractionProgress?.Invoke(this, $"BRA内包含{fileEntries.Length}个文件");
+
+                            int processedFiles = 0;
                             foreach (var entry in fileEntries)
                             {
                                 cancellationToken.ThrowIfCancellationRequested();
@@ -67,10 +58,16 @@ namespace super_toolbox
                                 if (!string.IsNullOrEmpty(outputDir))
                                     Directory.CreateDirectory(outputDir);
 
+                                outputPath = GetUniqueFilePath(outputPath);
+
                                 ExtractFile(archiveData, entry, outputPath);
 
-                                OnFileExtracted(Path.GetFileName(outputPath));
+                                processedFiles++;
+                                OnFileExtracted(outputPath);
+                                ExtractionProgress?.Invoke(this, $"已提取:{cleanFileName} ({processedFiles}/{fileEntries.Length})");
                             }
+
+                            ExtractionProgress?.Invoke(this, $"完成处理:{Path.GetFileName(braFilePath)} -> {processedFiles}/{fileEntries.Length}个文件");
                         }
                         catch (OperationCanceledException)
                         {
@@ -78,20 +75,24 @@ namespace super_toolbox
                         }
                         catch (Exception ex)
                         {
-                            OnExtractionFailed($"处理 {Path.GetFileName(braFilePath)} 时出错: {ex.Message}");
+                            ExtractionError?.Invoke(this, $"处理{Path.GetFileName(braFilePath)}时出错:{ex.Message}");
+                            OnExtractionFailed($"处理{Path.GetFileName(braFilePath)}时出错:{ex.Message}");
                         }
-                    });
+                    }
                 }, cancellationToken);
 
                 OnExtractionCompleted();
             }
             catch (OperationCanceledException)
             {
+                ExtractionError?.Invoke(this, "操作已取消");
                 OnExtractionFailed("操作已取消");
+                throw;
             }
             catch (Exception ex)
             {
-                OnExtractionFailed($"提取失败: {ex.Message}");
+                ExtractionError?.Invoke(this, $"提取失败:{ex.Message}");
+                OnExtractionFailed($"提取失败:{ex.Message}");
             }
         }
 
@@ -184,8 +185,7 @@ namespace super_toolbox
         {
             byte[] fileData = SubArray(archiveData, (int)(entry.fileOffset + 16), (int)(entry.compressedSize - 16));
 
-            string finalPath = GetUniqueFileName(outputPath);
-            using (var fileStream = File.Create(finalPath))
+            using (var fileStream = File.Create(outputPath))
             using (var memoryStream = new MemoryStream(fileData))
             {
                 if (entry.uncompressedSize == entry.compressedSize - 16)
@@ -201,45 +201,36 @@ namespace super_toolbox
                 }
             }
 
-            if (IsCl3File(File.ReadAllBytes(finalPath).Take(4).ToArray()))
+            if (IsCl3File(File.ReadAllBytes(outputPath).Take(4).ToArray()))
             {
-                string newPath = Path.ChangeExtension(finalPath, ".cl3");
+                string newPath = Path.ChangeExtension(outputPath, ".cl3");
                 if (!File.Exists(newPath))
                 {
-                    File.Move(finalPath, newPath);
+                    File.Move(outputPath, newPath);
                 }
             }
         }
 
-        private string GetUniqueFileName(string originalPath)
+        private string GetUniqueFilePath(string filePath)
         {
-            if (string.IsNullOrWhiteSpace(originalPath))
-                throw new ArgumentException("文件路径不能为空", nameof(originalPath));
+            if (!File.Exists(filePath))
+            {
+                return filePath;
+            }
 
-            if (!File.Exists(originalPath))
-                return originalPath;
+            string directory = Path.GetDirectoryName(filePath) ?? string.Empty;
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
+            string extension = Path.GetExtension(filePath);
+            int duplicateCount = 1;
+            string newFilePath;
 
-            string? directory = Path.GetDirectoryName(originalPath);
-            string fileNameWithoutExt = Path.GetFileNameWithoutExtension(originalPath);
-            string extension = Path.GetExtension(originalPath);
-
-            directory = string.IsNullOrEmpty(directory) ? Directory.GetCurrentDirectory() : directory;
-
-            fileNameWithoutExt = string.IsNullOrEmpty(fileNameWithoutExt) ? "file" : fileNameWithoutExt;
-
-            int counter = 1;
-            string newPath;
             do
             {
-                newPath = Path.Combine(directory, $"{fileNameWithoutExt}_{counter}{extension}");
-                counter++;
+                newFilePath = Path.Combine(directory, $"{fileNameWithoutExtension}_dup{duplicateCount}{extension}");
+                duplicateCount++;
+            } while (File.Exists(newFilePath));
 
-                if (counter > 1000)
-                    throw new IOException("无法为文件生成唯一名称，尝试次数过多");
-
-            } while (File.Exists(newPath));
-
-            return newPath;
+            return newFilePath;
         }
 
         private byte[] SubArray(byte[] data, int index, int length)
@@ -269,6 +260,11 @@ namespace super_toolbox
         }
 
         private static readonly char[] InvalidChars = Path.GetInvalidPathChars().Union(Path.GetInvalidFileNameChars()).ToArray();
+
+        public override void Extract(string directoryPath)
+        {
+            ExtractAsync(directoryPath).Wait();
+        }
 
         private struct XanaduHeader
         {
