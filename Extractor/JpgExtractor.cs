@@ -2,8 +2,10 @@ namespace super_toolbox
 {
     public class JpgExtractor : BaseExtractor
     {
-        private readonly object _lockObject = new object();
+        public new event EventHandler<string>? ExtractionStarted;
         public new event EventHandler<string>? ExtractionProgress;
+        public new event EventHandler<string>? ExtractionError;
+
         private static readonly byte[] START_SEQUENCE = { 0xFF, 0xD8, 0xFF, 0xE0 };
         private static readonly byte[] JFIF_MARKER = System.Text.Encoding.ASCII.GetBytes("JFIF");
         private static readonly byte[] EXIF_MARKER = System.Text.Encoding.ASCII.GetBytes("Exif");
@@ -13,26 +15,22 @@ namespace super_toolbox
         {
             ExtractAsync(directoryPath).Wait();
         }
+
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
             {
-                ExtractionProgress?.Invoke(this, $"错误:{directoryPath} 不是有效的目录");
+                ExtractionError?.Invoke(this, $"错误:{directoryPath}不是有效的目录");
                 OnExtractionFailed($"错误:{directoryPath}不是有效的目录");
                 return;
             }
+            string extractedDir = Path.Combine(directoryPath, "Extracted");
+            Directory.CreateDirectory(extractedDir);
 
             var files = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
             TotalFilesToExtract = files.Length;
-            ExtractionProgress?.Invoke(this, $"开始处理{TotalFilesToExtract}个文件...");
-            OnFileExtracted($"开始处理{TotalFilesToExtract}个文件...");
 
-            string extractedDir = Path.Combine(directoryPath, "Extracted");
-            if (!Directory.Exists(extractedDir))
-            {
-                Directory.CreateDirectory(extractedDir);
-                ExtractionProgress?.Invoke(this, $"创建文件夹:{extractedDir}");
-            }
+            ExtractionStarted?.Invoke(this, $"开始处理{TotalFilesToExtract}个文件");
 
             foreach (var file in files)
             {
@@ -40,7 +38,7 @@ namespace super_toolbox
 
                 try
                 {
-                    ExtractionProgress?.Invoke(this, $"处理文件 {ExtractedFileCount + 1}/{TotalFilesToExtract}: {Path.GetFileName(file)}");
+                    ExtractionProgress?.Invoke(this, $"正在处理文件:{Path.GetFileName(file)}");
 
                     if (Path.GetExtension(file).Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
                         Path.GetExtension(file).Equals(".jpeg", StringComparison.OrdinalIgnoreCase))
@@ -52,19 +50,21 @@ namespace super_toolbox
                 }
                 catch (OperationCanceledException)
                 {
-                    ExtractionProgress?.Invoke(this, "提取操作已取消");
+                    ExtractionError?.Invoke(this, "提取操作已取消");
                     OnExtractionFailed("提取操作已取消");
                     throw;
                 }
                 catch (Exception ex)
                 {
-                    ExtractionProgress?.Invoke(this, $"处理文件{file}时出错: {ex.Message}");
+                    ExtractionError?.Invoke(this, $"处理文件{file}时出错: {ex.Message}");
                     OnExtractionFailed($"处理文件{file} 时出错:{ex.Message}");
                 }
             }
 
             ExtractionProgress?.Invoke(this, $"提取完成:提取了{ExtractedFileCount}个JPG文件");
+            OnExtractionCompleted();
         }
+
         private async Task ProcessFileAsync(string filePath, string destinationFolder, CancellationToken cancellationToken)
         {
             const int BufferSize = 8192;
@@ -78,6 +78,7 @@ namespace super_toolbox
             MemoryStream? currentJpg = null;
             bool foundStart = false;
             string filePrefix = Path.GetFileNameWithoutExtension(filePath);
+            int jpgCount = 0;
 
             int bytesRead;
             while ((bytesRead = await fileStream.ReadAsync(buffer, 0, BufferSize, cancellationToken)) > 0)
@@ -105,7 +106,6 @@ namespace super_toolbox
                         foundStart = true;
                         currentJpg = new MemoryStream();
                         currentJpg.Write(currentData, startIndex, currentData.Length - startIndex);
-
                         leftover = Array.Empty<byte>();
                     }
                     else
@@ -118,7 +118,6 @@ namespace super_toolbox
                 else
                 {
                     currentJpg!.Write(currentData, 0, currentData.Length);
-
                     byte[] jpgBytes = currentJpg.ToArray();
                     int endIndex = IndexOf(jpgBytes, END_SEQUENCE);
 
@@ -130,7 +129,8 @@ namespace super_toolbox
 
                         if (ContainsMarker(extractedData, JFIF_MARKER) || ContainsMarker(extractedData, EXIF_MARKER))
                         {
-                            SaveJpgFile(extractedData, destinationFolder, filePrefix);
+                            SaveJpgFile(extractedData, destinationFolder, filePrefix, jpgCount);
+                            jpgCount++;
                         }
 
                         foundStart = false;
@@ -155,25 +155,25 @@ namespace super_toolbox
 
             currentJpg?.Dispose();
         }
-        private void SaveJpgFile(byte[] jpgData, string destinationFolder, string filePrefix)
-        {
-            lock (_lockObject)
-            {
-                string newFileName = $"{filePrefix}_{ExtractedFileCount}.jpg";
-                string filePath = Path.Combine(destinationFolder, newFileName);
 
-                try
-                {
-                    File.WriteAllBytes(filePath, jpgData);
-                    OnFileExtracted(filePath);
-                    ExtractionProgress?.Invoke(this, $"已提取:{newFileName}");
-                }
-                catch (Exception ex)
-                {
-                    ExtractionProgress?.Invoke(this, $"保存文件{newFileName}时出错: {ex.Message}");
-                }
+        private void SaveJpgFile(byte[] jpgData, string destinationFolder, string filePrefix, int index)
+        {
+            string newFileName = $"{filePrefix}_{index + 1}.jpg";
+            string filePath = Path.Combine(destinationFolder, newFileName);
+
+            try
+            {
+                File.WriteAllBytes(filePath, jpgData);
+                OnFileExtracted(filePath);
+                ExtractionProgress?.Invoke(this, $"已提取: {newFileName}");
+            }
+            catch (Exception ex)
+            {
+                ExtractionError?.Invoke(this, $"保存文件{newFileName}时出错:{ex.Message}");
+                OnExtractionFailed($"保存文件{newFileName}时出错:{ex.Message}");
             }
         }
+
         private static int IndexOf(byte[] source, byte[] pattern)
         {
             for (int i = 0; i <= source.Length - pattern.Length; i++)
@@ -191,6 +191,7 @@ namespace super_toolbox
             }
             return -1;
         }
+
         private static bool ContainsMarker(byte[] data, byte[] marker)
         {
             for (int i = 0; i <= data.Length - marker.Length; i++)
