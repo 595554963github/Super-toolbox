@@ -5,83 +5,114 @@ namespace super_toolbox
         private static readonly byte[] AHX_START_HEADER = { 0x80, 0x00, 0x00, 0x20 };
         private static readonly byte[] AHX_END_HEADER = { 0x80, 0x01, 0x00, 0x0C, 0x41, 0x48, 0x58, 0x45, 0x28, 0x63, 0x29, 0x43, 0x52, 0x49, 0x00, 0x00 };
 
+        public new event EventHandler<string>? ExtractionStarted;
         public new event EventHandler<string>? ExtractionProgress;
+        public new event EventHandler<string>? ExtractionError;
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
             {
-                OnExtractionFailed($"目录不存在:{directoryPath}");
+                ExtractionError?.Invoke(this, $"错误:{directoryPath} 不是有效的目录");
+                OnExtractionFailed($"错误:{directoryPath} 不是有效的目录");
                 return;
             }
 
-            string extractedDir = Path.Combine(directoryPath, "Extracted");
-            Directory.CreateDirectory(extractedDir);
+            string extractedRootDir = Path.Combine(directoryPath, "Extracted");
+            Directory.CreateDirectory(extractedRootDir);
 
-            ExtractionProgress?.Invoke(this, $"开始从目录{directoryPath}提取AHX文件");
+            var sourceFiles = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories)
+                .Where(file => !file.StartsWith(extractedRootDir, StringComparison.OrdinalIgnoreCase) &&
+                              !Path.GetExtension(file).Equals(".ahx", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            TotalFilesToExtract = sourceFiles.Count;
+            ExtractionStarted?.Invoke(this, $"开始处理{sourceFiles.Count}个源文件");
 
             try
             {
-                var files = Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories);
-                TotalFilesToExtract = 0; 
-
-                foreach (string filePath in files)
+                await Task.Run(() =>
                 {
-                    ThrowIfCancellationRequested(cancellationToken);
+                    int totalExtractedAhxFiles = 0;
 
-                    if (Path.GetExtension(filePath).Equals(".ahx", StringComparison.OrdinalIgnoreCase))
+                    foreach (var sourceFilePath in sourceFiles)
                     {
-                        continue;
+                        try
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+
+                            ExtractionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(sourceFilePath)}");
+
+                            int extractedCount = ExtractAhxsFromFile(sourceFilePath, extractedRootDir, cancellationToken);
+                            totalExtractedAhxFiles += extractedCount;
+
+                            if (extractedCount > 0)
+                            {
+                                ExtractionProgress?.Invoke(this, $"从{Path.GetFileName(sourceFilePath)}中提取出{extractedCount}个AHX文件");
+                            }
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            ExtractionError?.Invoke(this, $"处理{Path.GetFileName(sourceFilePath)}时出错:{ex.Message}");
+                            OnExtractionFailed($"处理{Path.GetFileName(sourceFilePath)}时出错:{ex.Message}");
+                        }
                     }
 
-                    ExtractionProgress?.Invoke(this, $"正在处理文件:{Path.GetFileName(filePath)}");
-
-                    try
+                    if (totalExtractedAhxFiles > 0)
                     {
-                        var extractedCount = await ExtractAhxsFromFileAsync(filePath, extractedDir, cancellationToken);
-                        TotalFilesToExtract += extractedCount;
+                        ExtractionProgress?.Invoke(this, $"处理完成，共从{sourceFiles.Count}个源文件中提取出{totalExtractedAhxFiles}个AHX文件");
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        OnExtractionFailed($"处理文件{filePath}时出错:{ex.Message}");
+                        ExtractionProgress?.Invoke(this, "处理完成，未找到AHX文件");
                     }
-                }
+                }, cancellationToken);
 
-                ExtractionProgress?.Invoke(this, $"提取完成，共提取{ExtractedFileCount}个AHX文件");
                 OnExtractionCompleted();
             }
             catch (OperationCanceledException)
             {
-                OnExtractionFailed("提取操作已取消");
+                ExtractionError?.Invoke(this, "操作已取消");
+                OnExtractionFailed("操作已取消");
                 throw;
             }
             catch (Exception ex)
             {
-                OnExtractionFailed($"提取过程中发生错误:{ex.Message}");
+                ExtractionError?.Invoke(this, $"提取失败:{ex.Message}");
+                OnExtractionFailed($"提取失败:{ex.Message}");
             }
         }
 
-        private async Task<int> ExtractAhxsFromFileAsync(string filePath, string extractedDir, CancellationToken cancellationToken)
+        private int ExtractAhxsFromFile(string filePath, string extractedRootDir, CancellationToken cancellationToken)
         {
             int count = 0;
 
             try
             {
-                byte[] fileContent = await File.ReadAllBytesAsync(filePath, cancellationToken);
+                byte[] fileContent = File.ReadAllBytes(filePath);
                 string baseFilename = Path.GetFileNameWithoutExtension(filePath);
-                string outputDir = Path.Combine(extractedDir, baseFilename);
+                string outputDir = Path.Combine(extractedRootDir, baseFilename);
                 Directory.CreateDirectory(outputDir);
 
                 foreach (byte[] ahxData in ExtractAhxData(fileContent))
                 {
-                    ThrowIfCancellationRequested(cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     string extractedFilename = $"{baseFilename}_{count + 1}.ahx";
                     string extractedPath = Path.Combine(outputDir, extractedFilename);
 
-                    await File.WriteAllBytesAsync(extractedPath, ahxData, cancellationToken);
+                    extractedPath = GetUniqueFilePath(extractedPath);
+
+                    File.WriteAllBytes(extractedPath, ahxData);
+
                     OnFileExtracted(extractedPath);
                     count++;
+
+                    ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(extractedPath)}");
                 }
             }
             catch (OperationCanceledException)
@@ -90,8 +121,7 @@ namespace super_toolbox
             }
             catch (Exception ex)
             {
-                OnExtractionFailed($"处理文件{filePath}时出错: {ex.Message}");
-                throw;
+                ExtractionError?.Invoke(this, $"处理文件{Path.GetFileName(filePath)}时出错:{ex.Message}");
             }
 
             return count;
@@ -138,6 +168,33 @@ namespace super_toolbox
                 }
             }
             return -1;
+        }
+
+        private string GetUniqueFilePath(string filePath)
+        {
+            if (!File.Exists(filePath))
+            {
+                return filePath;
+            }
+
+            string directory = Path.GetDirectoryName(filePath) ?? string.Empty;
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
+            string fileExtension = Path.GetExtension(filePath);
+            int duplicateCount = 1;
+            string newFilePath;
+
+            do
+            {
+                newFilePath = Path.Combine(directory, $"{fileNameWithoutExtension}_dup{duplicateCount}{fileExtension}");
+                duplicateCount++;
+            } while (File.Exists(newFilePath));
+
+            return newFilePath;
+        }
+
+        public override void Extract(string directoryPath)
+        {
+            ExtractAsync(directoryPath).Wait();
         }
     }
 }
