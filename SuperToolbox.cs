@@ -146,6 +146,7 @@ namespace super_toolbox
             { "CFSI - cfsi打包器", "其他档案" },
             { "消逝的光芒 - rpack","其他档案" },
             { "传颂之物二人的白皇 - sdat","其他档案" },
+            { "PlayStation MultiStream File - msf","音频" },
         };
         public SuperToolbox()
         {
@@ -572,6 +573,7 @@ namespace super_toolbox
                 case "CFSI - cfsi打包器": return new Cfsi_Repacker();
                 case "消逝的光芒 - rpack": return new DyingLightExtractor();
                 case "传颂之物二人的白皇 - sdat": return new Sdat_Extractor();
+                case "PlayStation MultiStream File - msf": return new Msf_Extractor();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
