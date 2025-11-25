@@ -93,6 +93,7 @@ namespace super_toolbox
                 "LopusExtractor——任天堂switch平台的音频提取器，代表作：月姬重制版(Switch)，文件头为OPUS，实际上是libopus编码的音频文件，和正常的opus不一样，叫lopus格式，使用此提取器可以从文件中提取出lopus\r\n" +
                 "MagesMpkExtractor——Mages的mpk解包工具，代表作：命运石之门\r\n" +
                 "MP4_Extractor——有些游戏会把mp4视频打包到一起，由于mp4文件头前四字节不固定，但后4字节是固定的，这个提取器可以轻易的把mp4视频提取出来,支持合法mp4\r\n" +
+                "Msf_Extractor——以二进制形式从索尼游戏里面提取msf音频文件\r\n" +
                 "Narc_Extractor——任天堂nds平台的narc文件提取器，代表作：口袋妖怪(nds)\r\n" +
                 "Nds_Extractor——任天堂nds平台的rom解包工具\r\n" +
                 "NintendoSound_Extractor——任天堂wii、wiiu和3ds平台的音频提取器，从brsar、bfsar和bcsar文件里面提取出br/bf/bc前缀的wav波形音频文件\r\n" +
