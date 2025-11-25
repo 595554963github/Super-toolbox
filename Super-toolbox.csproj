@@ -104,8 +104,8 @@
 		<EmbeddedResource Include="plugins\LZ77.runtimeconfig.json">
 			<LogicalName>embedded.LZ77.runtimeconfig.json</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\Unpsarc.exe">
-			<LogicalName>embedded.Unpsarc.exe</LogicalName>
+		<EmbeddedResource Include="plugins\psarc.exe">
+			<LogicalName>embedded.psarc.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\make_npdata.exe">
 			<LogicalName>embedded.make_npdata.exe</LogicalName>
@@ -161,7 +161,7 @@
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
 		<PackageReference Include="CriFsV2Lib" Version="2.1.2" />
-		<PackageReference Include="Fody" Version="6.9.2">
+		<PackageReference Include="Fody" Version="6.9.3">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
@@ -181,10 +181,10 @@
 			<HintPath>plugins\ByteSize.dll</HintPath>
 		</Reference>
 		<Reference Include="DALLib">
-		  <HintPath>plugins\DALLib.dll</HintPath>
+			<HintPath>plugins\DALLib.dll</HintPath>
 		</Reference>
 		<Reference Include="DyingLight">
-		  <HintPath>plugins\DyingLight.dll</HintPath>
+			<HintPath>plugins\DyingLight.dll</HintPath>
 		</Reference>
 		<Reference Include="GXTConvert">
 			<HintPath>plugins\GXTConvert.dll</HintPath>
@@ -196,7 +196,7 @@
 			<HintPath>plugins\WarTales_PakExtractor.dll</HintPath>
 		</Reference>
 		<Reference Include="zlib.net">
-		  <HintPath>plugins\zlib.net.dll</HintPath>
+			<HintPath>plugins\zlib.net.dll</HintPath>
 		</Reference>
 		<Reference Include="ZstdNet">
 			<HintPath>plugins\ZstdNet.dll</HintPath>
