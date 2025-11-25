@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Reflection;
 
 namespace super_toolbox
 {
@@ -14,20 +13,7 @@ namespace super_toolbox
 
         static PsarcRepacker()
         {
-            string tempDir = Path.Combine(Path.GetTempPath(), "supertoolbox_temp");
-            Directory.CreateDirectory(tempDir);
-            _tempExePath = Path.Combine(tempDir, "Unpsarc.exe");
-            if (!File.Exists(_tempExePath))
-            {
-                using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("embedded.Unpsarc.exe"))
-                {
-                    if (stream == null)
-                        throw new FileNotFoundException("嵌入的Unpsarc.exe资源未找到");
-                    byte[] buffer = new byte[stream.Length];
-                    stream.Read(buffer, 0, buffer.Length);
-                    File.WriteAllBytes(_tempExePath, buffer);
-                }
-            }
+            _tempExePath = LoadEmbeddedExe("embedded.psarc.exe", "psarc.exe");
         }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
@@ -46,73 +32,90 @@ namespace super_toolbox
                 OnPackingFailed("错误:目录不存在");
                 return;
             }
-            PackingProgress?.Invoke(this, "===========================================");
-            PackingProgress?.Invoke(this, "• 本打包器只能打包子文件夹中的文件");
-            PackingProgress?.Invoke(this, "• 请将要打包的文件放在子文件夹中");
-            PackingProgress?.Invoke(this, "• 当前目录下的文件不会被直接打包");
-            PackingProgress?.Invoke(this, "===========================================");
 
-            var directories = Directory.GetDirectories(directoryPath);
-            if (directories.Length == 0)
+            var allFiles = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories);
+            _totalSourceFiles = allFiles.Length;
+
+            if (_totalSourceFiles == 0)
             {
-                PackingError?.Invoke(this, "未找到可打包的文件夹");
-                PackingError?.Invoke(this, "提示:请创建子文件夹并将要打包的文件放入其中");
-                OnPackingFailed("未找到可打包的文件夹");
+                PackingError?.Invoke(this, "目录中未找到任何文件");
+                OnPackingFailed("目录中未找到任何文件");
                 return;
             }
 
-            PackingProgress?.Invoke(this, $"找到{directories.Length}个子文件夹:");
-            foreach (var dir in directories)
+            TotalFilesToPack = _totalSourceFiles;
+
+            PackingStarted?.Invoke(this, $"开始打包PSARC文件");
+            PackingProgress?.Invoke(this, "===========================================");
+            PackingProgress?.Invoke(this, "• PSARC打包器 - 将目录打包为PSARC文件");
+            PackingProgress?.Invoke(this, "• 自动打包目录及其所有子目录中的文件");
+            PackingProgress?.Invoke(this, "===========================================");
+            PackingProgress?.Invoke(this, $"找到{_totalSourceFiles}个文件:");
+
+            var fileExtensions = allFiles.GroupBy(f => Path.GetExtension(f).ToLower())
+                                       .Select(g => new { Extension = g.Key, Count = g.Count() })
+                                       .OrderByDescending(x => x.Count);
+
+            foreach (var extGroup in fileExtensions.Take(10))
             {
-                var fileCount = Directory.GetFiles(dir, "*", SearchOption.AllDirectories).Length;
-                PackingProgress?.Invoke(this, $"  - {Path.GetFileName(dir)} (包含{fileCount}个文件)");
+                PackingProgress?.Invoke(this, $"  - {extGroup.Extension}:{extGroup.Count}个文件");
             }
 
-            foreach (var folderPath in directories)
+            if (fileExtensions.Count() > 10)
             {
-                var filesInFolder = Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories);
-                _totalSourceFiles += filesInFolder.Length;
+                PackingProgress?.Invoke(this, $"  - ...及其他{fileExtensions.Count() - 10}种文件类型");
             }
-            TotalFilesToPack = _totalSourceFiles;
-            PackingStarted?.Invoke(this, $"开始打包PSARC文件，共找到{_totalSourceFiles}个源文件");
+
+            string parentDir = Path.GetDirectoryName(directoryPath) ?? Directory.GetCurrentDirectory();
+            string folderName = Path.GetFileName(directoryPath);
+            string expectedOutputFile = Path.Combine(parentDir, folderName + ".psarc");
+
+            PackingProgress?.Invoke(this, $"输入目录:{directoryPath}");
+            PackingProgress?.Invoke(this, $"预期输出:{expectedOutputFile}");
+            PackingProgress?.Invoke(this, $"工作目录:{parentDir}");
+
             try
             {
-                int successfullyPackedCount = 0;
-                foreach (var folderPath in directories)
+                foreach (var file in allFiles)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    string folderName = Path.GetFileName(folderPath);
-                    string parentDir = Path.GetDirectoryName(folderPath) ?? Directory.GetCurrentDirectory();
-                    var filesInCurrentFolder = Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories);
 
-                    PackingProgress?.Invoke(this, $"正在打包文件夹: {folderName} (包含{filesInCurrentFolder.Length}个文件)");
-                    PackingProgress?.Invoke(this, $"输出文件: {folderName}.psarc");
+                    string relativePath = Path.GetRelativePath(directoryPath, file);
+                    PackingProgress?.Invoke(this, $"处理源文件:{relativePath}");
+                    _processedSourceFiles++;
+                    OnFilePacked(file);
+                }
 
-                    foreach (var file in filesInCurrentFolder)
+                PackingProgress?.Invoke(this, "正在创建PSARC文件...");
+
+                string fullCommand = $"create \"{directoryPath}\"";
+                PackingProgress?.Invoke(this, $"执行命令:psarc {fullCommand}");
+
+                var processStartInfo = new ProcessStartInfo
+                {
+                    FileName = _tempExePath,
+                    Arguments = $"create \"{directoryPath}\"",
+                    WorkingDirectory = parentDir,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+                using (var process = Process.Start(processStartInfo))
+                {
+                    if (process == null)
                     {
-                        PackingProgress?.Invoke(this, $"处理源文件: {Path.GetRelativePath(folderPath, file)}");
-                        _processedSourceFiles++;
-                        OnFilePacked(file);
+                        PackingError?.Invoke(this, "无法启动打包进程");
+                        OnPackingFailed("无法启动打包进程");
+                        return;
                     }
-                    var process = new Process
-                    {
-                        StartInfo = new ProcessStartInfo
-                        {
-                            FileName = _tempExePath,
-                            Arguments = $"-c \"{folderName}\"",
-                            WorkingDirectory = parentDir,
-                            UseShellExecute = false,
-                            CreateNoWindow = true,
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true
-                        }
-                    };
-                    process.Start();
-                    var outputTask = process.StandardOutput.ReadToEndAsync();
-                    var errorTask = process.StandardError.ReadToEndAsync();
+
+                    string output = await process.StandardOutput.ReadToEndAsync();
+                    string error = await process.StandardError.ReadToEndAsync();
+
                     await process.WaitForExitAsync(cancellationToken);
-                    string output = await outputTask;
-                    string error = await errorTask;
+
                     if (!string.IsNullOrEmpty(output))
                     {
                         foreach (string line in output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
@@ -120,35 +123,48 @@ namespace super_toolbox
                             PackingProgress?.Invoke(this, line);
                         }
                     }
+
+                    if (!string.IsNullOrEmpty(error))
+                    {
+                        foreach (string line in error.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            PackingError?.Invoke(this, $"错误:{line}");
+                        }
+                    }
+
                     if (process.ExitCode != 0)
                     {
-                        PackingError?.Invoke(this, $"打包失败{folderName}:{error}");
-                        OnPackingFailed($"打包失败{folderName}: {error}");
-                        continue;
-                    }
-                    string expectedPsarcFile = Path.Combine(parentDir, folderName + ".psarc");
-                    if (File.Exists(expectedPsarcFile))
-                    {
-                        FileInfo fileInfo = new FileInfo(expectedPsarcFile);
-                        PackingProgress?.Invoke(this, $"打包完成:{folderName}.psarc({FormatFileSize(fileInfo.Length)})");
-                        successfullyPackedCount++;
+                        PackingError?.Invoke(this, $"打包失败:进程退出代码{process.ExitCode}");
+                        OnPackingFailed($"打包失败:进程退出代码{process.ExitCode}");
                     }
                     else
                     {
-                        PackingError?.Invoke(this, $"打包失败:未生成输出文件{folderName}.psarc");
-                        OnPackingFailed($"打包失败:未生成输出文件{folderName}.psarc");
+                        if (File.Exists(expectedOutputFile))
+                        {
+                            FileInfo fileInfo = new FileInfo(expectedOutputFile);
+                            PackingProgress?.Invoke(this, $"打包完成:{Path.GetFileName(expectedOutputFile)}({FormatFileSize(fileInfo.Length)})");
+                            PackingProgress?.Invoke(this, $"输出路径:{expectedOutputFile}");
+                            OnPackingCompleted();
+                        }
+                        else
+                        {
+                            var psarcFiles = Directory.GetFiles(parentDir, "*.psarc");
+                            if (psarcFiles.Length > 0)
+                            {
+                                string actualOutputFile = psarcFiles[0];
+                                FileInfo fileInfo = new FileInfo(actualOutputFile);
+                                PackingProgress?.Invoke(this, $"打包完成:{Path.GetFileName(actualOutputFile)}({FormatFileSize(fileInfo.Length)})");
+                                PackingProgress?.Invoke(this, $"输出路径:{actualOutputFile}");
+                                OnPackingCompleted();
+                            }
+                            else
+                            {
+                                PackingError?.Invoke(this, $"打包失败:未生成输出文件");
+                                PackingError?.Invoke(this, $"请检查psarc工具是否正常工作");
+                                OnPackingFailed("打包失败:未生成输出文件");
+                            }
+                        }
                     }
-                }
-                if (successfullyPackedCount > 0)
-                {
-                    PackingProgress?.Invoke(this, $"打包完成!共处理{_processedSourceFiles}个源文件，成功生成{successfullyPackedCount}个PSARC文件");
-                    PackingProgress?.Invoke(this, "输出文件位于所选目录的父目录中");
-                    OnPackingCompleted();
-                }
-                else
-                {
-                    PackingError?.Invoke(this, "所有文件夹打包PSARC都失败了");
-                    OnPackingFailed("所有文件夹打包PSARC都失败了");
                 }
             }
             catch (OperationCanceledException)
