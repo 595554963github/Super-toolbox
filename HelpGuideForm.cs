@@ -17,6 +17,9 @@ namespace super_toolbox
             }
             base.Dispose(disposing);
         }
+        private ContextMenuStrip? contextMenu;
+        private ToolStripMenuItem? copyMenuItem;
+        private RichTextBox? rtbGuide;
         private int lastHighlightedLine = -1;
         private void InitializeComponent()
         {
@@ -29,13 +32,38 @@ namespace super_toolbox
             this.MaximizeBox = false;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
 
-            RichTextBox rtbGuide = new RichTextBox();
+            rtbGuide = new RichTextBox();
             rtbGuide.Dock = DockStyle.Fill;
             rtbGuide.ReadOnly = true;
             rtbGuide.BorderStyle = BorderStyle.None;
             rtbGuide.Margin = new Padding(10);
             rtbGuide.BackColor = Color.White;
 
+            contextMenu = new ContextMenuStrip();
+            copyMenuItem = new ToolStripMenuItem("复制");
+            copyMenuItem.Click += (s, e) =>
+            {
+                if (!string.IsNullOrEmpty(rtbGuide.SelectedText))
+                {
+                    Clipboard.SetText(rtbGuide.SelectedText);
+                }
+                else
+                {
+                    int lineIndex = rtbGuide.GetLineFromCharIndex(rtbGuide.SelectionStart);
+                    int lineStart = rtbGuide.GetFirstCharIndexFromLine(lineIndex);
+                    int lineEnd = rtbGuide.GetFirstCharIndexFromLine(lineIndex + 1);
+                    if (lineEnd < 0) lineEnd = rtbGuide.TextLength;
+
+                    string lineText = rtbGuide.Text.Substring(lineStart, lineEnd - lineStart).Trim();
+                    if (!string.IsNullOrEmpty(lineText))
+                    {
+                        Clipboard.SetText(lineText);
+                    }
+                }
+            };
+            contextMenu.Items.Add(copyMenuItem);
+
+            rtbGuide.ContextMenuStrip = contextMenu;
             string guideText = "超级工具箱使用帮助\r\n\r\n基本操作流程：\r\n1. 选择文件夹 - 点击\"选择文件夹\"按钮或者拖放文件夹到路径输入框\r\n" +
                 "2. 选择操作 - 在左侧树形菜单中选择要执行的具体操作\r\n3. 开始执行 - 点击\"开始\"按钮执行选定的操作\r\n\r\n" +"功能分类说明：\r\n\r\n" +
                 "📁 音频处理\r\n  - 支持多种音频格式的提取和转换，包括WAV、OGG、HCA、ADX等格式，部分功能需要ffmpeg支持\r\n" +
@@ -181,10 +209,12 @@ namespace super_toolbox
 
             rtbGuide.Text = guideText;
             rtbGuide.Select(0, 0);
-            rtbGuide.MouseUp += (s, e) =>
+            rtbGuide.MouseDown += (s, e) =>
             {
                 if (e.Button == MouseButtons.Left)
                 {
+                    rtbGuide.Focus();
+
                     int charIndex = rtbGuide.GetCharIndexFromPosition(e.Location);
                     int lineIndex = rtbGuide.GetLineFromCharIndex(charIndex);
                     int lineStart = rtbGuide.GetFirstCharIndexFromLine(lineIndex);
@@ -212,15 +242,45 @@ namespace super_toolbox
                         }
 
                         rtbGuide.Select(lineStart, lineEnd - lineStart);
-                        rtbGuide.SelectionBackColor = Color.Green;
-                        rtbGuide.SelectionColor = Color.Purple;
+                        rtbGuide.SelectionBackColor = Color.LightGreen;
+                        rtbGuide.SelectionColor = Color.DarkBlue;
                         lastHighlightedLine = lineIndex;
                     }
+                    rtbGuide.SelectionStart = charIndex;
+                    rtbGuide.SelectionLength = 0;
 
-                    rtbGuide.Select(charIndex, 0);
+                    rtbGuide.Refresh();
                 }
             };
 
+            rtbGuide.MouseWheel += (s, e) =>
+            {
+                if (lastHighlightedLine != -1)
+                {
+                    int lastLineStart = rtbGuide.GetFirstCharIndexFromLine(lastHighlightedLine);
+                    int lastLineEnd = rtbGuide.GetFirstCharIndexFromLine(lastHighlightedLine + 1);
+                    if (lastLineEnd < 0) lastLineEnd = rtbGuide.TextLength;
+
+                    rtbGuide.Select(lastLineStart, lastLineEnd - lastLineStart);
+                    rtbGuide.SelectionBackColor = rtbGuide.BackColor;
+                    rtbGuide.SelectionColor = rtbGuide.ForeColor;
+                    lastHighlightedLine = -1;
+                }
+            };
+
+            rtbGuide.MouseUp += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Right)
+                {
+                    int charIndex = rtbGuide.GetCharIndexFromPosition(e.Location);
+                    int lineIndex = rtbGuide.GetLineFromCharIndex(charIndex);
+                    int lineStart = rtbGuide.GetFirstCharIndexFromLine(lineIndex);
+                    int lineEnd = rtbGuide.GetFirstCharIndexFromLine(lineIndex + 1);
+                    if (lineEnd < 0) lineEnd = rtbGuide.TextLength;
+
+                    rtbGuide.Select(lineStart, lineEnd - lineStart);
+                }
+            };
             rtbGuide.KeyDown += (s, e) =>
             {
                 if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Right ||
