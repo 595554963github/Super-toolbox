@@ -36,11 +36,11 @@ namespace super_toolbox
             deleteCategoryMenuItem = new ToolStripMenuItem();
             moveToCategoryMenuItem = new ToolStripMenuItem();
             txtFolderPath = new TextBox();
-            btnSelectFolder = new Button();
             btnExtract = new Button();
             richTextBox1 = new RichTextBox();
             btnClear = new Button();
             btnHelp = new Button();
+            toolTip1 = new ToolTip(components);
             treeViewContextMenu.SuspendLayout();
             SuspendLayout();
             // 
@@ -53,6 +53,7 @@ namespace super_toolbox
             treeView1.Name = "treeView1";
             treeView1.Size = new Size(265, 535);
             treeView1.TabIndex = 0;
+            toolTip1.SetToolTip(treeView1, "每个工具都有不同的作用，具体使用方法请查看使用手册");
             treeView1.AfterSelect += treeView1_AfterSelect;
             // 
             // treeViewContextMenu
@@ -98,27 +99,19 @@ namespace super_toolbox
             txtFolderPath.Name = "txtFolderPath";
             txtFolderPath.Size = new Size(499, 23);
             txtFolderPath.TabIndex = 1;
-            // 
-            // btnSelectFolder
-            // 
-            btnSelectFolder.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnSelectFolder.Location = new Point(788, 12);
-            btnSelectFolder.Name = "btnSelectFolder";
-            btnSelectFolder.Size = new Size(88, 28);
-            btnSelectFolder.TabIndex = 2;
-            btnSelectFolder.Text = "选择文件夹";
-            btnSelectFolder.UseVisualStyleBackColor = true;
-            btnSelectFolder.Click += btnSelectFolder_Click;
+            toolTip1.SetToolTip(txtFolderPath, "拖放一个文件夹到此");
             // 
             // btnExtract
             // 
             btnExtract.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnExtract.Font = new Font("微软雅黑", 20F, FontStyle.Bold);
             btnExtract.ForeColor = Color.SpringGreen;
-            btnExtract.Location = new Point(788, 46);
+            btnExtract.Location = new Point(788, 12);
             btnExtract.Name = "btnExtract";
-            btnExtract.Size = new Size(88, 28);
+            btnExtract.Size = new Size(88, 62);
             btnExtract.TabIndex = 3;
             btnExtract.Text = "开始";
+            toolTip1.SetToolTip(btnExtract, "点击此按钮开始提取、转换、压缩、解压、打包");
             btnExtract.UseVisualStyleBackColor = true;
             btnExtract.Click += btnExtract_Click;
             // 
@@ -131,28 +124,41 @@ namespace super_toolbox
             richTextBox1.Size = new Size(593, 467);
             richTextBox1.TabIndex = 4;
             richTextBox1.Text = "";
+            toolTip1.SetToolTip(richTextBox1, "你可以在此窗口查看提取出来的所有文件信息");
             // 
             // btnClear
             // 
             btnClear.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnClear.Font = new Font("Microsoft YaHei UI", 12F);
             btnClear.Location = new Point(694, 46);
             btnClear.Name = "btnClear";
             btnClear.Size = new Size(88, 28);
             btnClear.TabIndex = 5;
             btnClear.Text = "清空日志";
+            toolTip1.SetToolTip(btnClear, "点击此按钮清空所有提取出来的文件信息");
             btnClear.UseVisualStyleBackColor = true;
             btnClear.Click += btnClear_Click;
             // 
             // btnHelp
             // 
             btnHelp.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnHelp.Location = new Point(600, 46); 
+            btnHelp.Font = new Font("Microsoft YaHei UI", 12F);
+            btnHelp.ForeColor = Color.Red;
+            btnHelp.Location = new Point(600, 46);
             btnHelp.Name = "btnHelp";
             btnHelp.Size = new Size(88, 28);
             btnHelp.TabIndex = 6;
-            btnHelp.Text = "使用指南";
+            btnHelp.Text = "使用手册";
+            toolTip1.SetToolTip(btnHelp, "点击此按钮查看每个工具的作用");
             btnHelp.UseVisualStyleBackColor = true;
             btnHelp.Click += btnHelp_Click;
+            // 
+            // toolTip1
+            // 
+            toolTip1.AutoPopDelay = 5000;
+            toolTip1.InitialDelay = 500;
+            toolTip1.ReshowDelay = 100;
+            toolTip1.ShowAlways = true;
             // 
             // SuperToolbox
             // 
@@ -163,7 +169,6 @@ namespace super_toolbox
             Controls.Add(btnClear);
             Controls.Add(richTextBox1);
             Controls.Add(btnExtract);
-            Controls.Add(btnSelectFolder);
             Controls.Add(txtFolderPath);
             Controls.Add(treeView1);
             MinimumSize = new Size(800, 600);
@@ -179,7 +184,6 @@ namespace super_toolbox
 
         private System.Windows.Forms.TreeView treeView1;
         private System.Windows.Forms.TextBox txtFolderPath;
-        private System.Windows.Forms.Button btnSelectFolder;
         private System.Windows.Forms.Button btnExtract;
         private System.Windows.Forms.RichTextBox richTextBox1;
         private System.Windows.Forms.Button btnClear;
@@ -189,5 +193,6 @@ namespace super_toolbox
         private System.Windows.Forms.ToolStripMenuItem deleteCategoryMenuItem;
         private System.Windows.Forms.ToolStripMenuItem moveToCategoryMenuItem;
         private System.Windows.Forms.Button btnHelp;
+        private ToolTip toolTip1;
     }
 }
