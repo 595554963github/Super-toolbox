@@ -731,7 +731,6 @@ namespace super_toolbox
         private void UpdateUIState(bool isExtracting)
         {
             btnExtract.Enabled = !isExtracting;
-            btnSelectFolder.Enabled = !isExtracting;
             treeView1.Enabled = !isExtracting;
             if (lblStatus != null) lblStatus.Text = isExtracting ? "正在处理..." : "就绪";
         }
