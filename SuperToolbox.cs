@@ -147,6 +147,7 @@ namespace super_toolbox
             { "消逝的光芒 - rpack","其他档案" },
             { "传颂之物二人的白皇 - sdat","其他档案" },
             { "PlayStation MultiStream File - msf","音频" },
+            { "PlayStation - pssg archive", "图片" },
         };
         public SuperToolbox()
         {
@@ -574,6 +575,7 @@ namespace super_toolbox
                 case "消逝的光芒 - rpack": return new DyingLightExtractor();
                 case "传颂之物二人的白皇 - sdat": return new Sdat_Extractor();
                 case "PlayStation MultiStream File - msf": return new Msf_Extractor();
+                case "PlayStation - pssg archive": return new PSSG_Extractor();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
