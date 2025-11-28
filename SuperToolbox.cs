@@ -148,6 +148,8 @@ namespace super_toolbox
             { "传颂之物二人的白皇 - sdat","其他档案" },
             { "PlayStation MultiStream File - msf","音频" },
             { "PlayStation - pssg archive", "图片" },
+            { "Terminal Reality - pod/epd ahchive","其他档案" },
+            { "PlayStation - GPDA archive","其他档案" },
         };
         public SuperToolbox()
         {
@@ -210,7 +212,7 @@ namespace super_toolbox
                 if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
                 {
                     txtFolderPath.Text = folderBrowserDialog.SelectedPath;
-                    EnqueueMessage($"已选择文件夹: {folderBrowserDialog.SelectedPath}");
+                    EnqueueMessage($"已选择文件夹:{folderBrowserDialog.SelectedPath}");
                 }
             }
         }
@@ -303,7 +305,7 @@ namespace super_toolbox
                     {
                         this.Invoke(new Action(() =>
                         {
-                            EnqueueMessage($"{operationType}过程中出现错误: {ex.Message}");
+                            EnqueueMessage($"{operationType}过程中出现错误:{ex.Message}");
                         }));
                     }
                     finally
@@ -318,7 +320,7 @@ namespace super_toolbox
             }
             catch (Exception ex)
             {
-                EnqueueMessage($"操作初始化失败: {ex.Message}");
+                EnqueueMessage($"操作初始化失败:{ex.Message}");
                 isExtracting = false;
                 UpdateUIState(false);
             }
@@ -362,7 +364,7 @@ namespace super_toolbox
                 };
                 extractor.PackingFailed += (s, error) =>
                 {
-                    EnqueueMessage($"打包失败: {error}");
+                    EnqueueMessage($"打包失败:{error}");
                 };
             }
             else if (isCompressor)
@@ -380,7 +382,7 @@ namespace super_toolbox
 
                 extractor.CompressionFailed += (s, error) =>
                 {
-                    EnqueueMessage($"压缩失败: {error}");
+                    EnqueueMessage($"压缩失败:{error}");
                 };
             }
             else if (isDecompressor)
@@ -397,7 +399,7 @@ namespace super_toolbox
                 };
                 extractor.DecompressionFailed += (s, error) =>
                 {
-                    EnqueueMessage($"解压失败: {error}");
+                    EnqueueMessage($"解压失败:{error}");
                 };
             }
             else
@@ -410,11 +412,11 @@ namespace super_toolbox
                 };
                 extractor.ExtractionCompleted += (s, count) =>
                 {
-                    EnqueueMessage($"提取完成，共处理{count}个源文件");
+                    EnqueueMessage($"提取完成，共提取出{totalFileCount}个文件");
                 };
                 extractor.ExtractionFailed += (s, error) =>
                 {
-                    EnqueueMessage($"提取失败: {error}");
+                    EnqueueMessage($"提取失败:{error}");
                 };
             }
             extractor.ProgressUpdated += (s, progress) => { };
@@ -442,7 +444,7 @@ namespace super_toolbox
             {
                 eventInfo.AddEventHandler(extractor, new EventHandler<string>((s, message) =>
                 {
-                    string formattedMessage = isError ? $"错误: {message}" : $"{prefix}: {message}";
+                    string formattedMessage = isError ? $"错误:{message}" : $"{prefix}: {message}";
                     EnqueueMessage(formattedMessage);
                 }));
             }
@@ -576,6 +578,8 @@ namespace super_toolbox
                 case "传颂之物二人的白皇 - sdat": return new Sdat_Extractor();
                 case "PlayStation MultiStream File - msf": return new Msf_Extractor();
                 case "PlayStation - pssg archive": return new PSSG_Extractor();
+                case "Terminal Reality - pod/epd ahchive": return new PodExtractor();
+                case "PlayStation - GPDA archive": return new GPDA_Extractor();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
@@ -786,12 +790,12 @@ namespace super_toolbox
                     }
                     else
                     {
-                        lblFileCount.Text = $"已提取:{totalFileCount}个文件";
+                        lblFileCount.Text = $"已提取出:{totalFileCount}个文件";
                     }
                 }
                 else
                 {
-                    lblFileCount.Text = $"已提取:{totalFileCount}个文件";
+                    lblFileCount.Text = $"已提取出:{totalFileCount}个文件";
                 }
             }
         }
