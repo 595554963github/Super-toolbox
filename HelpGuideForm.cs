@@ -8,7 +8,6 @@ namespace super_toolbox
         {
             InitializeComponent();
         }
-
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -65,7 +64,7 @@ namespace super_toolbox
 
             rtbGuide.ContextMenuStrip = contextMenu;
             string guideText = "超级工具箱使用帮助\r\n\r\n基本操作流程：\r\n1. 选择文件夹 - 点击\"选择文件夹\"按钮或者拖放文件夹到路径输入框\r\n" +
-                "2. 选择操作 - 在左侧树形菜单中选择要执行的具体操作\r\n3. 开始执行 - 点击\"开始\"按钮执行选定的操作\r\n\r\n" +"功能分类说明：\r\n\r\n" +
+                "2. 选择操作 - 在左侧树形菜单中选择要执行的具体操作\r\n3. 开始执行 - 点击\"开始\"按钮执行选定的操作\r\n\r\n" + "功能分类说明：\r\n\r\n" +
                 "📁 音频处理\r\n  - 支持多种音频格式的提取和转换，包括WAV、OGG、HCA、ADX等格式，部分功能需要ffmpeg支持\r\n" +
                 "🖼️ 图片处理\r\n  - 支持多种图片格式的提取和转换，包括PNG、JPEG、DDS、GXT等格式\r\n📦 档案处理\r\n  - 支持多种游戏档案格式的提取和打包，" +
                 "包括AFS、PAC、DAT等格式\r\n🗜️ 压缩解压\r\n  - 支持多种压缩算法的压缩和解压，包括Brotli、Gzip、LZ4、LZMA等\r\n" +
@@ -74,9 +73,9 @@ namespace super_toolbox
                 "分组管理：\r\n- 右键点击树形菜单可管理分组，可以添加、编辑、删除自定义分组。可以将提取器移动到不同的分组\r\n\r\n" +
                 "以下是具体功能的详细说明\r\n" +
                 "--------------------------------------------------------------------------------------------------------------------------------------------------\r\n" +
-                "<提取器>\r\n"+
+                "<提取器>\r\n" +
                 "AdxExtractor——以二进制形式从cpk、afs、awb、acb甚至uasset、uexp等文件里面提取adx文件\r\n" +
-                "AfsExtractor——用于解包criware的afs格式的档案，常用于PlayStation和xbox360平台\r\n"+
+                "AfsExtractor——用于解包criware的afs格式的档案，常用于PlayStation和xbox360平台\r\n" +
                 "AFUpkExtractor——逆战upk提取器，一个个手动解包太麻烦，批量解包是最好的选择\r\n" +
                 "AhxExtractor——以二进制形式从cpk、afs等文件里面提取ahx文件\r\n" +
                 "Aokana2Extractor——苍之彼方的四重奏2 Extra的专用提取器 \r\n" +
@@ -104,6 +103,7 @@ namespace super_toolbox
                 "FPAC_CP_Extractor——苍翼默示录：刻之幻影的专用解包工具，无法用于苍翼默示录：神观之梦，从bin文件里提取出的pac文件可以用此提取器提取音频和图片\r\n" +
                 "Fsb5Extractor——首先可以从Fmod的bank里面提取fsb文件，也可以从steam游戏永恒轮回和女神异闻录5对决：幽灵先锋的resources.resource提取出fsb，对于正当防卫4的arc文件有专用方法提取fsb\r\n" +
                 "GDAT_Extractor——Mizuchi engine开发的游戏档案专用dat解包器，广泛用于地雷社游戏，如死亡终局轮回试炼系列、神狱塔断罪玛丽最终篇、新次元游戏海王星Ⅶr,大家也可以使用我的python脚本去解\r\n" +
+                "GPDA_Extractor——索尼psp平台上常见的GPDA档案的专用提取器，例如：我的妹妹不可能那么可爱、凉宫春日的追忆\r\n" +
                 "GpkExtractor——东方天空竞技场：幻想乡空战姬的专用解包器\r\n" +
                 "GustEbm_Extractor——光荣特库摩的ebm文件提取器，适用于蓝色反射：帝、幻舞少女之剑、无夜之国\r\n" +
                 "GustElixir_Extractor——光荣特库摩的gz和elixir文件提取器，适用于蓝色反射：帝、幻舞少女之剑、无夜之国\r\n" +
@@ -131,6 +131,7 @@ namespace super_toolbox
                 "PhyrePKG_Extractor——phyre引擎的pkg文件提取器，适用于东京幻都EX、闪之轨迹、创之轨迹\r\n" +
                 "PhyreTexture_Extractor——从phyre引擎的phyre文件里提取dds的提取器，适用于刀剑神域虚空断章、彼岸游境、东京幻都EX、闪之轨迹、创之轨迹\r\n" +
                 "PngExtractor——以二进制形式从游戏文件里面提取png图片的提取器，png是标准的计算机文件，有固定文件头和文件尾\r\n" +
+                "PodExtractor——Terminal Reality工作室的pod档案提取器，代表作如：星球大战原力释放2\r\n" +
                 "PsarcExtractor——索尼ps3平台的psarc解包工具，代表作：第二次超级机器人大战OG，也可以解包无人深空的pak文件\r\n" +
                 "RifxExtractor——以二进制形式从xbox360游戏里面提取大端序的wem文件，RIFX和RIFF都是资源交换文件格式\r\n" +
                 "Sdat_Extractor——传颂之物二人的白皇的sdat文件专用提取器\r\n" +
@@ -205,7 +206,7 @@ namespace super_toolbox
                 "Zlib_Decompressor——使用Zlib算法批量解压文件\r\n" +
                 "Zstd_Compressor——使用Zstd算法批量解压文件\r\n" +
                 "Zstd_Decompressor——使用Zstd算法批量解压文件\r\n"
-                ; 
+                ;
 
             rtbGuide.Text = guideText;
             rtbGuide.Select(0, 0);
