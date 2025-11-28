@@ -189,6 +189,9 @@
 		<Reference Include="GXTConvert">
 			<HintPath>plugins\GXTConvert.dll</HintPath>
 		</Reference>
+		<Reference Include="MiscUtil">
+		  <HintPath>plugins\MiscUtil.dll</HintPath>
+		</Reference>
 		<Reference Include="Narchive">
 			<HintPath>plugins\Narchive.dll</HintPath>
 		</Reference>
