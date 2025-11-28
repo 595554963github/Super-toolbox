@@ -1,4 +1,4 @@
-﻿using System.Drawing.Imaging;
+using System.Drawing.Imaging;
 
 namespace super_toolbox
 {
@@ -28,7 +28,7 @@ namespace super_toolbox
                 foreach (var filePath in allFiles)
                 {
                     ThrowIfCancellationRequested(cancellationToken);
-                    ConversionProgress?.Invoke(this, $"正在处理: {Path.GetFileName(filePath)}");
+                    ConversionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(filePath)}");
                     string fileName = Path.GetFileNameWithoutExtension(filePath);
                     string fileDirectory = Path.GetDirectoryName(filePath) ?? string.Empty;
                     string pngFilePath = Path.Combine(fileDirectory, $"{fileName}.png");
@@ -39,24 +39,24 @@ namespace super_toolbox
                         {
                             successCount++;
                             convertedFiles.Add(pngFilePath);
-                            ConversionProgress?.Invoke(this, $"转换成功: {Path.GetFileName(pngFilePath)}");
+                            ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(pngFilePath)}");
                             OnFileConverted(pngFilePath);
                         }
                         else
                         {
-                            ConversionError?.Invoke(this, $"{Path.GetFileName(filePath)} 转换失败");
-                            OnConversionFailed($"{Path.GetFileName(filePath)} 转换失败");
+                            ConversionError?.Invoke(this, $"{Path.GetFileName(filePath)}转换失败");
+                            OnConversionFailed($"{Path.GetFileName(filePath)}转换失败");
                         }
                     }
                     catch (Exception ex)
                     {
-                        ConversionError?.Invoke(this, $"转换异常: {ex.Message}");
-                        OnConversionFailed($"{Path.GetFileName(filePath)} 处理错误: {ex.Message}");
+                        ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
+                        OnConversionFailed($"{Path.GetFileName(filePath)} 处理错误:{ex.Message}");
                     }
                 }
                 if (successCount > 0)
                 {
-                    ConversionProgress?.Invoke(this, $"转换完成，成功转换 {successCount}/{TotalFilesToConvert} 个文件");
+                    ConversionProgress?.Invoke(this, $"转换完成，成功转换{successCount}/{TotalFilesToConvert}个文件");
                     OnConversionCompleted();
                 }
                 else
@@ -102,7 +102,7 @@ namespace super_toolbox
                 }
                 else
                 {
-                    ConversionError?.Invoke(this, $"不支持的文件格式。文件头:{BitConverter.ToString(magic)}");
+                    ConversionError?.Invoke(this, $"不支持的文件格式，文件头:{BitConverter.ToString(magic)}");
                     return false;
                 }
                 if (bitmap == null)
@@ -169,6 +169,18 @@ namespace super_toolbox
                     offset += 8;
                     offset += (int)(extraHeaderSize - 0x10);
                 }
+                if (imageWidth == 0 || imageHeight == 0)
+                {
+                    ConversionError?.Invoke(this, $"无效的图像尺寸:{imageWidth}x{imageHeight}");
+                    return null;
+                }
+
+                if (imageWidth > 8192 || imageHeight > 8192)
+                {
+                    ConversionError?.Invoke(this, $"图像尺寸过大:{imageWidth}x{imageHeight}");
+                    return null;
+                }
+
                 ConversionProgress?.Invoke(this, $"图像尺寸:{imageWidth}x{imageHeight}, 编码类型:0x{encodingTag:X2}");
                 switch (encodingTag)
                 {
@@ -257,8 +269,11 @@ namespace super_toolbox
                     palette.Add(Color.FromArgb(a, r, g, b));
                     dataOffset += 4;
                 }
+
                 List<byte> indices = new List<byte>();
-                while (indices.Count < width * height)
+                int expectedPixels = width * height;
+
+                while (indices.Count < expectedPixels)
                 {
                     if (dataOffset + 2 > fileData.Length)
                     {
@@ -268,16 +283,34 @@ namespace super_toolbox
                     byte index = fileData[dataOffset];
                     byte runLength = fileData[dataOffset + 1];
                     dataOffset += 2;
-                    for (int i = 0; i < runLength; i++)
+
+                    int remainingPixels = expectedPixels - indices.Count;
+                    int actualRunLength = Math.Min(runLength, remainingPixels);
+
+                    for (int i = 0; i < actualRunLength; i++)
                     {
                         indices.Add(index);
                     }
+
+                    if (indices.Count >= expectedPixels)
+                        break;
                 }
+                if (indices.Count != expectedPixels)
+                {
+                    ConversionProgress?.Invoke(this, $"警告: 索引数量({indices.Count})与预期像素数({expectedPixels})不匹配");
+                }
+
                 Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
-                for (int i = 0; i < indices.Count; i++)
+                for (int i = 0; i < indices.Count && i < expectedPixels; i++)
                 {
                     int x = i % width;
                     int y = i / width;
+                    if (x < 0 || x >= width || y < 0 || y >= height)
+                    {
+                        ConversionProgress?.Invoke(this, $"警告:坐标超出范围(x:{x}, y:{y}, 尺寸:{width}x{height})");
+                        continue;
+                    }
+
                     byte index = indices[i];
                     if (index < palette.Count)
                     {
@@ -302,6 +335,7 @@ namespace super_toolbox
             {
                 List<Color> pixels = new List<Color>();
                 int totalPixels = width * height;
+
                 while (pixels.Count < totalPixels)
                 {
                     if (dataOffset + 5 > fileData.Length)
@@ -309,6 +343,7 @@ namespace super_toolbox
                         ConversionError?.Invoke(this, "ARGB数据不完整");
                         return null;
                     }
+
                     byte a = fileData[dataOffset];
                     byte r = fileData[dataOffset + 1];
                     byte g = fileData[dataOffset + 2];
@@ -316,13 +351,19 @@ namespace super_toolbox
                     byte runLength = fileData[dataOffset + 4];
                     dataOffset += 5;
                     Color color = Color.FromArgb(a, r, g, b);
-                    for (int i = 0; i < runLength; i++)
+                    int remainingPixels = totalPixels - pixels.Count;
+                    int actualRunLength = Math.Min(runLength, remainingPixels);
+
+                    for (int i = 0; i < actualRunLength; i++)
                     {
                         pixels.Add(color);
                     }
+                    if (pixels.Count >= totalPixels)
+                        break;
                 }
+
                 Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
-                for (int i = 0; i < pixels.Count; i++)
+                for (int i = 0; i < pixels.Count && i < totalPixels; i++)
                 {
                     int x = i % width;
                     int y = i / width;
@@ -342,6 +383,7 @@ namespace super_toolbox
             {
                 List<ushort> lumaValues = new List<ushort>();
                 int totalPixels = width * height;
+
                 while (lumaValues.Count < totalPixels)
                 {
                     if (dataOffset + 3 > fileData.Length)
@@ -349,17 +391,23 @@ namespace super_toolbox
                         ConversionError?.Invoke(this, "亮度数据不完整");
                         return null;
                     }
+
                     ushort luma = BitConverter.ToUInt16(fileData, dataOffset);
                     byte runLength = fileData[dataOffset + 2];
                     dataOffset += 3;
-                    for (int i = 0; i < runLength; i++)
+                    int remainingPixels = totalPixels - lumaValues.Count;
+                    int actualRunLength = Math.Min(runLength, remainingPixels);
+
+                    for (int i = 0; i < actualRunLength; i++)
                     {
                         lumaValues.Add(luma);
                     }
+                    if (lumaValues.Count >= totalPixels)
+                        break;
                 }
-                Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
 
-                for (int i = 0; i < lumaValues.Count; i++)
+                Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+                for (int i = 0; i < lumaValues.Count && i < totalPixels; i++)
                 {
                     int x = i % width;
                     int y = i / width;
