@@ -97,6 +97,8 @@ namespace super_toolbox
             { "LZ77 - lz77_decompress","解压" },
             { "LZMA - 7-zip_lzma_compress","压缩" },
             { "LZMA - 7-zip_lzma_decompress","解压" },
+            { "LZO - lzo_compress","压缩" },
+            { "LZO - lzo_decompress","解压" },
             { "LZSS - lzss自定义压缩","压缩" },
             { "LZSS - lzss自定义解压","解压" },
             { "Lzham - lzham自定义压缩","压缩" },
@@ -109,6 +111,8 @@ namespace super_toolbox
             { "Mio0 - mio0_decompress", "解压" },
             { "Oodle - oodle_compress","压缩" },
             { "Oodle - oodle_decompress","解压" },
+            { "Snappy - snappy_compress","压缩" },
+            { "Snappy - snappy_decompress","解压" },
             { "Wflz - wflz_compress", "压缩" },
             { "Wflz - wflz_decompress", "解压" },
             { "Yay0 - yay0_compress","压缩" },
@@ -527,10 +531,12 @@ namespace super_toolbox
                 case "LZ77 - lz77_decompress": return new Lz77_Decompressor();
                 case "LZMA - 7-zip_lzma_compress": return new Lzma_Compressor();
                 case "LZMA - 7-zip_lzma_decompress": return new Lzma_Decompressor();
+                case "LZO - lzo_compress": return new Lzo_Compressor();
+                case "LZO - lzo_decompress": return new Lzo_Decompressor();
                 case "LZSS - lzss自定义压缩": return new LzssCustom_Compressor();
                 case "LZSS - lzss自定义解压": return new LzssCustom_Decompressor();
                 case "Lzham - lzham自定义压缩": return new LzhamCustom_Compressor();
-                case "Lzham - lzham自定义解压": return new lzhamCustom_Decompressor();
+                case "Lzham - lzham自定义解压": return new LzhamCustom_Decompressor();
                 case "Lzham - Lzham标准压缩": return new LzhamStandard_Compressor();
                 case "Lzham - Lzham标准解压": return new LzhamStandard_Decompressor();
                 case "Minlz - minlz_compress": return new Minlz_Compressor();
@@ -539,6 +545,8 @@ namespace super_toolbox
                 case "Mio0 - mio0_decompress": return new Mio0_Decompressor();
                 case "Oodle - oodle_compress": return new Oodle_Compressor();
                 case "Oodle - oodle_decompress": return new Oodle_Decompressor();
+                case "Snappy - snappy_compress": return new Snappy_Compressor();
+                case "Snappy - snappy_decompress": return new Snappy_Decompressor();
                 case "Wflz - wflz_compress": return new Wflz_Compressor();
                 case "Wflz - wflz_decompress": return new Wflz_Decompressor();
                 case "Yay0 - yay0_compress":return new Yay0_Compressor();
