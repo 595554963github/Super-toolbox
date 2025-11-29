@@ -176,18 +176,20 @@ namespace super_toolbox
                 "Gzip_Decompressor——使用Gzip算法批量解压文件\r\n" +
                 "Huffman_Compressor——使用Huffman算法批量压缩文件\r\n" +
                 "Huffman_Decompressor——使用Huffman算法批量解压文件\r\n" +
-                "LZ4_Compressor——使用LZ4算法批量压缩文件，使用C#第三方库\r\n" +
-                "LZ4_Decompressor——使用LZ4算法批量解压文件，使用C#第三方库\r\n" +
-                "Lz4c_Compressor——使用LZ4c算法批量压缩文件，使用外部可执行程序\r\n" +
-                "Lz4c_Decompressor——使用LZ4c算法批量解压文件，使用外部可执行程序\r\n" +
-                "Lz77_Compressor——使用LZ77算法批量压缩文件\r\n" +
-                "Lz77_Decompressor——使用LZ77算法批量解压文件\r\n" +
+                "Lz4_Compressor——使用Lz4算法批量压缩文件，使用C#第三方库\r\n" +
+                "LZ4_Decompressor——使用Lz4算法批量解压文件，使用C#第三方库\r\n" +
+                "Lz4c_Compressor——使用Lz4c算法批量压缩文件，使用外部可执行程序\r\n" +
+                "Lz4c_Decompressor——使用Lz4c算法批量解压文件，使用外部可执行程序\r\n" +
+                "Lz77_Compressor——使用Lz77算法批量压缩文件\r\n" +
+                "Lz77_Decompressor——使用Lz77算法批量解压文件\r\n" +
                 "LzhamCustom_Compressor——使用自定义Lzham算法批量压缩文件\r\n" +
                 "LzhamCustom_Decompressor——使用自定义Lzham算法批量解压文件\r\n" +
                 "LzhamStandard_Compressor——使用标准Lzham算法批量压缩文件\r\n" +
                 "LzhamStandard_Decompressor——使用标准Lzham算法批量解压文件\r\n" +
-                "Lzma_Compressor——使用LZMA算法批量压缩文件\r\n" +
-                "Lzma_Decompressor——使用LZMA算法批量解压文件\r\n" +
+                "Lzma_Compressor——使用Lzma算法批量压缩文件\r\n" +
+                "Lzma_Decompressor——使用Lzma算法批量解压文件\r\n" +
+                "Lzo_Compressor——使用Lzo算法批量压缩文件\r\n" +
+                "Lzo_Decompressor——使用Lzo算法批量解压文件\r\n" +
                 "LzssCustom_Compressor——使用自定义Lzss算法批量压缩文件\r\n" +
                 "LzssCustom_Decompressor——使用自定义Lzss算法批量解压文件\r\n" +
                 "Minlz_Compressor——使用Minlz算法批量压缩文件\r\n" +
@@ -196,6 +198,8 @@ namespace super_toolbox
                 "Mio0_Decompressor——使用Mio0算法批量解压文件\r\n" +
                 "Oodle_Compressor——使用Oodle算法批量压缩文件\r\n" +
                 "Oodle_Decompressor——使用Oodle算法批量解压文件\r\n" +
+                "Snappy_Compressor——使用Snappy算法批量压缩文件\r\n" +
+                "Snappy_Decompressor——使用Snappy算法批量解压文件\r\n" +
                 "Wflz_Compressor——使用Wflz算法批量压缩文件\r\n" +
                 "Wflz_Decompressor——使用Wflz算法批量解压文件\r\n" +
                 "Yay0_Compressor——使用Yay0算法批量压缩文件\r\n" +
