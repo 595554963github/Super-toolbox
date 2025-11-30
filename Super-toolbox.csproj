@@ -199,6 +199,9 @@
 		<Reference Include="Narchive">
 			<HintPath>plugins\Narchive.dll</HintPath>
 		</Reference>
+		<Reference Include="Shadowrun">
+		  <HintPath>plugins\Shadowrun.dll</HintPath>
+		</Reference>
 		<Reference Include="WarTales_PakExtractor">
 			<HintPath>plugins\WarTales_PakExtractor.dll</HintPath>
 		</Reference>
