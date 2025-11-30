@@ -39,7 +39,6 @@ namespace super_toolbox
             btnExtract = new Button();
             richTextBox1 = new RichTextBox();
             btnClear = new Button();
-            btnHelp = new Button();
             toolTip1 = new ToolTip(components);
             treeViewContextMenu.SuspendLayout();
             SuspendLayout();
@@ -139,20 +138,6 @@ namespace super_toolbox
             btnClear.UseVisualStyleBackColor = true;
             btnClear.Click += btnClear_Click;
             // 
-            // btnHelp
-            // 
-            btnHelp.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnHelp.Font = new Font("Microsoft YaHei UI", 12F);
-            btnHelp.ForeColor = Color.Red;
-            btnHelp.Location = new Point(600, 46);
-            btnHelp.Name = "btnHelp";
-            btnHelp.Size = new Size(88, 28);
-            btnHelp.TabIndex = 6;
-            btnHelp.Text = "使用手册";
-            toolTip1.SetToolTip(btnHelp, "点击此按钮查看每个工具的作用");
-            btnHelp.UseVisualStyleBackColor = true;
-            btnHelp.Click += btnHelp_Click;
-            // 
             // toolTip1
             // 
             toolTip1.AutoPopDelay = 5000;
@@ -165,7 +150,6 @@ namespace super_toolbox
             AutoScaleDimensions = new SizeF(7F, 17F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(888, 571);
-            Controls.Add(btnHelp);
             Controls.Add(btnClear);
             Controls.Add(richTextBox1);
             Controls.Add(btnExtract);
@@ -192,7 +176,6 @@ namespace super_toolbox
         private System.Windows.Forms.ToolStripMenuItem renameCategoryMenuItem;
         private System.Windows.Forms.ToolStripMenuItem deleteCategoryMenuItem;
         private System.Windows.Forms.ToolStripMenuItem moveToCategoryMenuItem;
-        private System.Windows.Forms.Button btnHelp;
         private ToolTip toolTip1;
     }
 }
