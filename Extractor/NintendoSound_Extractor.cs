@@ -1,235 +1,251 @@
 using System.Collections.Concurrent;
 using System.Text;
-using Syroot.BinaryData;
 
 namespace super_toolbox
 {
     public class NintendoSound_Extractor : BaseExtractor
     {
-        private static readonly byte[] CWAV_SIGNATURE = { 0x43, 0x57, 0x41, 0x56, 0xFF, 0xFE }; // "CWAV" + FFFE
-        private static readonly byte[] FWAV_SIGNATURE = { 0x46, 0x57, 0x41, 0x56, 0xFE, 0xFF }; // "FWAV" + FEFF
-        private static readonly byte[] RWAR_SIGNATURE = { 0x52, 0x57, 0x41, 0x52 }; // "RWAR"
-        private static readonly byte[] RWAV_SIGNATURE = { 0x52, 0x57, 0x41, 0x56 }; // "RWAV"
+        public new event EventHandler<string>? ExtractionStarted;
+        public new event EventHandler<string>? ExtractionProgress;
+        public new event EventHandler<string>? ExtractionError;
 
-        private const string CWAV_FOLDER = "CWAV";
-        private const string FWAV_FOLDER = "FWAV";
-        private const string RWAR_FOLDER = "RWAR";
-        private const string RWAV_FOLDER = "RWAV";
+        private static readonly AudioFormatInfo[] FormatInfos = new AudioFormatInfo[]
+        {
+            new AudioFormatInfo(
+                name: "CWAV",
+                signature: new byte[] { 0x43, 0x57, 0x41, 0x56, 0xFF, 0xFE },
+                sizeOffset: 0xC,
+                isBigEndian: false,
+                extension: ".bcwav"
+            ),
+            new AudioFormatInfo(
+                name: "FWAV",
+                signature: new byte[] { 0x46, 0x57, 0x41, 0x56, 0xFE, 0xFF },
+                sizeOffset: 0xC,
+                isBigEndian: true,
+                extension: ".bfwav"
+            ),
+            new AudioFormatInfo(
+                name: "RWAR",
+                signature: new byte[] { 0x52, 0x57, 0x41, 0x52 },
+                sizeOffset: 0x8,
+                isBigEndian: true,
+                extension: ".rwar"
+            ),
+            new AudioFormatInfo(
+                name: "RWAV",
+                signature: new byte[] { 0x52, 0x57, 0x41, 0x56 },
+                sizeOffset: 0x8,
+                isBigEndian: true,
+                extension: ".brwav"
+            )
+        };
 
-        private int cwavCounter = 0;
-        private int fwavCounter = 0;
-        private int rwarCounter = 0;
-        private int rwavCounter = 0;
+        private ConcurrentDictionary<string, int> _counters = new ConcurrentDictionary<string, int>();
+
+        public override void Extract(string directoryPath)
+        {
+            ExtractAsync(directoryPath).Wait();
+        }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
+            if (!Directory.Exists(directoryPath))
+            {
+                ExtractionError?.Invoke(this, $"错误:{directoryPath}不是有效的目录");
+                OnExtractionFailed($"错误:{directoryPath}不是有效的目录");
+                return;
+            }
+
             string extractedDir = Path.Combine(directoryPath, "Extracted");
             Directory.CreateDirectory(extractedDir);
 
-            string cwavDir = Path.Combine(extractedDir, CWAV_FOLDER);
-            string fwavDir = Path.Combine(extractedDir, FWAV_FOLDER);
-            string rwarDir = Path.Combine(extractedDir, RWAR_FOLDER);
-            string rwavDir = Path.Combine(extractedDir, RWAV_FOLDER);
+            ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
-            Directory.CreateDirectory(cwavDir);
-            Directory.CreateDirectory(fwavDir);
-            Directory.CreateDirectory(rwarDir);
-            Directory.CreateDirectory(rwavDir);
-
-            var sw = System.Diagnostics.Stopwatch.StartNew();
             var files = Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories)
                 .Where(file => !file.StartsWith(extractedDir, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             TotalFilesToExtract = files.Count;
 
-            var extractedFiles = new ConcurrentBag<string>();
+            foreach (var format in FormatInfos)
+            {
+                _counters[format.Name] = 0;
+            }
+
+            int processedFiles = 0;
 
             try
             {
+                var existingFormats = new ConcurrentDictionary<string, bool>();
+                ExtractionProgress?.Invoke(this, $"正在扫描文件以检测音频格式...");
+
                 await Task.Run(() =>
                 {
-                    Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount * 2 }, filePath =>
+                    Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, filePath =>
                     {
                         ThrowIfCancellationRequested(cancellationToken);
                         try
                         {
                             byte[] content = File.ReadAllBytes(filePath);
 
-                            ExtractCwav(filePath, content, cwavDir);
-                            ExtractFwav(filePath, content, fwavDir);
-                            ExtractRwar(filePath, content, rwarDir);
-                            ExtractRwav(filePath, content, rwavDir);
+                            foreach (var format in FormatInfos)
+                            {
+                                if (HasSignature(content, format.Signature))
+                                {
+                                    existingFormats[format.Name] = true;
+                                }
+                            }
                         }
                         catch (Exception ex)
                         {
-                            OnExtractionFailed($"提取文件 {filePath} 时发生错误: {ex.Message}");
+                            ExtractionError?.Invoke(this, $"扫描文件{Path.GetFileName(filePath)}时发生错误:{ex.Message}");
+                            OnExtractionFailed($"扫描文件{Path.GetFileName(filePath)}时发生错误:{ex.Message}");
+                        }
+                    });
+                }, cancellationToken);
+
+                foreach (var format in FormatInfos)
+                {
+                    if (existingFormats.ContainsKey(format.Name))
+                    {
+                        string formatDir = Path.Combine(extractedDir, format.Name);
+                        Directory.CreateDirectory(formatDir);
+                        ExtractionProgress?.Invoke(this, $"创建文件夹:{format.Name}");
+                    }
+                }
+
+                ExtractionProgress?.Invoke(this, $"开始提取音频文件...");
+
+                await Task.Run(() =>
+                {
+                    Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, filePath =>
+                    {
+                        ThrowIfCancellationRequested(cancellationToken);
+
+                        processedFiles++;
+                        string fileName = Path.GetFileName(filePath);
+                        ExtractionProgress?.Invoke(this, $"正在处理文件:{fileName} ({processedFiles}/{TotalFilesToExtract})");
+
+                        try
+                        {
+                            byte[] content = File.ReadAllBytes(filePath);
+
+                            foreach (var format in FormatInfos)
+                            {
+                                if (existingFormats.ContainsKey(format.Name))
+                                {
+                                    ExtractAudioFormat(filePath, content, format, Path.Combine(extractedDir, format.Name));
+                                }
+                            }
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            ExtractionError?.Invoke(this, $"处理文件{fileName}时发生错误:{ex.Message}");
+                            OnExtractionFailed($"处理文件{fileName}时发生错误:{ex.Message}");
                         }
                     });
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("提取操作已取消。");
+                ExtractionError?.Invoke(this, "提取操作已取消");
+                OnExtractionFailed("提取操作已取消");
+                throw;
+            }
+            int actualExtractedCount = 0;
+            StringBuilder summary = new StringBuilder();
+            summary.AppendLine("提取完成，统计信息:");
+
+            foreach (var format in FormatInfos)
+            {
+                if (_counters[format.Name] > 0)
+                {
+                    string formatDir = Path.Combine(extractedDir, format.Name);
+                    if (Directory.Exists(formatDir))
+                    {
+                        int fileCount = Directory.GetFiles(formatDir, "*.*", SearchOption.TopDirectoryOnly).Length;
+                        actualExtractedCount += fileCount;
+                        summary.AppendLine($"  {format.Name}: {_counters[format.Name]}个文件");
+                    }
+                }
             }
 
-            sw.Stop();
+            if (actualExtractedCount > 0)
+            {
+                ExtractionProgress?.Invoke(this, $"处理完成，共提取出{actualExtractedCount}个音频文件");
+                ExtractionProgress?.Invoke(this, summary.ToString());
+            }
+            else
+            {
+                ExtractionProgress?.Invoke(this, "处理完成，未找到音频文件");
+            }
 
-            int actualExtractedCount = Directory.EnumerateFiles(extractedDir, "*.*", SearchOption.AllDirectories).Count();
-            Console.WriteLine($"处理完成，耗时 {sw.Elapsed.TotalSeconds:F2} 秒");
-            Console.WriteLine($"共提取出 {actualExtractedCount} 个音频相关文件，统计提取文件数量: {ExtractedFileCount}");
             if (ExtractedFileCount != actualExtractedCount)
             {
-                Console.WriteLine("警告: 统计数量与实际数量不符，可能存在文件操作异常。");
+                ExtractionError?.Invoke(this, $"警告:统计数量({ExtractedFileCount})与实际数量({actualExtractedCount})不符，可能存在文件操作异常。");
             }
+
+            OnExtractionCompleted();
         }
 
-        private void ExtractCwav(string filePath, byte[] content, string outputDir)
+        private void ExtractAudioFormat(string filePath, byte[] content, AudioFormatInfo format, string outputDir)
         {
             int index = 0;
+            string baseFileName = Path.GetFileNameWithoutExtension(filePath);
+            int fileCountForThisFormat = 0;
 
             while (index < content.Length)
             {
-                int cwavStartIndex = IndexOf(content, CWAV_SIGNATURE, index);
-                if (cwavStartIndex == -1) break;
+                int startIndex = IndexOf(content, format.Signature, index);
+                if (startIndex == -1) break;
 
-                int sizeOffset = cwavStartIndex + 0xC;
+                int sizeOffset = startIndex + format.SizeOffset;
                 if (sizeOffset + 4 > content.Length)
                 {
-                    index = cwavStartIndex + 1;
+                    index = startIndex + 1;
                     continue;
                 }
 
-                int fileSize = ReadLittleEndianInt32(content, sizeOffset);
-                if (fileSize <= 0 || cwavStartIndex + fileSize > content.Length)
+                int fileSize = format.IsBigEndian
+                    ? ReadBigEndianInt32(content, sizeOffset)
+                    : ReadLittleEndianInt32(content, sizeOffset);
+
+                if (fileSize <= 0 || startIndex + fileSize > content.Length)
                 {
-                    index = cwavStartIndex + 1;
+                    index = startIndex + 1;
                     continue;
                 }
 
-                byte[] cwavData = new byte[fileSize];
-                Array.Copy(content, cwavStartIndex, cwavData, 0, fileSize);
+                byte[] audioData = new byte[fileSize];
+                Array.Copy(content, startIndex, audioData, 0, fileSize);
 
-                string baseFileName = Path.GetFileNameWithoutExtension(filePath);
-                string cwavFileName = $"{baseFileName}_cwav_{Interlocked.Increment(ref cwavCounter):D4}.bcwav";
-                string cwavFilePath = Path.Combine(outputDir, cwavFileName);
+                int counter = _counters.AddOrUpdate(format.Name, 1, (key, oldValue) => oldValue + 1);
+                string audioFileName = $"{baseFileName}_{format.Name.ToLower()}_{counter:D4}{format.Extension}";
+                string audioFilePath = Path.Combine(outputDir, audioFileName);
 
-                File.WriteAllBytes(cwavFilePath, cwavData);
-                OnFileExtracted(cwavFilePath);
+                File.WriteAllBytes(audioFilePath, audioData);
+                OnFileExtracted(audioFilePath);
 
-                index = cwavStartIndex + fileSize;
+                fileCountForThisFormat++;
+                ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(audioFilePath)}");
+
+                index = startIndex + fileSize;
+            }
+
+            if (fileCountForThisFormat > 0)
+            {
+                ExtractionProgress?.Invoke(this, $"从{Path.GetFileName(filePath)}中提取出{fileCountForThisFormat}个{format.Name}文件");
             }
         }
 
-        private void ExtractFwav(string filePath, byte[] content, string outputDir)
+        private bool HasSignature(byte[] content, byte[] signature)
         {
-            int index = 0;
-
-            while (index < content.Length)
-            {
-                int fwavStartIndex = IndexOf(content, FWAV_SIGNATURE, index);
-                if (fwavStartIndex == -1) break;
-
-                int sizeOffset = fwavStartIndex + 0xC;
-                if (sizeOffset + 4 > content.Length)
-                {
-                    index = fwavStartIndex + 1;
-                    continue;
-                }
-
-                int fileSize = ReadBigEndianInt32(content, sizeOffset);
-                if (fileSize <= 0 || fwavStartIndex + fileSize > content.Length)
-                {
-                    index = fwavStartIndex + 1;
-                    continue;
-                }
-
-                byte[] fwavData = new byte[fileSize];
-                Array.Copy(content, fwavStartIndex, fwavData, 0, fileSize);
-
-                string baseFileName = Path.GetFileNameWithoutExtension(filePath);
-                string fwavFileName = $"{baseFileName}_fwav_{Interlocked.Increment(ref fwavCounter):D4}.bfwav";
-                string fwavFilePath = Path.Combine(outputDir, fwavFileName);
-
-                File.WriteAllBytes(fwavFilePath, fwavData);
-                OnFileExtracted(fwavFilePath);
-
-                index = fwavStartIndex + fileSize;
-            }
-        }
-
-        private void ExtractRwar(string filePath, byte[] content, string outputDir)
-        {
-            int index = 0;
-
-            while (index < content.Length)
-            {
-                int rwarStartIndex = IndexOf(content, RWAR_SIGNATURE, index);
-                if (rwarStartIndex == -1) break;
-
-                int sizeOffset = rwarStartIndex + 8;
-                if (sizeOffset + 4 > content.Length)
-                {
-                    index = rwarStartIndex + 1;
-                    continue;
-                }
-
-                int fileSize = ReadBigEndianInt32(content, sizeOffset);
-                if (fileSize <= 0 || rwarStartIndex + fileSize > content.Length)
-                {
-                    index = rwarStartIndex + 1;
-                    continue;
-                }
-
-                byte[] rwarData = new byte[fileSize];
-                Array.Copy(content, rwarStartIndex, rwarData, 0, fileSize);
-
-                string baseFileName = Path.GetFileNameWithoutExtension(filePath);
-                string rwarFileName = $"{baseFileName}_rwar_{Interlocked.Increment(ref rwarCounter):D4}.rwar";
-                string rwarFilePath = Path.Combine(outputDir, rwarFileName);
-
-                File.WriteAllBytes(rwarFilePath, rwarData);
-                OnFileExtracted(rwarFilePath);
-
-                index = rwarStartIndex + fileSize;
-            }
-        }
-
-        private void ExtractRwav(string filePath, byte[] content, string outputDir)
-        {
-            int index = 0;
-
-            while (index < content.Length)
-            {
-                int rwavStartIndex = IndexOf(content, RWAV_SIGNATURE, index);
-                if (rwavStartIndex == -1) break;
-
-                int sizeOffset = rwavStartIndex + 8;
-                if (sizeOffset + 4 > content.Length)
-                {
-                    index = rwavStartIndex + 1;
-                    continue;
-                }
-
-                int fileSize = ReadBigEndianInt32(content, sizeOffset);
-                if (fileSize <= 0 || rwavStartIndex + fileSize > content.Length)
-                {
-                    index = rwavStartIndex + 1;
-                    continue;
-                }
-
-                byte[] rwavData = new byte[fileSize];
-                Array.Copy(content, rwavStartIndex, rwavData, 0, fileSize);
-
-                string baseFileName = Path.GetFileNameWithoutExtension(filePath);
-                string rwavFileName = $"{baseFileName}_rwav_{Interlocked.Increment(ref rwavCounter):D4}.brwav";
-                string rwavFilePath = Path.Combine(outputDir, rwavFileName);
-
-                File.WriteAllBytes(rwavFilePath, rwavData);
-                OnFileExtracted(rwavFilePath);
-
-                index = rwavStartIndex + fileSize;
-            }
+            return IndexOf(content, signature, 0) != -1;
         }
 
         private int ReadBigEndianInt32(byte[] data, int offset)
@@ -260,6 +276,23 @@ namespace super_toolbox
                 if (match) return i;
             }
             return -1;
+        }
+        private class AudioFormatInfo
+        {
+            public string Name { get; }
+            public byte[] Signature { get; }
+            public int SizeOffset { get; }
+            public bool IsBigEndian { get; }
+            public string Extension { get; }
+
+            public AudioFormatInfo(string name, byte[] signature, int sizeOffset, bool isBigEndian, string extension)
+            {
+                Name = name;
+                Signature = signature;
+                SizeOffset = sizeOffset;
+                IsBigEndian = isBigEndian;
+                Extension = extension;
+            }
         }
     }
 }
