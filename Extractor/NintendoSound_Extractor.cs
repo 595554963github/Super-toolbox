@@ -38,10 +38,20 @@ namespace super_toolbox
                 sizeOffset: 0x8,
                 isBigEndian: true,
                 extension: ".brwav"
+            ),
+            new AudioFormatInfo(
+                name: "RWAV_REV",
+                signature: new byte[] { 0x56, 0x41, 0x57, 0x52 }, // VAWR
+                sizeOffset: 0x8,
+                isBigEndian: false,
+                extension: ".brwav",
+                isReversible: true,
+                originalName: "RWAV"
             )
         };
 
         private ConcurrentDictionary<string, int> _counters = new ConcurrentDictionary<string, int>();
+        private ConcurrentBag<string> _reversibleFiles = new ConcurrentBag<string>();
 
         public override void Extract(string directoryPath)
         {
@@ -109,9 +119,9 @@ namespace super_toolbox
                 {
                     if (existingFormats.ContainsKey(format.Name))
                     {
-                        string formatDir = Path.Combine(extractedDir, format.Name);
+                        string formatDir = Path.Combine(extractedDir, format.OriginalName ?? format.Name);
                         Directory.CreateDirectory(formatDir);
-                        ExtractionProgress?.Invoke(this, $"创建文件夹:{format.Name}");
+                        ExtractionProgress?.Invoke(this, $"创建文件夹:{format.OriginalName ?? format.Name}");
                     }
                 }
 
@@ -135,7 +145,7 @@ namespace super_toolbox
                             {
                                 if (existingFormats.ContainsKey(format.Name))
                                 {
-                                    ExtractAudioFormat(filePath, content, format, Path.Combine(extractedDir, format.Name));
+                                    ExtractAudioFormat(filePath, content, format, extractedDir, cancellationToken);
                                 }
                             }
                         }
@@ -150,6 +160,30 @@ namespace super_toolbox
                         }
                     });
                 }, cancellationToken);
+
+                if (_reversibleFiles.Count > 0)
+                {
+                    ExtractionProgress?.Invoke(this, $"开始修复{_reversibleFiles.Count}个需要反转的RWAV文件...");
+                    int fixedCount = 0;
+
+                    foreach (var filePath in _reversibleFiles)
+                    {
+                        ThrowIfCancellationRequested(cancellationToken);
+                        try
+                        {
+                            if (FixReversedBytes(filePath))
+                            {
+                                fixedCount++;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            ExtractionError?.Invoke(this, $"修复文件{filePath}时出错:{ex.Message}");
+                        }
+                    }
+
+                    ExtractionProgress?.Invoke(this, $"完成修复，共修复{fixedCount}个RWAV文件");
+                }
             }
             catch (OperationCanceledException)
             {
@@ -157,20 +191,22 @@ namespace super_toolbox
                 OnExtractionFailed("提取操作已取消");
                 throw;
             }
+
             int actualExtractedCount = 0;
             StringBuilder summary = new StringBuilder();
             summary.AppendLine("提取完成，统计信息:");
 
             foreach (var format in FormatInfos)
             {
+                string dirName = format.OriginalName ?? format.Name;
                 if (_counters[format.Name] > 0)
                 {
-                    string formatDir = Path.Combine(extractedDir, format.Name);
+                    string formatDir = Path.Combine(extractedDir, dirName);
                     if (Directory.Exists(formatDir))
                     {
                         int fileCount = Directory.GetFiles(formatDir, "*.*", SearchOption.TopDirectoryOnly).Length;
                         actualExtractedCount += fileCount;
-                        summary.AppendLine($"  {format.Name}: {_counters[format.Name]}个文件");
+                        summary.AppendLine($"  {dirName}: {_counters[format.Name]}个文件");
                     }
                 }
             }
@@ -193,14 +229,19 @@ namespace super_toolbox
             OnExtractionCompleted();
         }
 
-        private void ExtractAudioFormat(string filePath, byte[] content, AudioFormatInfo format, string outputDir)
+        private void ExtractAudioFormat(string filePath, byte[] content, AudioFormatInfo format, string rootOutputDir, CancellationToken cancellationToken)
         {
             int index = 0;
             string baseFileName = Path.GetFileNameWithoutExtension(filePath);
             int fileCountForThisFormat = 0;
+            string outputDir = Path.Combine(rootOutputDir, format.OriginalName ?? format.Name);
+
+            int localCounter = 1;
 
             while (index < content.Length)
             {
+                ThrowIfCancellationRequested(cancellationToken);
+
                 int startIndex = IndexOf(content, format.Signature, index);
                 if (startIndex == -1) break;
 
@@ -215,7 +256,7 @@ namespace super_toolbox
                     ? ReadBigEndianInt32(content, sizeOffset)
                     : ReadLittleEndianInt32(content, sizeOffset);
 
-                if (fileSize <= 0 || startIndex + fileSize > content.Length)
+                if (fileSize <= 0 || startIndex + fileSize > content.Length || fileSize > 100 * 1024 * 1024)
                 {
                     index = startIndex + 1;
                     continue;
@@ -225,13 +266,26 @@ namespace super_toolbox
                 Array.Copy(content, startIndex, audioData, 0, fileSize);
 
                 int counter = _counters.AddOrUpdate(format.Name, 1, (key, oldValue) => oldValue + 1);
-                string audioFileName = $"{baseFileName}_{format.Name.ToLower()}_{counter:D4}{format.Extension}";
+
+                string audioFileName = format.IsReversible
+                    ? $"{baseFileName}_{localCounter}_reversed{format.Extension}"
+                    : $"{baseFileName}_{localCounter}{format.Extension}";
+
                 string audioFilePath = Path.Combine(outputDir, audioFileName);
+
+                audioFilePath = MakeUniqueFilename(audioFilePath);
 
                 File.WriteAllBytes(audioFilePath, audioData);
                 OnFileExtracted(audioFilePath);
 
+                if (format.IsReversible)
+                {
+                    _reversibleFiles.Add(audioFilePath);
+                }
+
                 fileCountForThisFormat++;
+                localCounter++; 
+
                 ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(audioFilePath)}");
 
                 index = startIndex + fileSize;
@@ -241,6 +295,65 @@ namespace super_toolbox
             {
                 ExtractionProgress?.Invoke(this, $"从{Path.GetFileName(filePath)}中提取出{fileCountForThisFormat}个{format.Name}文件");
             }
+        }
+
+        private bool FixReversedBytes(string filePath)
+        {
+            try
+            {
+                byte[] data = File.ReadAllBytes(filePath);
+                bool fixedSomething = false;
+
+                Dictionary<byte[], byte[]> fixMap = new Dictionary<byte[], byte[]>(new ByteArrayComparer())
+                {
+                    { new byte[] { 0x56, 0x41, 0x57, 0x52 }, new byte[] { 0x52, 0x57, 0x41, 0x56 } }, // VAWR -> RWAV
+                    { new byte[] { 0x4F, 0x46, 0x4E, 0x49 }, new byte[] { 0x49, 0x4E, 0x46, 0x4F } }, // OFNI -> INFO
+                    { new byte[] { 0x41, 0x54, 0x41, 0x44 }, new byte[] { 0x44, 0x41, 0x54, 0x41 } }  // ATAD -> DATA                  
+                };
+
+                int fixCount = 0;
+
+                for (int i = 0; i <= data.Length - 4; i++)
+                {
+                    foreach (var kvp in fixMap)
+                    {
+                        byte[] reversed = kvp.Key;
+                        byte[] normal = kvp.Value;
+
+                        if (data[i] == reversed[0] &&
+                            data[i + 1] == reversed[1] &&
+                            data[i + 2] == reversed[2] &&
+                            data[i + 3] == reversed[3])
+                        {
+                            Array.Copy(normal, 0, data, i, 4);
+                            fixCount++;
+                            fixedSomething = true;
+                        }
+                    }
+                }
+
+                if (fixedSomething)
+                {
+                    string newFileName = Path.GetFileName(filePath).Replace("_reversed", "");
+                    string newFilePath = Path.Combine(Path.GetDirectoryName(filePath) ?? "", newFileName);
+
+                    newFilePath = MakeUniqueFilename(newFilePath);
+
+                    File.WriteAllBytes(newFilePath, data);
+                    File.Delete(filePath);
+
+                    ExtractionProgress?.Invoke(this,
+                        $"修复了{fixCount}处反转字节，重命名为: {Path.GetFileName(newFilePath)}");
+
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                ExtractionError?.Invoke(this, $"修复文件{filePath}时出错:{ex.Message}");
+            }
+
+            return false;
         }
 
         private bool HasSignature(byte[] content, byte[] signature)
@@ -277,6 +390,26 @@ namespace super_toolbox
             }
             return -1;
         }
+
+        private string MakeUniqueFilename(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return filePath;
+
+            string directory = Path.GetDirectoryName(filePath) ?? "";
+            string fileName = Path.GetFileNameWithoutExtension(filePath);
+            string extension = Path.GetExtension(filePath);
+            int counter = 1;
+
+            while (true)
+            {
+                string newPath = Path.Combine(directory, $"{fileName}_{counter}{extension}");
+                if (!File.Exists(newPath))
+                    return newPath;
+                counter++;
+            }
+        }
+
         private class AudioFormatInfo
         {
             public string Name { get; }
@@ -284,14 +417,37 @@ namespace super_toolbox
             public int SizeOffset { get; }
             public bool IsBigEndian { get; }
             public string Extension { get; }
+            public bool IsReversible { get; }
+            public string? OriginalName { get; }
 
-            public AudioFormatInfo(string name, byte[] signature, int sizeOffset, bool isBigEndian, string extension)
+            public AudioFormatInfo(string name, byte[] signature, int sizeOffset, bool isBigEndian, string extension, bool isReversible = false, string? originalName = null)
             {
                 Name = name;
                 Signature = signature;
                 SizeOffset = sizeOffset;
                 IsBigEndian = isBigEndian;
                 Extension = extension;
+                IsReversible = isReversible;
+                OriginalName = originalName;
+            }
+        }
+
+        private class ByteArrayComparer : IEqualityComparer<byte[]>
+        {
+            public bool Equals(byte[]? x, byte[]? y)
+            {
+                if (x == null || y == null) return x == y;
+                return x.SequenceEqual(y);
+            }
+
+            public int GetHashCode(byte[] obj)
+            {
+                int hash = 17;
+                foreach (byte b in obj)
+                {
+                    hash = hash * 31 + b;
+                }
+                return hash;
             }
         }
     }
