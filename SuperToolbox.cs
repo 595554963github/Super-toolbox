@@ -155,6 +155,8 @@ namespace super_toolbox
             { "Terminal Reality - pod/epd ahchive", ("其他档案", "Terminal Reality工作室的pod档案提取器，代表作为星球大战原力释放2，可提取pod/epd档案中的资源") },
             { "PlayStation - GPDA archive", ("其他档案", "索尼psp平台上常见的GPDA档案的专用提取器，例如我的妹妹不可能那么可爱、凉宫春日的追忆等游戏") },
             { "暗影狂奔 - data/toc archive", ("其他档案", "Xbox360游戏暗影狂奔和皇牌空战6解放之战火的专用提取器，可解data/toc这种组合打包的档案") },
+            { "异度之刃3 - ard/arh archive", ("其他档案", "switch游戏异度之刃3的提取器，可解包ard/arh这种组合打包的档案") },
+            { "异度之刃 - LBIM texture", ("图片", "异度之刃系列的LBIM转换器，可将文件尾为LBIM的文件转换成dds图像，如果是wismda文件该工具会先拆分xbc1文件，如果是xbc1文件会先移除前48字节，随后zlib解压，然后转换成dds图片，一步到位") },
         };
         public SuperToolbox()
         {
@@ -186,15 +188,35 @@ namespace super_toolbox
             {
                 AddCategory(category);
             }
-            foreach (var item in defaultCategories)
+
+            var sortedExtractors = defaultCategories
+                .OrderBy(x => x.Key)
+                .ToList();
+
+            foreach (var item in sortedExtractors)
             {
                 string extractorName = item.Key;
                 string categoryName = item.Value.category;
-                TreeNode categoryNode = categoryNodes[categoryName];
-                TreeNode extractorNode = categoryNode.Nodes.Add(extractorName);
-                formatNodes[extractorName] = extractorNode;
-                extractorNode.Tag = extractorName;
+
+                if (categoryNodes.TryGetValue(categoryName, out TreeNode? categoryNode))
+                {
+                    TreeNode extractorNode = categoryNode.Nodes.Add(extractorName);
+                    formatNodes[extractorName] = extractorNode;
+                    extractorNode.Tag = extractorName;
+                }
             }
+
+            foreach (TreeNode categoryNode in treeView1.Nodes)
+            {
+                var sortedChildren = categoryNode.Nodes
+                    .Cast<TreeNode>()
+                    .OrderBy(node => node.Text)
+                    .ToList();
+
+                categoryNode.Nodes.Clear();
+                categoryNode.Nodes.AddRange(sortedChildren.ToArray());
+            }
+
             treeView1.ExpandAll();
         }
         private TreeNode AddCategory(string categoryName)
@@ -227,7 +249,7 @@ namespace super_toolbox
         {
          "PNG编码ASTC", "ASTC解码PNG", "Gnf2Png", "PowerVR转换png",
          "第七史诗 - sct", "索尼 - gxt转换器", "超女神信仰诺瓦露 - tex",
-         "wav2qoa - 转换qoa", "Wiiu - gtx转换器", "hip2png"
+         "wav2qoa - 转换qoa", "Wiiu - gtx转换器", "hip2png","异度之刃 - LBIM"
         };
         private bool IsConverter(string formatName) => _converters.Contains(formatName);
         private async void btnExtract_Click(object sender, EventArgs e)
@@ -592,6 +614,8 @@ namespace super_toolbox
                 case "Terminal Reality - pod/epd ahchive": return new PodExtractor();
                 case "PlayStation - GPDA archive": return new GPDA_Extractor();
                 case "暗影狂奔 - data/toc archive": return new DataToc_Extractor();
+                case "异度之刃3 - ard/arh archive": return new Xenoblade3_Extractor();
+                case "异度之刃 - LBIM texture": return new LBIM2DDS_Converter();
                 default: throw new NotSupportedException($"不支持的格式: {formatName}");
             }
         }
@@ -758,11 +782,30 @@ namespace super_toolbox
         private void MoveSelectedNodeToCategory(string category)
         {
             TreeNode selectedNode = treeView1.SelectedNode;
-            if (selectedNode == null || selectedNode.Parent == null || selectedNode.Tag as string == "category") return;
+            if (selectedNode == null || selectedNode.Parent == null || selectedNode.Tag as string == "category")
+                return;
+
             TreeNode? targetCategory = categoryNodes.ContainsKey(category) ? categoryNodes[category] : null;
-            if (targetCategory == null || selectedNode.Parent == targetCategory) return;
+            if (targetCategory == null || selectedNode.Parent == targetCategory)
+                return;
             selectedNode.Remove();
             targetCategory.Nodes.Add(selectedNode);
+            var sortedChildren = targetCategory.Nodes
+                .Cast<TreeNode>()
+                .OrderBy(node => node.Text)
+                .ToList();
+            targetCategory.Nodes.Clear();
+            targetCategory.Nodes.AddRange(sortedChildren.ToArray());
+            var oldParent = selectedNode.Parent;
+            if (oldParent != null)
+            {
+                var oldSortedChildren = oldParent.Nodes
+                    .Cast<TreeNode>()
+                    .OrderBy(node => node.Text)
+                    .ToList();
+                oldParent.Nodes.Clear();
+                oldParent.Nodes.AddRange(oldSortedChildren.ToArray());
+            }
             treeView1.SelectedNode = selectedNode;
             EnqueueMessage($"已将{selectedNode.Text}移动到{category}分组");
         }
