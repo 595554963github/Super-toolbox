@@ -9,7 +9,7 @@
 		<EnableDefaultCompileItems>true</EnableDefaultCompileItems>
 		<NoWarn>MSB3277;MSB3026</NoWarn>
 		<GenerateDependencyFile>false</GenerateDependencyFile>
-		<Configurations>Debug;Release;x86</Configurations>
+		<Configurations>Release</Configurations>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -157,6 +157,15 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\LZOStream.exe">
 			<LogicalName>embedded.LZOStream.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\ahx2wav.exe">
+			<LogicalName>embedded.ahx2wav.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\ETC1Lib.dll">
+			<LogicalName>embedded.ETC1Lib.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\png2bclim.exe">
+			<LogicalName>embedded.png2bclim.exe</LogicalName>
 		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
