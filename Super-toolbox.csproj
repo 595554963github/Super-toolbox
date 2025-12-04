@@ -167,6 +167,12 @@
 		<EmbeddedResource Include="plugins\png2bclim.exe">
 			<LogicalName>embedded.png2bclim.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\bdat-toolset.exe">
+			<LogicalName>embedded.bdat-toolset.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\xenoTextureConvert.exe">
+			<LogicalName>embedded.xenoTextureConvert.exe</LogicalName>
+		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
