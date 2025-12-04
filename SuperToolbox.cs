@@ -44,8 +44,8 @@ namespace super_toolbox
             { "GxArchivedFile - dat", ("其他档案", "Mizuchi引擎开发的游戏档案专用提取器，广泛用于地雷社游戏，如死亡终局轮回试炼系列、神狱塔断罪玛丽最终篇等。可提取dat文件内的数据，也可配合相关python脚本使用") },
             { "苍之彼方的四重奏EXTRA2 - dat", ("其他档案", "苍之彼方的四重奏2 Extra的专用提取器，专门针对该游戏的dat文件格式，能准确提取其中的游戏资源") },
             { "Lightvn galgame engine - mcdat/vndat", ("其他档案", "Light.vn galgame引擎的提取器，可解包宝石少女1st的mcdat和爱你，我的英雄！的vndat文件，适配该引擎开发的相关游戏资源提取") },
-            { "CRI - afs archives - afs", ("其他档案", "用于解包criware的afs格式档案，在PlayStation和xbox360平台较为常见。能有效解析afs格式的结构，提取其中包含的各类游戏资源") },
-            { "CRI - package - cpk", ("其他档案", "用于解包CRIWARE的cpk格式档案，该格式应用广泛，可存储多种类型资源。工具能应对不同平台的cpk文件，提取其中的游戏数据") },
+            { "CRI - afs提取器", ("其他档案", "用于解包criware的afs档案，该文件在任天堂、索尼、世嘉和xbox360平台较为常见，此提取器可以提取其中包含的各类资源") },
+            { "CRI - cpk", ("其他档案", "用于解包CRIWARE的cpk格式档案，该格式应用广泛，可存储多种类型资源。工具能应对不同平台的cpk文件，提取其中的游戏数据") },
             { "IdeaFactory - tid", ("图片", "地雷社海王星系列tid文件转换工具，可将tid转换为dds格式，且支持BC7纹理的tid文件。解决了tid格式图片的查看和编辑问题，适配该系列游戏的图片处理") },
             { "第七史诗 - sct", ("图片", "第七史诗的sct转换器，支持批量将sct格式转换为png格式，方便用户查看和使用该游戏中的图片资源") },
             { "万代南梦宫 - bnsf", ("音频", "万代南梦宫的bnsf音频提取器，以二进制形式从TLFILE.TLDAT文件中提取。可解析情热传说和ps3平台的狂战传说中的音频，注意狂战传说steam版因加密无法提取") },
@@ -142,8 +142,8 @@ namespace super_toolbox
             { "CMVS_Engine - cmv", ("其他档案", "CMVS引擎的cmv视频解码器，代表作为天津罪，可解码该引擎的cmv视频文件") },
             { "SRPG_Studio - dts", ("其他档案", "SRPG Studio的dts提取器，代表作为刻印战记2：七圣英雄，可提取dts文件中的资源") },
             { "XACT Wave Bank - xwb打包器", ("其他档案", "XWB打包器，能将一个文件夹里的所有wav打包成xwb文件，为了打包成功建议使用pcm_s16le的wav文件，有些编码不支持") },
-            { "PNG编码ASTC", ("图片", "png到astc图像的转换器，支持批量转换，满足将png图片转换为astc格式的需求") },
-            { "ASTC解码PNG", ("图片", "astc图像到png的转换器，支持批量转换，方便查看和使用astc格式的图片") },
+            { "PNG2ASTC", ("图片", "png到astc图像的转换器，支持批量转换，满足将png图片转换为astc格式的需求") },
+            { "ASTC2PNG", ("图片", "astc图像到png的转换器，支持批量转换，方便查看和使用astc格式的图片") },
             { "hip2png", ("图片", "hip到png的转换器，代表作为switch平台的赛马娘，可批量处理该格式转换成png") },
             { "双截龙彩虹pak提取器", ("其他档案", "双截龙彩虹的专用pak提取器，专门针对该游戏的pak格式，能提取其中的资源") },
             { "CFSI - cfsi提取器", ("其他档案", "cfsi文件专用提取器，适用于极限脱出3：零时困境和Re：从零开始的异世界生活虚假的王选候补等游戏") },
@@ -157,6 +157,15 @@ namespace super_toolbox
             { "暗影狂奔 - data/toc archive", ("其他档案", "Xbox360游戏暗影狂奔和皇牌空战6解放之战火的专用提取器，可解data/toc这种组合打包的档案") },
             { "异度之刃3 - ard/arh archive", ("其他档案", "switch游戏异度之刃3的提取器，可解包ard/arh这种组合打包的档案") },
             { "异度之刃 - LBIM texture", ("图片", "异度之刃系列的LBIM转换器，可将文件尾为LBIM的文件转换成dds图像，如果是wismda文件该工具会先拆分xbc1文件，如果是xbc1文件会先移除前48字节，随后zlib解压，然后转换成dds图片，一步到位") },
+            { "ahx2wav", ("音频", "此工具可以将Criware的ahx文件转换成wav格式") },
+            { "异度之刃 - arc file", ("其他档案", "从3ds平台的异度之刃arc文件里面提取tpl文件") },
+            { "异度之刃 - tpl2bclim", ("图片", "将3ds平台异度之刃的tpl文件转换成bclim文件") },
+            { "异度之刃 - bclim2png", ("图片", "将bclim文件转换成png文件") },
+            { "异度之刃 - bdat提取器", ("其他档案", "异度之刃所有系列游戏的bdat提取器") },
+            { "异度之刃 - bdat打包器", ("其他档案", "将json文件夹重新打包为bdat文件,目录必须为解包后的文件夹结构(包含bschema文件和json文件夹)") },
+            { "异度之刃 - MXTX file", ("其他档案", "异度之刃系列游戏的MTXT提取器") },
+            { "异度之刃 - MXTX2DDS", ("图片", "异度之刃系列游戏的MTXT转换器，可以把MTXT纹理转换成dds图像") },
+            { "异度之刃 - map.pkb", ("其他档案", "异度之刃wii平台的map.pkb解包器，可提取出里面的文件") },
         };
         public SuperToolbox()
         {
@@ -247,9 +256,9 @@ namespace super_toolbox
         }
         private readonly HashSet<string> _converters = new HashSet<string>
         {
-         "PNG编码ASTC", "ASTC解码PNG", "Gnf2Png", "PowerVR转换png",
+         "PNG编码ASTC", "ASTC解码PNG", "Gnf2Png", "PowerVR转换png","异度之刃 - tpl2bclim","异度之刃 - bclim2png","异度之刃 - MXTX2DDS",
          "第七史诗 - sct", "索尼 - gxt转换器", "超女神信仰诺瓦露 - tex",
-         "wav2qoa - 转换qoa", "Wiiu - gtx转换器", "hip2png","异度之刃 - LBIM"
+         "wav2qoa - 转换qoa", "Wiiu - gtx转换器", "hip2png","异度之刃 - LBIM","ahx2wav"
         };
         private bool IsConverter(string formatName) => _converters.Contains(formatName);
         private async void btnExtract_Click(object sender, EventArgs e)
@@ -502,8 +511,8 @@ namespace super_toolbox
                 case "GxArchivedFile - dat": return new GDAT_Extractor();
                 case "苍之彼方的四重奏EXTRA2 - dat": return new Aokana2Extractor();
                 case "Lightvn galgame engine - mcdat/vndat": return new LightvnExtractor();
-                case "CRI - afs archives - afs": return new AfsExtractor();
-                case "CRI - package - cpk": return new CpkExtractor();
+                case "CRI - afs提取器": return new AfsExtractor();
+                case "CRI - cpk": return new CpkExtractor();
                 case "IdeaFactory - tid": return new TidExtractor();
                 case "第七史诗 - sct": return new Sct2Png_Converter();
                 case "万代南梦宫 - bnsf": return new Bnsf_Extractor();
@@ -601,8 +610,8 @@ namespace super_toolbox
                 case "CMVS_Engine - cmv": return new CmvDecoder();
                 case "SRPG_Studio - dts": return new DtsExtractor();
                 case "XACT Wave Bank - xwb打包器": return new XWBPacker();
-                case "PNG编码ASTC": return new Png2Astc_Converter();
-                case "ASTC解码PNG": return new Astc2Png_Converter();
+                case "PNG2ASTC": return new Png2Astc_Converter();
+                case "ASTC2PNG": return new Astc2Png_Converter();
                 case "hip2png": return new Hip2Png_Converter();
                 case "双截龙彩虹pak提取器": return new DoubleDragonNeon_PakExtractor();
                 case "CFSI - cfsi提取器": return new Cfsi_Extractor();
@@ -616,7 +625,16 @@ namespace super_toolbox
                 case "暗影狂奔 - data/toc archive": return new DataToc_Extractor();
                 case "异度之刃3 - ard/arh archive": return new Xenoblade3_Extractor();
                 case "异度之刃 - LBIM texture": return new LBIM2DDS_Converter();
-                default: throw new NotSupportedException($"不支持的格式: {formatName}");
+                case "ahx2wav": return new Ahx2wav_Converter();
+                case "异度之刃 - arc file": return new XenobladeTpl_Extractor();
+                case "异度之刃 - tpl2bclim":return new Tpl2bclim_Converter();
+                case "异度之刃 - bclim2png": return new Bclim2png_Converter();
+                case "异度之刃 - bdat提取器":return new XenobladeBdat_Extractor();
+                case "异度之刃 - bdat打包器":return new XenobladeBdat_Repacker();
+                case "异度之刃 - MXTX file": return new XenobladeMTXT_Extractor();
+                case "异度之刃 - MXTX2DDS": return new MTXT2DDS_Converter();
+                case "异度之刃 - map.pkb": return new XenobladeMap_Extractor();
+                default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
         private void btnClear_Click(object sender, EventArgs e)
