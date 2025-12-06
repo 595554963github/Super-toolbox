@@ -1,4 +1,4 @@
-﻿namespace super_toolbox
+namespace super_toolbox
 {
     public class XenobladeMTXT_Extractor : BaseExtractor
     {
@@ -43,18 +43,23 @@
                 try
                 {
                     byte[] content = await File.ReadAllBytesAsync(filePath, cancellationToken);
-
-                    if (fileName.Contains("casmt", StringComparison.OrdinalIgnoreCase))
+                    if (fileName.Contains("casmt", StringComparison.OrdinalIgnoreCase) ||
+                        fileName.Contains("caevd", StringComparison.OrdinalIgnoreCase))
                     {
                         ExtractCasmtFile(content, filePath, extractedDir, extractedFiles);
                     }
                     else if (fileName.Contains("camdo", StringComparison.OrdinalIgnoreCase))
                     {
-                        ExtractCamdoFile(content, filePath, extractedDir, extractedFiles);
+                        ExtractMtxtBySignatureRule(content, filePath, extractedDir, extractedFiles, extractPre256Bytes: true);
                     }
                     else if (fileName.Contains("casmda", StringComparison.OrdinalIgnoreCase))
                     {
                         ExtractCasmdaFile(content, filePath, extractedDir, extractedFiles);
+                    }
+                    else if (fileName.Contains("bmn", StringComparison.OrdinalIgnoreCase) ||
+                             fileName.Contains("caavp", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ExtractMtxtBySignatureRule(content, filePath, extractedDir, extractedFiles, extractPre256Bytes: false);
                     }
                     else
                     {
@@ -113,7 +118,7 @@
             }
         }
 
-        private void ExtractCamdoFile(byte[] content, string sourceFilePath, string extractedDir, List<string> extractedFiles)
+        private void ExtractMtxtBySignatureRule(byte[] content, string sourceFilePath, string extractedDir, List<string> extractedFiles, bool extractPre256Bytes)
         {
             List<int> mtxtPositions = FindSignaturePositions(content, MTXT_SIGNATURE);
 
@@ -126,14 +131,16 @@
             ExtractionProgress?.Invoke(this, $"找到{mtxtPositions.Count}个MTXT标记，开始提取...");
 
             int fileIndex = 1;
+            int firstMtxtPos = mtxtPositions[0];
 
-            if (mtxtPositions.Count > 0)
+            int firstSegmentStart = extractPre256Bytes
+                ? Math.Max(0, firstMtxtPos - 252)
+                : firstMtxtPos + MTXT_SIGNATURE.Length;
+            int firstSegmentEnd = firstMtxtPos + MTXT_SIGNATURE.Length;
+
+            if (firstSegmentStart < firstSegmentEnd)
             {
-                int firstMtxtPos = mtxtPositions[0];
-                int startPos = Math.Max(0, firstMtxtPos - 252);
-                int endPos = firstMtxtPos + MTXT_SIGNATURE.Length;
-
-                ExtractSegment(content, startPos, endPos, sourceFilePath, fileIndex++, extractedDir, extractedFiles);
+                ExtractSegment(content, firstSegmentStart, firstSegmentEnd, sourceFilePath, fileIndex++, extractedDir, extractedFiles);
             }
 
             for (int i = 0; i < mtxtPositions.Count - 1; i++)
@@ -149,12 +156,12 @@
 
             if (mtxtPositions.Count > 0)
             {
-                int startPos = mtxtPositions[mtxtPositions.Count - 1] + MTXT_SIGNATURE.Length;
-                int endPos = content.Length;
+                int lastStartPos = mtxtPositions[mtxtPositions.Count - 1] + MTXT_SIGNATURE.Length;
+                int lastEndPos = content.Length;
 
-                if (startPos < endPos)
+                if (lastStartPos < lastEndPos)
                 {
-                    ExtractSegment(content, startPos, endPos, sourceFilePath, fileIndex++, extractedDir, extractedFiles);
+                    ExtractSegment(content, lastStartPos, lastEndPos, sourceFilePath, fileIndex, extractedDir, extractedFiles);
                 }
             }
         }
@@ -230,6 +237,7 @@
                     ExtractionProgress?.Invoke(this, $"跳过过大文件段:0x{startPos:X}-0x{endPos:X}，大小:{segmentSize}字节");
                 }
             }
+
             if (validMtxtPositions.Count > 0)
             {
                 int lastMtxtPos = validMtxtPositions[validMtxtPositions.Count - 1];
