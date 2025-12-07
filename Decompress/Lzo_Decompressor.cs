@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace super_toolbox
@@ -93,11 +93,9 @@ namespace super_toolbox
 
                             if (process.ExitCode == 0)
                             {
-                                // 检查是否生成了解压后的文件（去掉.lzo扩展名）
                                 string expectedOutputPath = Path.ChangeExtension(filePath, null);
                                 if (File.Exists(expectedOutputPath) && new FileInfo(expectedOutputPath).Length > 0)
                                 {
-                                    // 移动到目标位置
                                     if (expectedOutputPath != outputPath)
                                     {
                                         if (File.Exists(outputPath))
