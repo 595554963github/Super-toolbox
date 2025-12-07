@@ -1,4 +1,4 @@
-﻿namespace super_toolbox
+namespace super_toolbox
 {
     public class XenobladeSar_Extractor : BaseExtractor
     {
@@ -7,7 +7,7 @@
         public new event EventHandler<string>? ExtractionError;
 
         private const uint SAR1_LITTLE_ENDIAN = 0x53415231;
-        private const uint SAR1_BIG_ENDIAN = 0x31524153;  
+        private const uint SAR1_BIG_ENDIAN = 0x31524153;
 
         private struct SarFileEntry
         {
@@ -33,13 +33,13 @@
             string extractedDir = Path.Combine(directoryPath, "Extracted");
             Directory.CreateDirectory(extractedDir);
 
-            var files = Directory.GetFiles(directoryPath, "*.sar", SearchOption.AllDirectories)
+            var files = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories)
                 .Where(f => !f.StartsWith(extractedDir, StringComparison.OrdinalIgnoreCase))
                 .ToArray();
 
             TotalFilesToExtract = files.Length;
 
-            ExtractionStarted?.Invoke(this, $"开始处理{TotalFilesToExtract}个sar文件");
+            ExtractionStarted?.Invoke(this, $"开始处理{TotalFilesToExtract}个文件");
 
             foreach (var file in files)
             {
@@ -73,6 +73,7 @@
             using var reader = new BinaryReader(fileStream);
 
             uint fourCC = reader.ReadUInt32();
+            reader.BaseStream.Position = 0;
 
             if (fourCC != SAR1_LITTLE_ENDIAN && fourCC != SAR1_BIG_ENDIAN)
             {
@@ -81,147 +82,168 @@
             }
 
             bool isBigEndian = fourCC == SAR1_BIG_ENDIAN;
-            reader.BaseStream.Position = 0;
+
+            uint fileSize;
+            uint version;
+            uint fileCount;
+            uint offsetTable;
+            uint dataOffset;
+            uint dummy1, dummy2;
+            string basePath;
 
             if (isBigEndian)
             {
-                reader.BaseStream.Position = 0;
                 fourCC = ReadUInt32BigEndian(reader);
-
-                uint fileSize = ReadUInt32BigEndian(reader);
-                uint version = ReadUInt32BigEndian(reader);
-                uint fileCount = ReadUInt32BigEndian(reader);
-                uint offsetTable = ReadUInt32BigEndian(reader);
-                uint dataOffset = ReadUInt32BigEndian(reader);
-                uint dummy1 = ReadUInt32BigEndian(reader);
-                uint dummy2 = ReadUInt32BigEndian(reader);
+                fileSize = ReadUInt32BigEndian(reader);
+                version = ReadUInt32BigEndian(reader);
+                fileCount = ReadUInt32BigEndian(reader);
+                offsetTable = ReadUInt32BigEndian(reader);
+                dataOffset = ReadUInt32BigEndian(reader);
+                dummy1 = ReadUInt32BigEndian(reader);
+                dummy2 = ReadUInt32BigEndian(reader);
 
                 byte[] pathBytes = reader.ReadBytes(128);
-                string basePath = System.Text.Encoding.ASCII.GetString(pathBytes).TrimEnd('\0');
+                basePath = System.Text.Encoding.ASCII.GetString(pathBytes).TrimEnd('\0');
 
-                reader.BaseStream.Position = offsetTable;
-
-                var fileEntries = new List<SarFileEntry>();
-
-                for (int i = 0; i < fileCount; i++)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    uint entryOffset = ReadUInt32BigEndian(reader);
-                    uint entryLength = ReadUInt32BigEndian(reader);
-                    uint entryDummy = ReadUInt32BigEndian(reader);
-
-                    string fileName;
-                    if (version > 500)
-                    {
-                        byte[] nameBytes = reader.ReadBytes(36);
-                        fileName = System.Text.Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
-                        reader.BaseStream.Position += 48;
-                    }
-                    else
-                    {
-                        byte[] nameBytes = reader.ReadBytes(52);
-                        fileName = System.Text.Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
-                    }
-
-                    string fullPath = string.IsNullOrEmpty(basePath) ? fileName : Path.Combine(basePath, fileName);
-
-                    fileEntries.Add(new SarFileEntry
-                    {
-                        Offset = entryOffset,
-                        Length = entryLength,
-                        FileName = fullPath
-                    });
-                }
-
-                await ExtractFilesAsync(reader, fileEntries, destinationFolder, Path.GetFileNameWithoutExtension(filePath), cancellationToken);
+                ExtractionProgress?.Invoke(this, $"大端序SAR文件:版本={version},文件数={fileCount},偏移表=0x{offsetTable:X8}");
+                ExtractionProgress?.Invoke(this, $"基础路径:{basePath}");
             }
             else
             {
-                reader.BaseStream.Position = 0;
                 fourCC = reader.ReadUInt32();
-                uint fileSize = reader.ReadUInt32();
-                uint version = reader.ReadUInt32();
-                uint fileCount = reader.ReadUInt32();
-                uint offsetTable = reader.ReadUInt32();
-                uint dataOffset = reader.ReadUInt32();
-                uint dummy1 = reader.ReadUInt32();
-                uint dummy2 = reader.ReadUInt32();
+                fileSize = reader.ReadUInt32();
+                version = reader.ReadUInt32();
+                fileCount = reader.ReadUInt32();
+                offsetTable = reader.ReadUInt32();
+                dataOffset = reader.ReadUInt32();
+                dummy1 = reader.ReadUInt32();
+                dummy2 = reader.ReadUInt32();
 
                 byte[] pathBytes = reader.ReadBytes(128);
-                string basePath = System.Text.Encoding.ASCII.GetString(pathBytes).TrimEnd('\0');
+                basePath = System.Text.Encoding.ASCII.GetString(pathBytes).TrimEnd('\0');
+            }
 
-                reader.BaseStream.Position = offsetTable;
+            reader.BaseStream.Position = offsetTable;
 
-                var fileEntries = new List<SarFileEntry>();
+            var fileEntries = new List<SarFileEntry>();
 
-                for (int i = 0; i < fileCount; i++)
+            for (int i = 0; i < fileCount; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                uint entryOffset;
+                uint entryLength;
+                uint entryDummy;
+
+                if (isBigEndian)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    uint entryOffset = reader.ReadUInt32();
-                    uint entryLength = reader.ReadUInt32();
-                    uint entryDummy = reader.ReadUInt32();
-
-                    string fileName;
-                    if (version > 500)
-                    {
-                        byte[] nameBytes = reader.ReadBytes(36);
-                        fileName = System.Text.Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
-                        reader.BaseStream.Position += 48;
-                    }
-                    else
-                    {
-                        byte[] nameBytes = reader.ReadBytes(52);
-                        fileName = System.Text.Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
-                    }
-
-                    string fullPath = string.IsNullOrEmpty(basePath) ? fileName : Path.Combine(basePath, fileName);
-
-                    fileEntries.Add(new SarFileEntry
-                    {
-                        Offset = entryOffset,
-                        Length = entryLength,
-                        FileName = fullPath
-                    });
+                    entryOffset = ReadUInt32BigEndian(reader);
+                    entryLength = ReadUInt32BigEndian(reader);
+                    entryDummy = ReadUInt32BigEndian(reader);
+                }
+                else
+                {
+                    entryOffset = reader.ReadUInt32();
+                    entryLength = reader.ReadUInt32();
+                    entryDummy = reader.ReadUInt32();
                 }
 
-                await ExtractFilesAsync(reader, fileEntries, destinationFolder, Path.GetFileNameWithoutExtension(filePath), cancellationToken);
+                string fileName;
+                if (version > 500)
+                {
+                    byte[] nameBytes = reader.ReadBytes(36);
+                    fileName = System.Text.Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
+                    reader.BaseStream.Position += 36;
+                }
+                else
+                {
+                    byte[] nameBytes = reader.ReadBytes(52);
+                    fileName = System.Text.Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
+                }
+
+                string fullPath;
+                if (string.IsNullOrEmpty(basePath) || string.IsNullOrEmpty(fileName))
+                {
+                    fullPath = string.IsNullOrEmpty(fileName) ? $"file_{i:D4}.bin" : fileName;
+                }
+                else
+                {
+                    string normalizedBasePath = basePath;
+                    if (normalizedBasePath.Length > 2 && normalizedBasePath[1] == ':')
+                    {
+                        normalizedBasePath = normalizedBasePath.Substring(2).TrimStart('\\', '/');
+                    }
+
+                    fullPath = Path.Combine(normalizedBasePath, fileName).Replace('\\', '/');
+                }
+
+                fileEntries.Add(new SarFileEntry
+                {
+                    Offset = entryOffset,
+                    Length = entryLength,
+                    FileName = fullPath
+                });
             }
+
+            await ExtractFilesAsync(reader, fileEntries, destinationFolder, Path.GetFileNameWithoutExtension(filePath), cancellationToken);
         }
 
         private async Task ExtractFilesAsync(BinaryReader reader, List<SarFileEntry> fileEntries, string destinationFolder, string baseFileName, CancellationToken cancellationToken)
         {
+            string baseExtractFolder = Path.Combine(destinationFolder, baseFileName);
+
             foreach (var entry in fileEntries)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 try
                 {
-                    reader.BaseStream.Position = entry.Offset;
+                    if (reader.BaseStream.Position != entry.Offset)
+                    {
+                        reader.BaseStream.Position = entry.Offset;
+                    }
 
                     byte[] fileData = reader.ReadBytes((int)entry.Length);
 
-                    string fullDestinationPath = Path.Combine(destinationFolder, baseFileName);
-                    string entryDirectory = Path.GetDirectoryName(entry.FileName) ?? "";
-                    string targetDirectory = Path.Combine(fullDestinationPath, entryDirectory);
+                    string fullExtractPath;
 
-                    Directory.CreateDirectory(targetDirectory);
+                    if (string.IsNullOrEmpty(entry.FileName))
+                    {
+                        fullExtractPath = Path.Combine(baseExtractFolder, $"file_{entry.Offset:X8}.bin");
+                    }
+                    else
+                    {
+                        string normalizedPath = entry.FileName.Replace('/', Path.DirectorySeparatorChar)
+                                                             .Replace('\\', Path.DirectorySeparatorChar);
 
-                    string fileName = Path.GetFileName(entry.FileName);
-                    fileName = CleanFileName(fileName);
+                        if (Path.IsPathRooted(normalizedPath))
+                        {
+                            normalizedPath = normalizedPath.TrimStart(Path.DirectorySeparatorChar);
+                        }
 
+                        fullExtractPath = Path.Combine(baseExtractFolder, normalizedPath);
+                    }
+
+                    string? fileDirectory = Path.GetDirectoryName(fullExtractPath);
+                    if (!string.IsNullOrEmpty(fileDirectory))
+                    {
+                        Directory.CreateDirectory(fileDirectory);
+                    }
+
+                    string fileName = Path.GetFileName(fullExtractPath);
                     if (string.IsNullOrEmpty(fileName))
                     {
                         fileName = $"file_{entry.Offset:X8}.bin";
                     }
 
-                    string filePath = Path.Combine(targetDirectory, fileName);
+                    fileName = CleanFileName(fileName);
 
-                    await File.WriteAllBytesAsync(filePath, fileData, cancellationToken);
+                    string finalFilePath = Path.Combine(fileDirectory ?? baseExtractFolder, fileName);
 
-                    OnFileExtracted(filePath);
-                    ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(filePath)}");
+                    await File.WriteAllBytesAsync(finalFilePath, fileData, cancellationToken);
+
+                    OnFileExtracted(finalFilePath);
+                    ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(finalFilePath)}");
                 }
                 catch (Exception ex)
                 {
