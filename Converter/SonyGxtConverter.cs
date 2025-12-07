@@ -1,4 +1,5 @@
-using GXTConvert.FileFormat;
+using GXTConvert;
+using SixLabors.ImageSharp.Formats.Png;
 
 namespace super_toolbox
 {
@@ -10,7 +11,6 @@ namespace super_toolbox
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
-            List<string> convertedFiles = new List<string>();
             if (!Directory.Exists(directoryPath))
             {
                 ConversionError?.Invoke(this, $"源文件夹{directoryPath}不存在");
@@ -19,29 +19,31 @@ namespace super_toolbox
             }
 
             ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
-            var gxtFiles = Directory.EnumerateFiles(directoryPath, "*.gxt", SearchOption.AllDirectories)
-               .Where(file => !file.Contains("Extracted", StringComparison.OrdinalIgnoreCase))
-               .ToList();
-            TotalFilesToConvert = gxtFiles.Count;
+
+            var gxtFiles = Directory.GetFiles(directoryPath, "*.gxt", SearchOption.AllDirectories);
+            TotalFilesToConvert = gxtFiles.Length;
             int successCount = 0;
-            string extractedDir = Path.Combine(directoryPath, "Extracted");
-            Directory.CreateDirectory(extractedDir);
 
             try
             {
                 foreach (var gxtFilePath in gxtFiles)
                 {
                     ThrowIfCancellationRequested(cancellationToken);
-                    ConversionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(gxtFilePath)}");
+
                     string fileName = Path.GetFileNameWithoutExtension(gxtFilePath);
+                    ConversionProgress?.Invoke(this, $"正在处理:{fileName}.gxt");
+
+                    string fileDirectory = Path.GetDirectoryName(gxtFilePath) ?? string.Empty;
+
                     try
                     {
-                        bool conversionSuccess = await ConvertGxtToPng(gxtFilePath, extractedDir, fileName, cancellationToken);
+                        bool conversionSuccess = await ConvertGxtToPng(gxtFilePath, fileDirectory, cancellationToken);
 
                         if (conversionSuccess)
                         {
                             successCount++;
-                            ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(gxtFilePath)}");
+                            ConversionProgress?.Invoke(this, $"转换成功:{fileName}.gxt");
+                            OnFileConverted(gxtFilePath);
                         }
                         else
                         {
@@ -62,8 +64,9 @@ namespace super_toolbox
                 }
                 else
                 {
-                    ConversionProgress?.Invoke(this, "转换完成，但未成功转换任何文件");
+                    ConversionProgress?.Invoke(this, "转换完成，但未成功转换任何GXT文件");
                 }
+
                 OnConversionCompleted();
             }
             catch (OperationCanceledException)
@@ -78,93 +81,83 @@ namespace super_toolbox
             }
         }
 
-        private async Task<bool> ConvertGxtToPng(string gxtFilePath, string outputDirectory, string fileName, CancellationToken cancellationToken)
+        private async Task<bool> ConvertGxtToPng(string gxtFilePath, string outputDirectory, CancellationToken cancellationToken)
         {
             try
             {
-                return await Task.Run(() =>
+                string fileName = Path.GetFileNameWithoutExtension(gxtFilePath);
+                string baseOutputName = Path.Combine(outputDirectory, fileName);
+
+                using (FileStream fs = new FileStream(gxtFilePath, FileMode.Open, FileAccess.Read))
+                using (GxtBinary gxt = new GxtBinary(fs))
                 {
-                    try
+                    ConversionProgress?.Invoke(this, $"[GXT]正在保存{fileName}.gxt的纹理...");
+                    var pngEncoder = new PngEncoder();
+
+                    for (int i = 0; i < gxt.Textures.Length; i++)
                     {
-                        using (FileStream fileStream = new FileStream(gxtFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        string outputPath = gxt.Textures.Length == 1
+                            ? $"{baseOutputName}.png"
+                            : $"{baseOutputName}_{i + 1}.png";
+
+                        await using (var outputStream = File.Create(outputPath))
                         {
-                            GxtBinary gxtInstance = new GxtBinary(fileStream);
-                            int textureCount = 0;
+                            await gxt.Textures[i].SaveAsync(outputStream, pngEncoder, cancellationToken);
+                        }
 
-                            for (int i = 0; i < gxtInstance.TextureInfos.Length; i++)
+                        ConversionProgress?.Invoke(this, $"[GXT]已保存:{Path.GetFileName(outputPath)}");
+                    }
+
+                    if (gxt.BUVTextures != null && gxt.BUVTextures.Length > 0)
+                    {
+                        ConversionProgress?.Invoke(this, $"[GXT]正在保存{fileName}.gxt的BUV纹理...");
+                        for (int i = 0; i < gxt.BUVTextures.Length; i++)
+                        {
+                            string outputPath = gxt.BUVTextures.Length == 1
+                                ? $"{baseOutputName}_buv.png"
+                                : $"{baseOutputName}_buv_{i + 1}.png";
+                            await using (var outputStream = File.Create(outputPath))
                             {
-                                ThrowIfCancellationRequested(cancellationToken);
-                                string outputFilename = $"{fileName}_texture_{i}.png";
-                                string outputFilePath = GetUniqueFilePath(outputDirectory, outputFilename);
-                                gxtInstance.Textures[i].Save(outputFilePath, System.Drawing.Imaging.ImageFormat.Png);
-                                textureCount++;
-                                OnFileConverted(outputFilePath);
-                                ConversionProgress?.Invoke(this, $"已转换:{Path.GetFileName(outputFilePath)}");
+                                await gxt.BUVTextures[i].SaveAsync(outputStream, pngEncoder, cancellationToken);
                             }
 
-                            if (gxtInstance.BUVChunk != null)
-                            {
-                                for (int i = 0; i < gxtInstance.BUVTextures.Length; i++)
-                                {
-                                    ThrowIfCancellationRequested(cancellationToken);
-
-                                    string outputFilename = $"{fileName}_block_{i}.png";
-                                    string outputFilePath = GetUniqueFilePath(outputDirectory, outputFilename);
-
-                                    gxtInstance.BUVTextures[i].Save(outputFilePath, System.Drawing.Imaging.ImageFormat.Png);
-                                    textureCount++;
-
-                                    OnFileConverted(outputFilePath);
-                                    ConversionProgress?.Invoke(this, $"已转换:{Path.GetFileName(outputFilePath)}");
-                                }
-                            }
-                            return textureCount > 0;
+                            ConversionProgress?.Invoke(this, $"[GXT]已保存BUV纹理:{Path.GetFileName(outputPath)}");
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        ConversionError?.Invoke(this, $"转换GXT文件时出错:{ex.Message}");
-                        return false;
-                    }
-                }, cancellationToken);
+
+                    ConversionProgress?.Invoke(this, $"[GXT]{fileName}.gxt转换完成");
+                    return true;
+                }
             }
-            catch (OperationCanceledException)
+            catch (FormatNotImplementedException ex)
             {
-                throw;
+                ConversionError?.Invoke(this, $"[GXT]不支持的纹理格式:{ex.Format}");
+                return false;
+            }
+            catch (TypeNotImplementedException ex)
+            {
+                ConversionError?.Invoke(this, $"[GXT]不支持的纹理类型:{ex.Type}");
+                return false;
+            }
+            catch (VersionNotImplementedException ex)
+            {
+                ConversionError?.Invoke(this, $"[GXT]不支持的GXT版本:0x{ex.Version:X8}");
+                return false;
+            }
+            catch (UnknownMagicException)
+            {
+                ConversionError?.Invoke(this, $"[GXT]未知的文件格式或损坏的文件");
+                return false;
+            }
+            catch (PaletteNotImplementedException ex)
+            {
+                ConversionError?.Invoke(this, $"[GXT]不支持的调色板格式:{ex.Format}");
+                return false;
             }
             catch (Exception ex)
             {
-                ConversionError?.Invoke(this, $"转换过程异常:{ex.Message}");
+                ConversionError?.Invoke(this, $"[GXT]转换过程异常:{ex.Message}");
                 return false;
-            }
-        }
-
-        private string GetUniqueFilePath(string directory, string originalFileName)
-        {
-            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(originalFileName);
-            string fileExtension = Path.GetExtension(originalFileName);
-            string baseFilePath = Path.Combine(directory, originalFileName);
-            if (!File.Exists(baseFilePath))
-            {
-                return baseFilePath;
-            }
-            int counter = 1;
-            string newFilePath;
-            do
-            {
-                string newFileName = $"{fileNameWithoutExtension}_{counter}{fileExtension}";
-                newFilePath = Path.Combine(directory, newFileName);
-                counter++;
-            } while (File.Exists(newFilePath));
-
-            return newFilePath;
-        }
-
-        private new void ThrowIfCancellationRequested(CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                throw new OperationCanceledException("转换操作已取消", cancellationToken);
             }
         }
     }
