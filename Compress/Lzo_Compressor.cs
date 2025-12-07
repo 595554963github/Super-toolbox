@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace super_toolbox
@@ -98,11 +98,9 @@ namespace super_toolbox
 
                             if (process.ExitCode == 0)
                             {
-                                // 检查是否生成了.lzo文件
                                 string expectedOutputPath = filePath + ".lzo";
                                 if (File.Exists(expectedOutputPath) && new FileInfo(expectedOutputPath).Length > 0)
                                 {
-                                    // 移动到目标位置
                                     if (expectedOutputPath != outputPath)
                                     {
                                         if (File.Exists(outputPath))
