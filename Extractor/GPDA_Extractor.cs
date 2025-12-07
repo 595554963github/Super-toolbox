@@ -1,4 +1,4 @@
-﻿using System.IO.Compression;
+using System.IO.Compression;
 using System.Text;
 
 namespace super_toolbox
@@ -162,7 +162,6 @@ namespace super_toolbox
                     var entry = fileEntries[i];
                     long currentPosition = reader.BaseStream.Position;
 
-                    // 读取文件名
                     reader.BaseStream.Seek(baseOffset + entry.NameOffset, SeekOrigin.Begin);
                     uint nameSize = reader.ReadUInt32();
                     byte[] nameBytes = reader.ReadBytes((int)nameSize);
@@ -172,23 +171,20 @@ namespace super_toolbox
 
                     long actualFileOffset = baseOffset + entry.Offset;
 
-                    // 检查文件签名
                     reader.BaseStream.Seek(actualFileOffset, SeekOrigin.Begin);
                     byte[] fileSignatureBytes = reader.ReadBytes(4);
                     string fileSignature = Encoding.ASCII.GetString(fileSignatureBytes);
                     reader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
 
-                    // 处理.gz文件扩展名（包括末尾有空格的情况）
                     string extension = Path.GetExtension(fileName).ToLower();
                     if (extension == ".gz" || extension == ".gz ")
                     {
                         fileName = Path.GetFileNameWithoutExtension(fileName);
-                        entry.IsCompressed = 1; // 强制标记为压缩文件
+                        entry.IsCompressed = 1;
                     }
 
                     if (fileSignature == GPDA_SIGNATURE)
                     {
-                        // 嵌套的GPDA归档
                         string nestedFileName = Path.GetFileNameWithoutExtension(fileName);
                         string nestedPath = Path.Combine(currentPath, nestedFileName);
                         string nestedOutputDir = Path.Combine(outputDir, nestedPath);
@@ -201,10 +197,8 @@ namespace super_toolbox
                     {
                         if (entry.IsCompressed == 1)
                         {
-                            // 压缩文件 - 检查是否是内存中的GPDA
                             byte[] compressedData = ReadFileData(reader, actualFileOffset, entry.Size);
 
-                            // 尝试解压缩并检查是否是GPDA
                             try
                             {
                                 byte[] decompressedData = await DecompressGzip(compressedData);
@@ -213,7 +207,6 @@ namespace super_toolbox
                                     string decompressedSignature = Encoding.ASCII.GetString(decompressedData, 0, 4);
                                     if (decompressedSignature == GPDA_SIGNATURE)
                                     {
-                                        // 内存中的嵌套GPDA
                                         string nestedFileName = Path.GetFileNameWithoutExtension(fileName);
                                         string nestedPath = Path.Combine(currentPath, nestedFileName);
                                         string nestedOutputDir = Path.Combine(outputDir, nestedPath);
@@ -229,15 +222,12 @@ namespace super_toolbox
                             }
                             catch
                             {
-                                // 如果解压失败，继续正常处理
                             }
 
-                            // 普通压缩文件
                             await ExtractCompressedFile(reader, actualFileOffset, entry.Size, outputDir, currentPath, fileName, extractedFiles);
                         }
                         else
                         {
-                            // 未压缩文件
                             await ExtractUncompressedFile(reader, actualFileOffset, entry.Size, outputDir, currentPath, fileName, extractedFiles);
                         }
                     }
@@ -280,7 +270,6 @@ namespace super_toolbox
 
                     long currentPosition = reader.BaseStream.Position;
 
-                    // 读取文件名
                     reader.BaseStream.Seek(baseOffset + nameOffset, SeekOrigin.Begin);
                     uint nameSize = reader.ReadUInt32();
                     byte[] nameBytes = reader.ReadBytes((int)nameSize);
@@ -298,14 +287,12 @@ namespace super_toolbox
                     {
                         if (isCompressed == 0)
                         {
-                            // 未压缩文件
                             reader.BaseStream.Seek(actualFileOffset, SeekOrigin.Begin);
                             byte[] fileData = reader.ReadBytes((int)fileSize);
                             await File.WriteAllBytesAsync(fullOutputPath, fileData);
                         }
                         else
                         {
-                            // 压缩文件
                             reader.BaseStream.Seek(actualFileOffset, SeekOrigin.Begin);
                             byte[] compressedData = reader.ReadBytes((int)fileSize);
                             byte[] decompressedData = await DecompressGzip(compressedData);
@@ -399,23 +386,6 @@ namespace super_toolbox
             await gzipStream.CopyToAsync(outputStream);
             return outputStream.ToArray();
         }
-
-        private async Task<byte[]> DecompressGzipPartial(byte[] compressedData, int bytesToRead)
-        {
-            using var compressedStream = new MemoryStream(compressedData);
-            using var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress);
-
-            byte[] buffer = new byte[bytesToRead];
-            int bytesRead = await gzipStream.ReadAsync(buffer, 0, bytesToRead);
-
-            if (bytesRead < bytesToRead)
-            {
-                Array.Resize(ref buffer, bytesRead);
-            }
-
-            return buffer;
-        }
-
         private bool IsGpdaFile(string filePath)
         {
             try
@@ -434,7 +404,6 @@ namespace super_toolbox
                 return false;
             }
         }
-
         private class GpdaFileEntry
         {
             public uint Offset { get; set; }
