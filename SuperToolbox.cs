@@ -161,11 +161,13 @@ namespace super_toolbox
             { "异度之刃 - arc file", ("其他档案", "从3ds平台的异度之刃arc文件里面提取tpl文件") },
             { "异度之刃 - tpl2bclim", ("图片", "将3ds平台异度之刃的tpl文件转换成bclim文件") },
             { "异度之刃 - bclim2png", ("图片", "将bclim文件转换成png文件") },
-            { "异度之刃 - bdat提取器", ("其他档案", "异度之刃所有系列游戏的bdat提取器") },
+            { "异度之刃 - bdat提取器", ("其他档案", "异度之刃系列游戏的bdat提取器,不支持3ds平台") },
             { "异度之刃 - bdat打包器", ("其他档案", "将json文件夹重新打包为bdat文件,目录必须为解包后的文件夹结构(包含bschema文件和json文件夹)") },
             { "异度之刃 - MXTX file", ("其他档案", "异度之刃系列游戏的MTXT提取器") },
             { "异度之刃 - MXTX2DDS", ("图片", "异度之刃系列游戏的MTXT转换器，可以把MTXT纹理转换成dds图像") },
-            { "异度之刃 - map.pkb", ("其他档案", "异度之刃wii平台的map.pkb解包器，可提取出里面的文件") },
+            { "异度之刃 - map.pkb", ("其他档案", "wii平台异度之刃的map.pkb解包器，可提取出里面的文件") },
+            { "异度之刃 - sar", ("其他档案", "wiiu平台异度之刃x的sar解包器，可提取出里面的hkt文件") },
+            { "Fate Extella/Link - pk/pfs/pkb", ("其他档案", "psv平台的Fate Extella和Fate Extella Link专用提取器") },
         };
         public SuperToolbox()
         {
@@ -634,6 +636,8 @@ namespace super_toolbox
                 case "异度之刃 - MXTX file": return new XenobladeMTXT_Extractor();
                 case "异度之刃 - MXTX2DDS": return new MTXT2DDS_Converter();
                 case "异度之刃 - map.pkb": return new XenobladeMap_Extractor();
+                case "异度之刃 - sar": return new XenobladeSar_Extractor();
+                case "Fate Extella/Link - pk/pfs/pkb": return new Fate_pk_Extractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
