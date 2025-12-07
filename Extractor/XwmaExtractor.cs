@@ -26,14 +26,14 @@ namespace super_toolbox
             string extractedDir = Path.Combine(directoryPath, "Extracted");
             Directory.CreateDirectory(extractedDir);
 
-            ExtractionStarted?.Invoke(this, $"开始处理目录: {directoryPath}");
+            ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
             var filePaths = Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories)
                 .Where(file => !file.StartsWith(extractedDir, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             TotalFilesToExtract = filePaths.Count;
-            ExtractionProgress?.Invoke(this, $"找到 {TotalFilesToExtract} 个源文件");
+            ExtractionProgress?.Invoke(this, $"找到{TotalFilesToExtract}个源文件");
 
             List<string> extractedFiles = new List<string>();
 
@@ -41,7 +41,7 @@ namespace super_toolbox
             {
                 ThrowIfCancellationRequested(cancellationToken);
 
-                ExtractionProgress?.Invoke(this, $"正在处理文件: {Path.GetFileName(filePath)}");
+                ExtractionProgress?.Invoke(this, $"正在处理文件:{Path.GetFileName(filePath)}");
 
                 try
                 {
@@ -55,14 +55,14 @@ namespace super_toolbox
                 }
                 catch (Exception ex)
                 {
-                    ExtractionError?.Invoke(this, $"处理文件 {Path.GetFileName(filePath)} 时出错: {ex.Message}");
-                    OnExtractionFailed($"处理文件 {Path.GetFileName(filePath)} 时出错: {ex.Message}");
+                    ExtractionError?.Invoke(this, $"处理文件{Path.GetFileName(filePath)}时出错:{ex.Message}");
+                    OnExtractionFailed($"处理文件{Path.GetFileName(filePath)}时出错:{ex.Message}");
                 }
             }
 
             if (extractedFiles.Count > 0)
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，共提取出 {extractedFiles.Count} 个XWMA文件");
+                ExtractionProgress?.Invoke(this, $"处理完成，共提取出{extractedFiles.Count}个XWMA文件");
             }
             else
             {
@@ -85,7 +85,6 @@ namespace super_toolbox
                 string extractedFilename = $"{baseFilename}_{innerCount}.xwma";
                 string extractedPath = Path.Combine(extractedDir, extractedFilename);
 
-                // 处理重复文件名
                 if (File.Exists(extractedPath))
                 {
                     int duplicateCount = 1;
@@ -103,7 +102,7 @@ namespace super_toolbox
                 {
                     extractedFiles.Add(extractedPath);
                     OnFileExtracted(extractedPath);
-                    ExtractionProgress?.Invoke(this, $"已提取: {Path.GetFileName(extractedPath)}");
+                    ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(extractedPath)}");
                 }
 
                 innerCount++;
