@@ -1,6 +1,3 @@
-using System.ComponentModel;
-using System.Diagnostics;
-
 namespace super_toolbox
 {
     public class WaveExtractor : BaseExtractor
@@ -8,8 +5,9 @@ namespace super_toolbox
         public new event EventHandler<string>? ExtractionStarted;
         public new event EventHandler<string>? ExtractionProgress;
         public new event EventHandler<string>? ExtractionError;
+
         private static readonly byte[] RIFF_HEADER = { 0x52, 0x49, 0x46, 0x46 };
-        private static readonly byte[] AUDIO_BLOCK = { 0x57, 0x41, 0x56, 0x45, 0x66, 0x6D, 0x74 };
+
         private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= data.Length - pattern.Length; i++)
@@ -62,50 +60,28 @@ namespace super_toolbox
                 {
                     byte[] content = await File.ReadAllBytesAsync(filePath, cancellationToken);
                     int index = 0;
-                    int? currentWaveStart = null;
-                    int waveCount = 1;
+                    int waveCount = 0;
                     while (index < content.Length)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        int waveStartIndex = IndexOf(content, RIFF_HEADER, index);
-                        if (waveStartIndex == -1)
+                        int riffStart = IndexOf(content, RIFF_HEADER, index);
+                        if (riffStart == -1) break;
+                        if (IsValidWaveHeader(content, riffStart))
                         {
-                            if (currentWaveStart.HasValue)
+                            waveCount++;
+                            int fileSize = BitConverter.ToInt32(content, riffStart + 4);
+                            int waveEnd = riffStart + 8 + fileSize;
+                            if (waveEnd > content.Length)
+                                waveEnd = content.Length;
+                            if (ExtractWaveFile(content, riffStart, waveEnd, filePath, waveCount, extractedDir, extractedFiles))
                             {
-                                if (ProcessWaveSegment(content, currentWaveStart.Value, content.Length,
-                                                    filePath, waveCount, extractedDir, extractedFiles))
-                                {
-                                    totalExtractedFiles++;
-                                }
-                                waveCount++;
+                                totalExtractedFiles++;
                             }
-                            break;
+                            index = waveEnd;
                         }
-                        if (IsValidWaveHeader(content, waveStartIndex))
+                        else
                         {
-                            if (!currentWaveStart.HasValue)
-                            {
-                                currentWaveStart = waveStartIndex;
-                            }
-                            else
-                            {
-                                if (ProcessWaveSegment(content, currentWaveStart.Value, waveStartIndex,
-                                                    filePath, waveCount, extractedDir, extractedFiles))
-                                {
-                                    totalExtractedFiles++;
-                                }
-                                waveCount++;
-                                currentWaveStart = waveStartIndex;
-                            }
-                        }
-                        index = waveStartIndex + 1;
-                    }
-                    if (currentWaveStart.HasValue)
-                    {
-                        if (ProcessWaveSegment(content, currentWaveStart.Value, content.Length,
-                                            filePath, waveCount, extractedDir, extractedFiles))
-                        {
-                            totalExtractedFiles++;
+                            index = riffStart + 4;
                         }
                     }
                 }
@@ -128,11 +104,11 @@ namespace super_toolbox
             }
             if (totalExtractedFiles > 0)
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，共处理{totalSourceFiles}个源文件，提取出{totalExtractedFiles}个音频文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,共处理{totalSourceFiles}个源文件,提取出{totalExtractedFiles}个音频文件");
             }
             else
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，共处理{totalSourceFiles}个源文件，未找到音频文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,共处理{totalSourceFiles}个源文件,未找到音频文件");
             }
             OnExtractionCompleted();
         }
@@ -140,108 +116,66 @@ namespace super_toolbox
         {
             if (startIndex + 12 >= content.Length)
                 return false;
+            if (content[startIndex + 8] != 0x57 || content[startIndex + 9] != 0x41 ||
+                content[startIndex + 10] != 0x56 || content[startIndex + 11] != 0x45)
+                return false;
             int fileSize = BitConverter.ToInt32(content, startIndex + 4);
             if (fileSize <= 0 || startIndex + 8 + fileSize > content.Length)
                 return false;
-            int blockStart = startIndex + 8;
-            return IndexOf(content, AUDIO_BLOCK, blockStart) != -1;
+            return true;
         }
-        private bool ProcessWaveSegment(byte[] content, int start, int end, string filePath, int waveCount,
+        private bool ExtractWaveFile(byte[] content, int start, int end, string filePath, int waveCount,
                               string extractedDir, List<string> extractedFiles)
         {
             int length = end - start;
-            if (length <= RIFF_HEADER.Length)
-                return false;
-            int actualLength = Math.Min(length, content.Length - start);
-            byte[] waveData = new byte[actualLength];
-            Array.Copy(content, start, waveData, 0, actualLength);
+            if (length <= 8) return false;
+            byte[] waveData = new byte[length];
+            Array.Copy(content, start, waveData, 0, length);
+            string extension = IdentifyAudioFormat(waveData);
             string baseFileName = Path.GetFileNameWithoutExtension(filePath);
-            string tempFileName = $"{baseFileName}_{waveCount}.temp";
-            string tempFilePath = Path.Combine(extractedDir, tempFileName);
+            string outputFileName = $"{baseFileName}_{waveCount}.{extension}";
+            string outputFilePath = Path.Combine(extractedDir, outputFileName);
+            if (File.Exists(outputFilePath))
+            {
+                int duplicateCount = 1;
+                do
+                {
+                    outputFileName = $"{baseFileName}_{waveCount}_dup{duplicateCount}.{extension}";
+                    outputFilePath = Path.Combine(extractedDir, outputFileName);
+                    duplicateCount++;
+                } while (File.Exists(outputFilePath));
+            }
             try
             {
-                File.WriteAllBytes(tempFilePath, waveData);
-                string detectedExtension = AnalyzeAudioFormat(tempFilePath);
-                string outputFileName = $"{baseFileName}_{waveCount}.{detectedExtension}";
-                string outputFilePath = Path.Combine(extractedDir, outputFileName);
-                if (File.Exists(outputFilePath))
-                {
-                    int duplicateCount = 1;
-                    do
-                    {
-                        outputFileName = $"{baseFileName}_{waveCount}_dup{duplicateCount}.{detectedExtension}";
-                        outputFilePath = Path.Combine(extractedDir, outputFileName);
-                        duplicateCount++;
-                    } while (File.Exists(outputFilePath));
-                }
-                File.Move(tempFilePath, outputFilePath);
+                File.WriteAllBytes(outputFilePath, waveData);
                 if (!extractedFiles.Contains(outputFilePath))
                 {
                     extractedFiles.Add(outputFilePath);
-                    OnFileExtracted(outputFilePath); 
+                    OnFileExtracted(outputFilePath);
+                    ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(outputFilePath)} (格式:{extension})");
                     return true;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                if (File.Exists(tempFilePath))
-                {
-                    try { File.Delete(tempFilePath); } catch { }
-                }
-                throw;
+                ExtractionError?.Invoke(this, $"保存文件{outputFileName}时出错:{ex.Message}");
+                return false;
             }
             return false;
         }
-        private string AnalyzeAudioFormat(string filePath)
+        private string IdentifyAudioFormat(byte[] waveData)
         {
-            try
-            {
-                ProcessStartInfo startInfo = new ProcessStartInfo
-                {
-                    FileName = "ffmpeg",
-                    Arguments = $"-i \"{filePath}\"",
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-                using (Process process = new Process())
-                {
-                    process.StartInfo = startInfo;
-                    process.Start();
-                    string output = process.StandardError.ReadToEnd();
-                    process.WaitForExit();
-                    if (output.Contains("atrac3", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return "at3";
-                    }
-                    else if (output.Contains("atrac9", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return "at9";
-                    }
-                    else if (output.Contains("xma2", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return "xma";
-                    }
-                    else if (output.Contains("none", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return "wem";
-                    }
-                    else if (output.Contains("pcm_s8", StringComparison.OrdinalIgnoreCase) ||
-                             output.Contains("pcm_s16le", StringComparison.OrdinalIgnoreCase) ||
-                             output.Contains("pcm_s16be", StringComparison.OrdinalIgnoreCase) ||
-                             output.Contains("pcm_s24le", StringComparison.OrdinalIgnoreCase) ||
-                             output.Contains("pcm_s24be", StringComparison.OrdinalIgnoreCase) ||
-                             output.Contains("pcm_s32le", StringComparison.OrdinalIgnoreCase) ||
-                             output.Contains("pcm_s32be", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return "wav";
-                    }
-                }
-            }
-            catch (Exception ex) when (ex is FileNotFoundException || ex is Win32Exception)
-            {
-                ExtractionProgress?.Invoke(this, "警告: FFmpeg未安装，默认使用WAV格式");
-            }
+            if (waveData.Length < 0x18) return "wav";
+            if (waveData[0x10] == 0x20 && waveData[0x14] == 0x70 && waveData[0x15] == 0x02)
+                return "at3";
+            if (waveData[0x10] == 0x34 && waveData[0x14] == 0xFE && waveData[0x15] == 0xFF)
+                return "at9";
+            if (waveData[0x10] == 0x34 && waveData[0x14] == 0x66 && waveData[0x15] == 0x01)
+                return "xma";
+            if (waveData[0x10] == 0x42 && waveData[0x14] == 0xFF && waveData[0x15] == 0xFF)
+                return "wem";
+            if (waveData[0x10] == 0x10 && waveData[0x14] == 0x01 && waveData[0x15] == 0x00)
+                return "wav";
             return "wav";
         }
     }
