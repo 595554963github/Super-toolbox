@@ -23,10 +23,8 @@ namespace super_toolbox
         private ToolStripStatusLabel lblFileCount;
         private readonly Dictionary<string, (string category, string description)> defaultCategories = new Dictionary<string, (string, string)>
         {
-            { "RIFF - wave系列[需要ffmpeg]", ("音频", "RIFF资源交换文件格式家族中的音频提取工具，支持提取wav、wwise的wem、索尼的at3/at9及微软的xma等格式。需在电脑上安装ffmpeg并配置环境变量，否则无法正确识别音频格式，适用于多种游戏的音频提取场景") },
+            { "RIFF - RIFF/RIFX音频", ("音频", "RIFF/RIFX资源交换文件格式家族的音频提取器，支持提取wwise的小端序wem、索尼的at3/at9、微软的xma和xwma，常见的wav和RIFX的大端序wem格式") },
             { "RIFF - Fmod - bank", ("音频", "从游戏文件中提取Fmod音频库的bank文件，如国产手游白荆回廊、云裳羽衣等均采用此格式存储音频，提取后可进一步处理其中的音频资源") },
-            { "RIFF - wmav2 - xwma", ("音频", "针对微软开发的xwma音频格式的专用提取工具。xwma是较为罕见的音频格式，该工具能从包含此类格式的游戏文件中精准提取") },
-            { "RIFX - BigEndian - wem", ("音频", "RIFX与RIFF同属资源交换文件格式，本工具用于从xbox360游戏中提取大端序的wem文件，解决了因字节序差异导致的提取难题") },
             { "RIFF - cdxa - xa", ("音频", "专门从PlayStation游戏的XA文件中提取xa音频。需注意区分大小写，XA是打包多个xa音频的容器文件，该工具可有效解析并提取其中的音频内容") },
             { "CRI - adpcm_adx - adx", ("音频", "以二进制形式从cpk、afs、awb、acb甚至uasset、uexp等多种文件中提取adx文件") },
             { "CRI - adpcm_adx - ahx", ("音频", "以二进制形式从cpk、afs等文件中提取ahx文件") },
@@ -495,11 +493,9 @@ namespace super_toolbox
         {
             switch (formatName)
             {
-                case "RIFF - wave系列[需要ffmpeg]": return new WaveExtractor();
+                case "RIFF - RIFF/RIFX音频": return new RIFF_RIFX_Sound_Extractor();
                 case "RIFF - Fmod - bank": return new BankExtractor();
                 case "RIFF - Google - webp": return new WebpExtractor();
-                case "RIFF - wmav2 - xwma": return new XwmaExtractor();
-                case "RIFX - BigEndian - wem": return new RifxExtractor();
                 case "RIFF - cdxa - xa": return new CdxaExtractor();
                 case "CRI - adpcm_adx - adx": return new AdxExtractor();
                 case "CRI - adpcm_adx - ahx": return new AhxExtractor();
