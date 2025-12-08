@@ -1,0 +1,348 @@
+namespace super_toolbox
+{
+    public class RIFF_RIFX_Sound_Extractor : BaseExtractor
+    {
+        public new event EventHandler<string>? ExtractionStarted;
+        public new event EventHandler<string>? ExtractionProgress;
+        public new event EventHandler<string>? ExtractionError;
+
+        private static readonly byte[] RIFF_HEADER = { 0x52, 0x49, 0x46, 0x46 };
+        private static readonly byte[] RIFX_HEADER = { 0x52, 0x49, 0x46, 0x58 };
+        private static readonly byte[] WEM_BLOCK = { 0x57, 0x41, 0x56, 0x45, 0x66, 0x6D, 0x74 };
+        private static readonly byte[] XWMA_PATTERN = { 0x12, 0x00, 0x00, 0x00, 0x61, 0x01 };
+
+        private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
+        {
+            for (int i = startIndex; i <= data.Length - pattern.Length; i++)
+            {
+                bool found = true;
+                for (int j = 0; j < pattern.Length; j++)
+                {
+                    if (data[i + j] != pattern[j])
+                    {
+                        found = false;
+                        break;
+                    }
+                }
+                if (found)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public override void Extract(string directoryPath)
+        {
+            ExtractAsync(directoryPath).Wait();
+        }
+
+        public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
+        {
+            List<string> extractedFiles = new List<string>();
+            string extractedDir = Path.Combine(directoryPath, "Extracted");
+            Directory.CreateDirectory(extractedDir);
+
+            if (!Directory.Exists(directoryPath))
+            {
+                ExtractionError?.Invoke(this, $"源文件夹{directoryPath}不存在");
+                OnExtractionFailed($"源文件夹{directoryPath}不存在");
+                return;
+            }
+
+            ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
+
+            var filePaths = Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories)
+                .Where(file => !file.StartsWith(extractedDir, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            int totalSourceFiles = filePaths.Count;
+            int processedSourceFiles = 0;
+            int totalExtractedFiles = 0;
+
+            foreach (var filePath in filePaths)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                processedSourceFiles++;
+                ExtractionProgress?.Invoke(this, $"正在处理源文件({processedSourceFiles}/{totalSourceFiles}):{Path.GetFileName(filePath)}");
+
+                try
+                {
+                    byte[] content = await File.ReadAllBytesAsync(filePath, cancellationToken);
+                    int index = 0;
+                    int waveCount = 0;
+
+                    while (index < content.Length)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        int riffStart = IndexOf(content, RIFF_HEADER, index);
+                        int rifxStart = IndexOf(content, RIFX_HEADER, index);
+
+                        int headerStart = -1;
+                        bool isRifx = false;
+
+                        if (riffStart != -1 && (rifxStart == -1 || riffStart < rifxStart))
+                        {
+                            headerStart = riffStart;
+                        }
+                        else if (rifxStart != -1)
+                        {
+                            headerStart = rifxStart;
+                            isRifx = true;
+                        }
+                        else
+                        {
+                            break;
+                        }
+
+                        string format = "";
+                        bool hasValidFormat = false;
+
+                        if (isRifx)
+                        {
+                            int? currentHeaderStart = null;
+                            int innerCount = 1;
+                            while (index < content.Length)
+                            {
+                                cancellationToken.ThrowIfCancellationRequested();
+                                int headerStartIndex = IndexOf(content, RIFX_HEADER, index);
+                                if (headerStartIndex == -1)
+                                {
+                                    if (currentHeaderStart.HasValue)
+                                    {
+                                        ExtractRifxWaveFile(content, currentHeaderStart.Value, content.Length,
+                                                          filePath, innerCount, extractedDir, extractedFiles, "wem");
+                                        totalExtractedFiles++;
+                                    }
+                                    break;
+                                }
+                                int nextRifxIndex = IndexOf(content, RIFX_HEADER, headerStartIndex + 1);
+                                int endIndex = nextRifxIndex != -1 ? nextRifxIndex : content.Length;
+                                int blockStart = headerStartIndex + 8;
+                                bool hasWemBlock = ContainsBytes(content, WEM_BLOCK, blockStart);
+                                if (hasWemBlock)
+                                {
+                                    if (!currentHeaderStart.HasValue)
+                                    {
+                                        currentHeaderStart = headerStartIndex;
+                                    }
+                                    else
+                                    {
+                                        ExtractRifxWaveFile(content, currentHeaderStart.Value, headerStartIndex,
+                                                          filePath, innerCount, extractedDir, extractedFiles, "wem");
+                                        totalExtractedFiles++;
+                                        innerCount++;
+                                        currentHeaderStart = headerStartIndex;
+                                    }
+                                }
+                                index = headerStartIndex + 1;
+                            }
+                            if (currentHeaderStart.HasValue)
+                            {
+                                ExtractRifxWaveFile(content, currentHeaderStart.Value, content.Length,
+                                                  filePath, innerCount, extractedDir, extractedFiles, "wem");
+                                totalExtractedFiles++;
+                            }
+                            continue; 
+                        }
+                        else
+                        {
+                            if (headerStart + 22 < content.Length)
+                            {
+                                if (content[headerStart + 8] == 0x58 && content[headerStart + 9] == 0x57 &&
+                                    content[headerStart + 10] == 0x4D && content[headerStart + 11] == 0x41)
+                                {
+                                    bool matchesXwmaPattern = true;
+                                    for (int i = 0; i < 6; i++)
+                                    {
+                                        if (content[headerStart + 16 + i] != XWMA_PATTERN[i])
+                                        {
+                                            matchesXwmaPattern = false;
+                                            break;
+                                        }
+                                    }
+
+                                    if (matchesXwmaPattern)
+                                    {
+                                        format = "xwma";
+                                        hasValidFormat = true;
+                                    }
+                                }
+                                else if (content[headerStart + 8] == 0x57 && content[headerStart + 9] == 0x41 &&
+                                         content[headerStart + 10] == 0x56 && content[headerStart + 11] == 0x45)
+                                {
+                                    format = IdentifyAudioFormat(content, headerStart);
+                                    hasValidFormat = !string.IsNullOrEmpty(format);
+                                }
+                            }
+
+                            if (hasValidFormat)
+                            {
+                                waveCount++;
+                                int nextHeader = FindNextHeader(content, headerStart + 4);
+                                int waveEnd = nextHeader != -1 ? nextHeader : content.Length;
+
+                                if (ExtractWaveFile(content, headerStart, waveEnd, filePath, waveCount, extractedDir, extractedFiles, format))
+                                {
+                                    totalExtractedFiles++;
+                                }
+                                index = waveEnd;
+                            }
+                            else
+                            {
+                                index = headerStart + 4;
+                            }
+                        }
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    ExtractionError?.Invoke(this, "提取操作已取消");
+                    OnExtractionFailed("提取操作已取消");
+                    throw;
+                }
+                catch (IOException e)
+                {
+                    ExtractionError?.Invoke(this, $"读取文件{filePath}时出错:{e.Message}");
+                    OnExtractionFailed($"读取文件{filePath}时出错:{e.Message}");
+                }
+                catch (Exception e)
+                {
+                    ExtractionError?.Invoke(this, $"处理文件{filePath}时发生错误:{e.Message}");
+                    OnExtractionFailed($"处理文件{filePath}时发生错误:{e.Message}");
+                }
+            }
+
+            if (totalExtractedFiles > 0)
+            {
+                ExtractionProgress?.Invoke(this, $"处理完成,共处理{totalSourceFiles}个源文件,提取出{totalExtractedFiles}个音频文件");
+            }
+            else
+            {
+                ExtractionProgress?.Invoke(this, $"处理完成,共处理{totalSourceFiles}个源文件,未找到音频文件");
+            }
+            OnExtractionCompleted();
+        }
+
+        private static bool ContainsBytes(byte[] data, byte[] pattern, int startIndex)
+        {
+            return IndexOf(data, pattern, startIndex) != -1;
+        }
+
+        private int FindNextHeader(byte[] content, int startIndex)
+        {
+            int riffNext = IndexOf(content, RIFF_HEADER, startIndex);
+            int rifxNext = IndexOf(content, RIFX_HEADER, startIndex);
+
+            if (riffNext != -1 && (rifxNext == -1 || riffNext < rifxNext))
+            {
+                return riffNext;
+            }
+            return rifxNext;
+        }
+
+        private string IdentifyAudioFormat(byte[] content, int startIndex)
+        {
+            if (startIndex + 0x18 >= content.Length) return "wav";
+
+            if (content[startIndex + 0x10] == 0x20 && content[startIndex + 0x14] == 0x70 && content[startIndex + 0x15] == 0x02)
+                return "at3";
+            if (content[startIndex + 0x10] == 0x34 && content[startIndex + 0x14] == 0xFE && content[startIndex + 0x15] == 0xFF)
+                return "at9";
+            if (content[startIndex + 0x10] == 0x34 && content[startIndex + 0x14] == 0x66 && content[startIndex + 0x15] == 0x01)
+                return "xma";
+            if (content[startIndex + 0x10] == 0x42 && content[startIndex + 0x14] == 0xFF && content[startIndex + 0x15] == 0xFF)
+                return "wem";
+            if (content[startIndex + 0x10] == 0x10 && content[startIndex + 0x14] == 0x01 && content[startIndex + 0x15] == 0x00)
+                return "wav";
+            return "wav";
+        }
+
+        private bool ExtractWaveFile(byte[] content, int start, int end, string filePath, int waveCount,
+                              string extractedDir, List<string> extractedFiles, string format)
+        {
+            int length = end - start;
+            if (length <= 8) return false;
+
+            byte[] waveData = new byte[length];
+            Array.Copy(content, start, waveData, 0, length);
+
+            string baseFileName = Path.GetFileNameWithoutExtension(filePath);
+            string outputFileName = $"{baseFileName}_{waveCount}.{format}";
+            string outputFilePath = Path.Combine(extractedDir, outputFileName);
+
+            if (File.Exists(outputFilePath))
+            {
+                int duplicateCount = 1;
+                do
+                {
+                    outputFileName = $"{baseFileName}_{waveCount}_dup{duplicateCount}.{format}";
+                    outputFilePath = Path.Combine(extractedDir, outputFileName);
+                    duplicateCount++;
+                } while (File.Exists(outputFilePath));
+            }
+
+            try
+            {
+                File.WriteAllBytes(outputFilePath, waveData);
+                if (!extractedFiles.Contains(outputFilePath))
+                {
+                    extractedFiles.Add(outputFilePath);
+                    OnFileExtracted(outputFilePath);
+                    ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(outputFilePath)} (格式:{format})");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                ExtractionError?.Invoke(this, $"保存文件{outputFileName}时出错:{ex.Message}");
+                return false;
+            }
+            return false;
+        }
+
+        private bool ExtractRifxWaveFile(byte[] content, int start, int end, string filePath, int innerCount,
+                                     string extractedDir, List<string> extractedFiles, string format)
+        {
+            int length = end - start;
+            if (length <= 0) return false;
+
+            byte[] waveData = new byte[length];
+            Array.Copy(content, start, waveData, 0, length);
+
+            string baseFileName = Path.GetFileNameWithoutExtension(filePath);
+            string outputFileName = $"{baseFileName}_{innerCount}.{format}";
+            string outputFilePath = Path.Combine(extractedDir, outputFileName);
+
+            if (File.Exists(outputFilePath))
+            {
+                int duplicateCount = 1;
+                do
+                {
+                    outputFileName = $"{baseFileName}_{innerCount}_dup{duplicateCount}.{format}";
+                    outputFilePath = Path.Combine(extractedDir, outputFileName);
+                    duplicateCount++;
+                } while (File.Exists(outputFilePath));
+            }
+
+            try
+            {
+                File.WriteAllBytes(outputFilePath, waveData);
+                if (!extractedFiles.Contains(outputFilePath))
+                {
+                    extractedFiles.Add(outputFilePath);
+                    OnFileExtracted(outputFilePath);
+                    ExtractionProgress?.Invoke(this, $"已提取:{outputFileName} (格式:{format})");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                ExtractionError?.Invoke(this, $"保存文件{outputFileName}时出错:{ex.Message}");
+                return false;
+            }
+            return false;
+        }
+    }
+}
