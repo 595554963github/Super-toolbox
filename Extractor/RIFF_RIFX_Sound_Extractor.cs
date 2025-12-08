@@ -5,12 +5,10 @@ namespace super_toolbox
         public new event EventHandler<string>? ExtractionStarted;
         public new event EventHandler<string>? ExtractionProgress;
         public new event EventHandler<string>? ExtractionError;
-
         private static readonly byte[] RIFF_HEADER = { 0x52, 0x49, 0x46, 0x46 };
         private static readonly byte[] RIFX_HEADER = { 0x52, 0x49, 0x46, 0x58 };
         private static readonly byte[] WEM_BLOCK = { 0x57, 0x41, 0x56, 0x45, 0x66, 0x6D, 0x74 };
         private static readonly byte[] XWMA_PATTERN = { 0x12, 0x00, 0x00, 0x00, 0x61, 0x01 };
-
         private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= data.Length - pattern.Length; i++)
@@ -31,57 +29,45 @@ namespace super_toolbox
             }
             return -1;
         }
-
         public override void Extract(string directoryPath)
         {
             ExtractAsync(directoryPath).Wait();
         }
-
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             List<string> extractedFiles = new List<string>();
             string extractedDir = Path.Combine(directoryPath, "Extracted");
             Directory.CreateDirectory(extractedDir);
-
             if (!Directory.Exists(directoryPath))
             {
                 ExtractionError?.Invoke(this, $"源文件夹{directoryPath}不存在");
                 OnExtractionFailed($"源文件夹{directoryPath}不存在");
                 return;
             }
-
             ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
-
             var filePaths = Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories)
                 .Where(file => !file.StartsWith(extractedDir, StringComparison.OrdinalIgnoreCase))
                 .ToList();
-
             int totalSourceFiles = filePaths.Count;
             int processedSourceFiles = 0;
             int totalExtractedFiles = 0;
-
             foreach (var filePath in filePaths)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 processedSourceFiles++;
                 ExtractionProgress?.Invoke(this, $"正在处理源文件({processedSourceFiles}/{totalSourceFiles}):{Path.GetFileName(filePath)}");
-
                 try
                 {
                     byte[] content = await File.ReadAllBytesAsync(filePath, cancellationToken);
                     int index = 0;
                     int waveCount = 0;
-
                     while (index < content.Length)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-
                         int riffStart = IndexOf(content, RIFF_HEADER, index);
                         int rifxStart = IndexOf(content, RIFX_HEADER, index);
-
                         int headerStart = -1;
                         bool isRifx = false;
-
                         if (riffStart != -1 && (rifxStart == -1 || riffStart < rifxStart))
                         {
                             headerStart = riffStart;
@@ -95,10 +81,8 @@ namespace super_toolbox
                         {
                             break;
                         }
-
                         string format = "";
                         bool hasValidFormat = false;
-
                         if (isRifx)
                         {
                             int? currentHeaderStart = null;
@@ -111,9 +95,11 @@ namespace super_toolbox
                                 {
                                     if (currentHeaderStart.HasValue)
                                     {
-                                        ExtractRifxWaveFile(content, currentHeaderStart.Value, content.Length,
-                                                          filePath, innerCount, extractedDir, extractedFiles, "wem");
-                                        totalExtractedFiles++;
+                                        if (ExtractRifxWaveFileWithSize(content, currentHeaderStart.Value, content.Length,
+                                                              filePath, innerCount, extractedDir, extractedFiles))
+                                        {
+                                            totalExtractedFiles++;
+                                        }
                                     }
                                     break;
                                 }
@@ -129,9 +115,11 @@ namespace super_toolbox
                                     }
                                     else
                                     {
-                                        ExtractRifxWaveFile(content, currentHeaderStart.Value, headerStartIndex,
-                                                          filePath, innerCount, extractedDir, extractedFiles, "wem");
-                                        totalExtractedFiles++;
+                                        if (ExtractRifxWaveFileWithSize(content, currentHeaderStart.Value, headerStartIndex,
+                                                          filePath, innerCount, extractedDir, extractedFiles))
+                                        {
+                                            totalExtractedFiles++;
+                                        }
                                         innerCount++;
                                         currentHeaderStart = headerStartIndex;
                                     }
@@ -140,58 +128,82 @@ namespace super_toolbox
                             }
                             if (currentHeaderStart.HasValue)
                             {
-                                ExtractRifxWaveFile(content, currentHeaderStart.Value, content.Length,
-                                                  filePath, innerCount, extractedDir, extractedFiles, "wem");
-                                totalExtractedFiles++;
-                            }
-                            continue; 
-                        }
-                        else
-                        {
-                            if (headerStart + 22 < content.Length)
-                            {
-                                if (content[headerStart + 8] == 0x58 && content[headerStart + 9] == 0x57 &&
-                                    content[headerStart + 10] == 0x4D && content[headerStart + 11] == 0x41)
-                                {
-                                    bool matchesXwmaPattern = true;
-                                    for (int i = 0; i < 6; i++)
-                                    {
-                                        if (content[headerStart + 16 + i] != XWMA_PATTERN[i])
-                                        {
-                                            matchesXwmaPattern = false;
-                                            break;
-                                        }
-                                    }
-
-                                    if (matchesXwmaPattern)
-                                    {
-                                        format = "xwma";
-                                        hasValidFormat = true;
-                                    }
-                                }
-                                else if (content[headerStart + 8] == 0x57 && content[headerStart + 9] == 0x41 &&
-                                         content[headerStart + 10] == 0x56 && content[headerStart + 11] == 0x45)
-                                {
-                                    format = IdentifyAudioFormat(content, headerStart);
-                                    hasValidFormat = !string.IsNullOrEmpty(format);
-                                }
-                            }
-
-                            if (hasValidFormat)
-                            {
-                                waveCount++;
-                                int nextHeader = FindNextHeader(content, headerStart + 4);
-                                int waveEnd = nextHeader != -1 ? nextHeader : content.Length;
-
-                                if (ExtractWaveFile(content, headerStart, waveEnd, filePath, waveCount, extractedDir, extractedFiles, format))
+                                if (ExtractRifxWaveFileWithSize(content, currentHeaderStart.Value, content.Length,
+                                              filePath, innerCount, extractedDir, extractedFiles))
                                 {
                                     totalExtractedFiles++;
                                 }
-                                index = waveEnd;
+                            }
+                            continue;
+                        }
+                        else
+                        {
+                            if (IsValidWaveHeader(content, headerStart))
+                            {
+                                format = IdentifyAudioFormat(content, headerStart);
+                                hasValidFormat = !string.IsNullOrEmpty(format);
+                                if (hasValidFormat)
+                                {
+                                    waveCount++;
+                                    int fileSize = BitConverter.ToInt32(content, headerStart + 4);
+                                    int waveEnd = headerStart + 8 + fileSize;
+                                    if (waveEnd > content.Length)
+                                        waveEnd = content.Length;
+                                    int nextHeader = FindNextHeader(content, headerStart + 4);
+                                    if (nextHeader != -1 && nextHeader < waveEnd)
+                                        waveEnd = nextHeader;
+                                    if (ExtractWaveFileWithSize(content, headerStart, waveEnd, filePath, waveCount,
+                                                              extractedDir, extractedFiles, format))
+                                    {
+                                        totalExtractedFiles++;
+                                    }
+                                    index = waveEnd;
+                                }
+                                else
+                                {
+                                    index = headerStart + 4;
+                                }
                             }
                             else
                             {
-                                index = headerStart + 4;
+                                if (headerStart + 22 < content.Length)
+                                {
+                                    if (content[headerStart + 8] == 0x58 && content[headerStart + 9] == 0x57 &&
+                                        content[headerStart + 10] == 0x4D && content[headerStart + 11] == 0x41)
+                                    {
+                                        bool matchesXwmaPattern = true;
+                                        for (int i = 0; i < 6; i++)
+                                        {
+                                            if (content[headerStart + 16 + i] != XWMA_PATTERN[i])
+                                            {
+                                                matchesXwmaPattern = false;
+                                                break;
+                                            }
+                                        }
+                                        if (matchesXwmaPattern)
+                                        {
+                                            format = "xwma";
+                                            hasValidFormat = true;
+
+                                            int fileSize = BitConverter.ToInt32(content, headerStart + 4);
+                                            int waveEnd = headerStart + 8 + fileSize;
+                                            if (waveEnd > content.Length)
+                                                waveEnd = content.Length;
+
+                                            waveCount++;
+                                            if (ExtractWaveFileWithSize(content, headerStart, waveEnd, filePath, waveCount,
+                                                                      extractedDir, extractedFiles, format))
+                                            {
+                                                totalExtractedFiles++;
+                                            }
+                                            index = waveEnd;
+                                        }
+                                    }
+                                }
+                                if (!hasValidFormat)
+                                {
+                                    index = headerStart + 4;
+                                }
                             }
                         }
                     }
@@ -213,7 +225,6 @@ namespace super_toolbox
                     OnExtractionFailed($"处理文件{filePath}时发生错误:{e.Message}");
                 }
             }
-
             if (totalExtractedFiles > 0)
             {
                 ExtractionProgress?.Invoke(this, $"处理完成,共处理{totalSourceFiles}个源文件,提取出{totalExtractedFiles}个音频文件");
@@ -224,7 +235,6 @@ namespace super_toolbox
             }
             OnExtractionCompleted();
         }
-
         private static bool ContainsBytes(byte[] data, byte[] pattern, int startIndex)
         {
             return IndexOf(data, pattern, startIndex) != -1;
@@ -234,44 +244,50 @@ namespace super_toolbox
         {
             int riffNext = IndexOf(content, RIFF_HEADER, startIndex);
             int rifxNext = IndexOf(content, RIFX_HEADER, startIndex);
-
             if (riffNext != -1 && (rifxNext == -1 || riffNext < rifxNext))
             {
                 return riffNext;
             }
             return rifxNext;
         }
-
+        private bool IsValidWaveHeader(byte[] content, int startIndex)
+        {
+            if (startIndex + 12 >= content.Length)
+                return false;
+            if (content[startIndex + 8] != 0x57 || content[startIndex + 9] != 0x41 ||
+                content[startIndex + 10] != 0x56 || content[startIndex + 11] != 0x45)
+                return false;
+            int fileSize = BitConverter.ToInt32(content, startIndex + 4);
+            if (fileSize <= 0 || startIndex + 8 + fileSize > content.Length)
+                return false;
+            return true;
+        }
         private string IdentifyAudioFormat(byte[] content, int startIndex)
         {
             if (startIndex + 0x18 >= content.Length) return "wav";
-
-            if (content[startIndex + 0x10] == 0x20 && content[startIndex + 0x14] == 0x70 && content[startIndex + 0x15] == 0x02)
+            int formatStart = startIndex + 0x10;
+            if (content[formatStart] == 0x20 && content[startIndex + 0x14] == 0x70 && content[startIndex + 0x15] == 0x02)
                 return "at3";
-            if (content[startIndex + 0x10] == 0x34 && content[startIndex + 0x14] == 0xFE && content[startIndex + 0x15] == 0xFF)
+            if (content[formatStart] == 0x34 && content[startIndex + 0x14] == 0xFE && content[startIndex + 0x15] == 0xFF)
                 return "at9";
-            if (content[startIndex + 0x10] == 0x34 && content[startIndex + 0x14] == 0x66 && content[startIndex + 0x15] == 0x01)
+            if (content[formatStart] == 0x34 && content[startIndex + 0x14] == 0x66 && content[startIndex + 0x15] == 0x01)
                 return "xma";
-            if (content[startIndex + 0x10] == 0x42 && content[startIndex + 0x14] == 0xFF && content[startIndex + 0x15] == 0xFF)
+            if (content[formatStart] == 0x42 && content[startIndex + 0x14] == 0xFF && content[startIndex + 0x15] == 0xFF)
                 return "wem";
-            if (content[startIndex + 0x10] == 0x10 && content[startIndex + 0x14] == 0x01 && content[startIndex + 0x15] == 0x00)
+            if (content[formatStart] == 0x10 && content[startIndex + 0x14] == 0x01 && content[startIndex + 0x15] == 0x00)
                 return "wav";
             return "wav";
         }
-
-        private bool ExtractWaveFile(byte[] content, int start, int end, string filePath, int waveCount,
+        private bool ExtractWaveFileWithSize(byte[] content, int start, int end, string filePath, int waveCount,
                               string extractedDir, List<string> extractedFiles, string format)
         {
             int length = end - start;
             if (length <= 8) return false;
-
             byte[] waveData = new byte[length];
             Array.Copy(content, start, waveData, 0, length);
-
             string baseFileName = Path.GetFileNameWithoutExtension(filePath);
             string outputFileName = $"{baseFileName}_{waveCount}.{format}";
             string outputFilePath = Path.Combine(extractedDir, outputFileName);
-
             if (File.Exists(outputFilePath))
             {
                 int duplicateCount = 1;
@@ -282,7 +298,6 @@ namespace super_toolbox
                     duplicateCount++;
                 } while (File.Exists(outputFilePath));
             }
-
             try
             {
                 File.WriteAllBytes(outputFilePath, waveData);
@@ -301,20 +316,28 @@ namespace super_toolbox
             }
             return false;
         }
-
-        private bool ExtractRifxWaveFile(byte[] content, int start, int end, string filePath, int innerCount,
-                                     string extractedDir, List<string> extractedFiles, string format)
+        private bool ExtractRifxWaveFileWithSize(byte[] content, int start, int end, string filePath, int innerCount,
+                                     string extractedDir, List<string> extractedFiles)
         {
             int length = end - start;
             if (length <= 0) return false;
-
+            string format = "wem";
+            if (length >= 0x18 && start + 0x10 < content.Length)
+            {
+                if (content[start + 0x10] == 0x20 && content[start + 0x14] == 0x70 && content[start + 0x15] == 0x02)
+                    format = "at3";
+                else if (content[start + 0x10] == 0x34 && content[start + 0x14] == 0xFE && content[start + 0x15] == 0xFF)
+                    format = "at9";
+                else if (content[start + 0x10] == 0x34 && content[start + 0x14] == 0x66 && content[start + 0x15] == 0x01)
+                    format = "xma";
+                else if (content[start + 0x10] == 0x42 && content[start + 0x14] == 0xFF && content[start + 0x15] == 0xFF)
+                    format = "wem";
+            }
             byte[] waveData = new byte[length];
             Array.Copy(content, start, waveData, 0, length);
-
             string baseFileName = Path.GetFileNameWithoutExtension(filePath);
             string outputFileName = $"{baseFileName}_{innerCount}.{format}";
             string outputFilePath = Path.Combine(extractedDir, outputFileName);
-
             if (File.Exists(outputFilePath))
             {
                 int duplicateCount = 1;
@@ -325,7 +348,6 @@ namespace super_toolbox
                     duplicateCount++;
                 } while (File.Exists(outputFilePath));
             }
-
             try
             {
                 File.WriteAllBytes(outputFilePath, waveData);
