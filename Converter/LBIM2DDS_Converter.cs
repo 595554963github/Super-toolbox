@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using System.IO.Compression;
 
 namespace super_toolbox
@@ -44,12 +44,18 @@ namespace super_toolbox
 
         private enum LBIMFormat
         {
-            LBIM_BC1_UNORM = 66,
-            LBIM_BC2_UNORM = 67,
-            LBIM_BC3_UNORM = 68,
+            LBIM_R8 = 1,
+            LBIM_RGBA8888 = 37,
+            LBIM_R16G16B16A16 = 41,
+            LBIM_BC1 = 66,
+            LBIM_BC2 = 67,
+            LBIM_BC3 = 68,
+            LBIM_RGBA4444 = 57,
             LBIM_BC4_UNORM = 73,
             LBIM_BC5_UNORM = 75,
-            LBIM_R8_G8_B8_A8_UNORM = 37
+            LBIM_BC7 = 77,
+            LBIM_BC6H_UF16 = 80,
+            LBIM_BGRA8888 = 109,
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -59,10 +65,10 @@ namespace super_toolbox
             public int headersize;
             public int width;
             public int height;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
-            public int[] unk0;
+            public int depth;
+            public int type;
             public int format;
-            public int unk1;
+            public int numMips;
             public int version;
             public int magic;
         }
@@ -133,7 +139,7 @@ namespace super_toolbox
                         foreach (var dataBlock in splitDatas)
                         {
                             blockIndex++;
-                            totalBlocksProcessed++; 
+                            totalBlocksProcessed++;
 
                             if (splitDatas.Count > 1)
                             {
@@ -141,6 +147,7 @@ namespace super_toolbox
                             }
 
                             byte[] processedData = dataBlock;
+
                             if (processedData.Length >= 4 && processedData.Take(4).SequenceEqual(XBC1_HEADER))
                             {
                                 ConversionProgress?.Invoke(this, "检测到xbc1文件头，移除前48字节...");
@@ -152,6 +159,7 @@ namespace super_toolbox
                                     ConversionProgress?.Invoke(this, "已移除xbc1头48字节");
                                 }
                             }
+
                             if (processedData.Length >= 2 && processedData[0] == 0x78 &&
                                 (processedData[1] == 0x01 || processedData[1] == 0x9C || processedData[1] == 0xDA))
                             {
@@ -176,6 +184,7 @@ namespace super_toolbox
                             {
                                 ConversionProgress?.Invoke(this, "未检测到zlib压缩数据，跳过解压");
                             }
+
                             if (processedData.Length >= 4 &&
                                 processedData.Skip(processedData.Length - 4).Take(4).SequenceEqual(LBIM_MAGIC))
                             {
@@ -231,15 +240,15 @@ namespace super_toolbox
                 {
                     int totalCount = successCount + skippedCount;
                     ConversionProgress?.Invoke(this, $"转换完成，成功转换{successCount}个文件，跳过{skippedCount}个数据块");
-                    ConversionProgress?.Invoke(this, $"总计处理数据块: {totalCount} 个");
+                    ConversionProgress?.Invoke(this, $"总计处理数据块:{totalCount}个");
 
                     if (totalBlocksProcessed == totalCount)
                     {
-                        ConversionProgress?.Invoke(this, $"数据统计正确: {totalBlocksProcessed} = {successCount}(成功) + {skippedCount}(跳过)");
+                        ConversionProgress?.Invoke(this, $"数据统计正确:{totalBlocksProcessed} = {successCount}(成功) + {skippedCount}(跳过)");
                     }
                     else
                     {
-                        ConversionProgress?.Invoke(this, $"数据统计差异: 处理了{totalBlocksProcessed}个数据块，但统计为{totalCount}个");
+                        ConversionProgress?.Invoke(this, $"数据统计差异:处理了{totalBlocksProcessed}个数据块，但统计为{totalCount}个");
                     }
                 }
                 else
@@ -259,6 +268,7 @@ namespace super_toolbox
                 OnConversionFailed($"严重错误:{ex.Message}");
             }
         }
+
         private List<byte[]> SplitXBC1Data(byte[] fileData)
         {
             List<byte[]> result = new List<byte[]>();
@@ -300,6 +310,7 @@ namespace super_toolbox
             ConversionProgress?.Invoke(this, $"找到{xbc1Positions.Count}个xbc1文件头，分割为{result.Count}个数据块");
             return result;
         }
+
         private async Task<bool> ConvertLBIMDataToDDSAsync(byte[] lbimData, string outputPath, CancellationToken cancellationToken)
         {
             try
@@ -372,10 +383,6 @@ namespace super_toolbox
                 IntPtr ptr = handle.AddrOfPinnedObject();
                 object? structObj = Marshal.PtrToStructure(ptr, typeof(LBIMHeader));
                 header = structObj != null ? (LBIMHeader)structObj : default;
-                if (header.unk0 == null)
-                {
-                    header.unk0 = new int[2];
-                }
             }
             finally
             {
@@ -385,7 +392,7 @@ namespace super_toolbox
             return header;
         }
 
-        private static ConvertLBIM_Out ConvertLBIM(byte[] buffer, int size, byte[]? exBuffer, int exBuffSize)
+        private ConvertLBIM_Out ConvertLBIM(byte[] buffer, int size, byte[]? exBuffer, int exBuffSize)
         {
             LBIMHeader header = ReadLBIMHeader(buffer, size);
             ConvertLBIM_Out retVal = new ConvertLBIM_Out();
@@ -394,6 +401,8 @@ namespace super_toolbox
                 retVal.result = 1;
                 return retVal;
             }
+
+            ConversionProgress?.Invoke(this, $"转换LBIM:格式={header.format}, 尺寸={header.width}x{header.height}, Mips={header.numMips}");
 
             if (exBuffSize > 0)
             {
@@ -407,7 +416,59 @@ namespace super_toolbox
 
             switch ((LBIMFormat)header.format)
             {
-                case LBIMFormat.LBIM_BC1_UNORM:
+                case LBIMFormat.LBIM_R8:
+                    bpp = 1;
+                    ppb = 1;
+                    pixelFormat.dwSize = 32;
+                    pixelFormat.dwFlags = 0x20000;
+                    pixelFormat.dwFourCC = 0;
+                    pixelFormat.dwRGBBitCount = 8;
+                    pixelFormat.dwRBitMask = 0xFF;
+                    pixelFormat.dwGBitMask = 0;
+                    pixelFormat.dwBBitMask = 0;
+                    pixelFormat.dwABitMask = 0;
+                    break;
+
+                case LBIMFormat.LBIM_RGBA8888:
+                    bpp = 4;
+                    ppb = 1;
+                    pixelFormat.dwSize = 32;
+                    pixelFormat.dwFlags = 0x41;
+                    pixelFormat.dwFourCC = 0;
+                    pixelFormat.dwRGBBitCount = 32;
+                    pixelFormat.dwRBitMask = 0x000000FF;
+                    pixelFormat.dwGBitMask = 0x0000FF00;
+                    pixelFormat.dwBBitMask = 0x00FF0000;
+                    pixelFormat.dwABitMask = 0xFF000000;
+                    break;
+
+                case LBIMFormat.LBIM_R16G16B16A16:
+                    bpp = 8;
+                    ppb = 1;
+                    pixelFormat.dwSize = 32;
+                    pixelFormat.dwFlags = 0x40;
+                    pixelFormat.dwFourCC = 0x24;
+                    pixelFormat.dwRGBBitCount = 0;
+                    pixelFormat.dwRBitMask = 0;
+                    pixelFormat.dwGBitMask = 0;
+                    pixelFormat.dwBBitMask = 0;
+                    pixelFormat.dwABitMask = 0;
+                    break;
+
+                case LBIMFormat.LBIM_RGBA4444:
+                    bpp = 2;
+                    ppb = 1;
+                    pixelFormat.dwSize = 32;
+                    pixelFormat.dwFlags = 0x41;
+                    pixelFormat.dwFourCC = 0;
+                    pixelFormat.dwRGBBitCount = 16;
+                    pixelFormat.dwRBitMask = 0x0F00;
+                    pixelFormat.dwGBitMask = 0x00F0;
+                    pixelFormat.dwBBitMask = 0x000F;
+                    pixelFormat.dwABitMask = 0xF000;
+                    break;
+
+                case LBIMFormat.LBIM_BC1:
                     bpp = 8;
                     ppb = 4;
                     pixelFormat.dwSize = 32;
@@ -419,7 +480,8 @@ namespace super_toolbox
                     pixelFormat.dwBBitMask = 0;
                     pixelFormat.dwABitMask = 0;
                     break;
-                case LBIMFormat.LBIM_BC2_UNORM:
+
+                case LBIMFormat.LBIM_BC2:
                     bpp = 16;
                     ppb = 4;
                     pixelFormat.dwSize = 32;
@@ -431,7 +493,8 @@ namespace super_toolbox
                     pixelFormat.dwBBitMask = 0;
                     pixelFormat.dwABitMask = 0;
                     break;
-                case LBIMFormat.LBIM_BC3_UNORM:
+
+                case LBIMFormat.LBIM_BC3:
                     bpp = 16;
                     ppb = 4;
                     pixelFormat.dwSize = 32;
@@ -443,6 +506,7 @@ namespace super_toolbox
                     pixelFormat.dwBBitMask = 0;
                     pixelFormat.dwABitMask = 0;
                     break;
+
                 case LBIMFormat.LBIM_BC4_UNORM:
                     bpp = 8;
                     ppb = 4;
@@ -455,6 +519,7 @@ namespace super_toolbox
                     pixelFormat.dwBBitMask = 0;
                     pixelFormat.dwABitMask = 0;
                     break;
+
                 case LBIMFormat.LBIM_BC5_UNORM:
                     bpp = 16;
                     ppb = 4;
@@ -467,19 +532,48 @@ namespace super_toolbox
                     pixelFormat.dwBBitMask = 0;
                     pixelFormat.dwABitMask = 0;
                     break;
-                case LBIMFormat.LBIM_R8_G8_B8_A8_UNORM:
+
+                case LBIMFormat.LBIM_BC7:
+                    bpp = 16;
+                    ppb = 4;
+                    pixelFormat.dwSize = 32;
+                    pixelFormat.dwFlags = 0x04;
+                    pixelFormat.dwFourCC = 0x30315844;
+                    pixelFormat.dwRGBBitCount = 0;
+                    pixelFormat.dwRBitMask = 0;
+                    pixelFormat.dwGBitMask = 0;
+                    pixelFormat.dwBBitMask = 0;
+                    pixelFormat.dwABitMask = 0;
+                    break;
+
+                case LBIMFormat.LBIM_BC6H_UF16:
+                    bpp = 16;
+                    ppb = 4;
+                    pixelFormat.dwSize = 32;
+                    pixelFormat.dwFlags = 0x04;
+                    pixelFormat.dwFourCC = 0x30315844;
+                    pixelFormat.dwRGBBitCount = 0;
+                    pixelFormat.dwRBitMask = 0;
+                    pixelFormat.dwGBitMask = 0;
+                    pixelFormat.dwBBitMask = 0;
+                    pixelFormat.dwABitMask = 0;
+                    break;
+
+                case LBIMFormat.LBIM_BGRA8888:
                     bpp = 4;
                     ppb = 1;
                     pixelFormat.dwSize = 32;
                     pixelFormat.dwFlags = 0x41;
                     pixelFormat.dwFourCC = 0;
                     pixelFormat.dwRGBBitCount = 32;
-                    pixelFormat.dwRBitMask = 0x000000FF;
+                    pixelFormat.dwRBitMask = 0x00FF0000;
                     pixelFormat.dwGBitMask = 0x0000FF00;
-                    pixelFormat.dwBBitMask = 0x00FF0000;
+                    pixelFormat.dwBBitMask = 0x000000FF;
                     pixelFormat.dwABitMask = 0xFF000000;
                     break;
+
                 default:
+                    ConversionProgress?.Invoke(this, $"不支持的LBIM格式:{header.format}");
                     retVal.result = 2;
                     return retVal;
             }
@@ -490,21 +584,34 @@ namespace super_toolbox
             DDS_HEADER ddsHeader = new DDS_HEADER();
             ddsHeader.dwSize = 124;
 
-            if ((LBIMFormat)header.format == LBIMFormat.LBIM_R8_G8_B8_A8_UNORM)
+            ddsHeader.dwFlags = 0x1007;
+            if (header.numMips > 0)
             {
-                ddsHeader.dwFlags = 0x81007;
-                ddsHeader.dwPitchOrLinearSize = (uint)(header.width * 4);
+                ddsHeader.dwFlags |= 0x20000;
+                ddsHeader.dwMipMapCount = (uint)header.numMips;
             }
             else
             {
-                ddsHeader.dwFlags = 0x1007;
-                ddsHeader.dwPitchOrLinearSize = 0;
+                ddsHeader.dwMipMapCount = 0;
+            }
+
+            if ((LBIMFormat)header.format == LBIMFormat.LBIM_RGBA8888 ||
+                (LBIMFormat)header.format == LBIMFormat.LBIM_RGBA4444 ||
+                (LBIMFormat)header.format == LBIMFormat.LBIM_BGRA8888 ||
+                (LBIMFormat)header.format == LBIMFormat.LBIM_R8)
+            {
+                ddsHeader.dwFlags |= 0x8;
+                ddsHeader.dwPitchOrLinearSize = (uint)(header.width * bpp);
+            }
+            else
+            {
+                ddsHeader.dwFlags |= 0x80000;
+                ddsHeader.dwPitchOrLinearSize = (uint)(blockWidth * blockHeight * bpp);
             }
 
             ddsHeader.dwHeight = (uint)header.height;
             ddsHeader.dwWidth = (uint)header.width;
-            ddsHeader.dwDepth = 0;
-            ddsHeader.dwMipMapCount = 0;
+            ddsHeader.dwDepth = (uint)(header.depth > 0 ? header.depth : 0);
             ddsHeader.dwReserved1 = new uint[11];
             ddsHeader.ddspf = pixelFormat;
             ddsHeader.dwCaps = 0x1000;
