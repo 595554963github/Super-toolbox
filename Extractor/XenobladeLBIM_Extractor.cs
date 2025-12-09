@@ -1,4 +1,4 @@
-﻿using System.IO.Compression;
+using System.IO.Compression;
 
 namespace super_toolbox
 {
@@ -9,6 +9,7 @@ namespace super_toolbox
         public new event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] XBC1_SIGNATURE = { 0x78, 0x62, 0x63, 0x31 };
+        private static readonly byte[] EFB0_SIGNATURE = { 0x65, 0x66, 0x62, 0x30 };
         private static readonly byte[] ZLIB_HEADER = { 0x78, 0x9C };
         private static readonly byte[] LBIM_SIGNATURE = { 0x4C, 0x42, 0x49, 0x4D };
 
@@ -90,101 +91,184 @@ namespace super_toolbox
                     return;
                 }
 
-                byte[] dataWithoutHeader = new byte[fileContent.Length - 48];
-                Array.Copy(fileContent, 48, dataWithoutHeader, 0, dataWithoutHeader.Length);
-
-                if (dataWithoutHeader.Length >= 2 &&
-                    dataWithoutHeader[0] == ZLIB_HEADER[0] &&
-                    dataWithoutHeader[1] == ZLIB_HEADER[1])
+                bool isEfb0Format = false;
+                if (fileContent.Length >= 4)
                 {
-                    try
-                    {
-                        byte[] decompressedData;
-                        using (MemoryStream compressedStream = new MemoryStream(dataWithoutHeader, 2, dataWithoutHeader.Length - 2))
-                        using (MemoryStream decompressedStream = new MemoryStream())
-                        {
-                            using (DeflateStream deflateStream = new DeflateStream(compressedStream, CompressionMode.Decompress))
-                            {
-                                await deflateStream.CopyToAsync(decompressedStream, cancellationToken);
-                            }
-                            decompressedData = decompressedStream.ToArray();
-                        }
-                        ExtractionProgress?.Invoke(this, $"解压成功，数据大小:{decompressedData.Length}字节");
-                        List<int> lbimPositions = FindSignaturePositionsEx(decompressedData, LBIM_SIGNATURE);
+                    isEfb0Format = fileContent[0] == EFB0_SIGNATURE[0] &&
+                                   fileContent[1] == EFB0_SIGNATURE[1] &&
+                                   fileContent[2] == EFB0_SIGNATURE[2] &&
+                                   fileContent[3] == EFB0_SIGNATURE[3];
+                }
 
-                        if (lbimPositions.Count == 0)
-                        {
-                            ExtractionError?.Invoke(this, $"在解压数据中未找到LBIM签名");
-                            return;
-                        }
-                        ExtractionProgress?.Invoke(this, $"找到{lbimPositions.Count}个LBIM签名");
-                        string baseFilename = Path.GetFileNameWithoutExtension(filePath);
-                        string fileDir = Path.GetDirectoryName(filePath) ?? string.Empty;
-                        string outputDir = Path.Combine(fileDir, baseFilename);
-                        Directory.CreateDirectory(outputDir);
-                        for (int i = 0; i < lbimPositions.Count; i++)
-                        {
-                            ThrowIfCancellationRequested(cancellationToken);
-                            int startPos;
-                            int endPos;
-                            if (i == 0)
-                            {
-                                startPos = lbimPositions[i] + LBIM_SIGNATURE.Length;
-                            }
-                            else
-                            {
-                                startPos = lbimPositions[i - 1] + LBIM_SIGNATURE.Length;
-                            }
-
-                            if (i < lbimPositions.Count - 1)
-                            {
-                                endPos = lbimPositions[i + 1] + LBIM_SIGNATURE.Length;
-                            }
-                            else
-                            {
-                                endPos = decompressedData.Length;
-                            }
-                            if (endPos <= startPos) continue;
-                            byte[] segmentData = new byte[endPos - startPos];
-                            Array.Copy(decompressedData, startPos, segmentData, 0, segmentData.Length);
-                            bool hasLbimAtEnd = CheckSegmentEndsWithLbim(segmentData);
-                            if (!hasLbimAtEnd)
-                            {
-                                ExtractionProgress?.Invoke(this, $"警告:第{i + 1}段末尾没有LBIM签名");
-                            }
-                            string outputFileName = $"{baseFilename}_{i + 1:000}.lbim";
-                            string outputFilePath = Path.Combine(outputDir, outputFileName);
-                            if (File.Exists(outputFilePath))
-                            {
-                                int duplicateCount = 1;
-                                do
-                                {
-                                    outputFileName = $"{baseFilename}_{i + 1:000}_dup{duplicateCount}.lbim";
-                                    outputFilePath = Path.Combine(outputDir, outputFileName);
-                                    duplicateCount++;
-                                } while (File.Exists(outputFilePath));
-                            }
-
-                            await File.WriteAllBytesAsync(outputFilePath, segmentData, cancellationToken);
-                            extractedFiles.Add(outputFilePath);
-                            OnFileExtracted(outputFilePath);
-                            ExtractionProgress?.Invoke(this,
-                                $"已提取:{outputFileName} (大小:{segmentData.Length}字节, 位置:0x{startPos:X}-0x{endPos:X}, 包含LBIM:{(hasLbimAtEnd ? "是" : "否")})");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        ExtractionError?.Invoke(this, $"zlib解压失败:{ex.Message}");
-                    }
+                if (isEfb0Format)
+                {
+                    await ProcessEfb0WiefbFileAsync(fileContent, filePath, extractedFiles, cancellationToken);
                 }
                 else
                 {
-                    ExtractionError?.Invoke(this, $"不是有效的zlib压缩数据");
+                    await ProcessXbc1WiefbFileAsync(fileContent, filePath, extractedFiles, cancellationToken);
                 }
             }
             catch (Exception ex)
             {
                 ExtractionError?.Invoke(this, $"处理wiefb文件失败:{ex.Message}");
+            }
+        }
+
+        private async Task ProcessEfb0WiefbFileAsync(byte[] fileContent, string filePath, List<string> extractedFiles, CancellationToken cancellationToken)
+        {
+            List<int> lbimPositions = FindSignaturePositionsEx(fileContent, LBIM_SIGNATURE);
+
+            if (lbimPositions.Count == 0)
+            {
+                ExtractionError?.Invoke(this, $"在文件中未找到LBIM签名");
+                return;
+            }
+
+            ExtractionProgress?.Invoke(this, $"找到{lbimPositions.Count}个LBIM签名");
+
+            string baseFilename = Path.GetFileNameWithoutExtension(filePath);
+            string fileDir = Path.GetDirectoryName(filePath) ?? string.Empty;
+            string outputDir = Path.Combine(fileDir, baseFilename);
+            Directory.CreateDirectory(outputDir);
+
+            for (int i = 0; i < lbimPositions.Count; i++)
+            {
+                ThrowIfCancellationRequested(cancellationToken);
+
+                int startPos = lbimPositions[i] + LBIM_SIGNATURE.Length;
+                int endPos = (i < lbimPositions.Count - 1) ? lbimPositions[i + 1] + LBIM_SIGNATURE.Length : fileContent.Length;
+
+                if (endPos <= startPos) continue;
+
+                byte[] segmentData = new byte[endPos - startPos];
+                Array.Copy(fileContent, startPos, segmentData, 0, segmentData.Length);
+
+                string outputFileName = $"{baseFilename}_{i + 1:000}.lbim";
+                string outputFilePath = Path.Combine(outputDir, outputFileName);
+
+                if (File.Exists(outputFilePath))
+                {
+                    int duplicateCount = 1;
+                    do
+                    {
+                        outputFileName = $"{baseFilename}_{i + 1:000}_dup{duplicateCount}.lbim";
+                        outputFilePath = Path.Combine(outputDir, outputFileName);
+                        duplicateCount++;
+                    } while (File.Exists(outputFilePath));
+                }
+
+                await File.WriteAllBytesAsync(outputFilePath, segmentData, cancellationToken);
+                extractedFiles.Add(outputFilePath);
+                OnFileExtracted(outputFilePath);
+
+                ExtractionProgress?.Invoke(this,
+                    $"已提取:{outputFileName} (大小:{segmentData.Length}字节, 位置:0x{startPos:X}-0x{endPos:X})");
+            }
+        }
+
+        private async Task ProcessXbc1WiefbFileAsync(byte[] fileContent, string filePath, List<string> extractedFiles, CancellationToken cancellationToken)
+        {
+            byte[] dataWithoutHeader = new byte[fileContent.Length - 48];
+            Array.Copy(fileContent, 48, dataWithoutHeader, 0, dataWithoutHeader.Length);
+
+            if (dataWithoutHeader.Length >= 2 &&
+                dataWithoutHeader[0] == ZLIB_HEADER[0] &&
+                dataWithoutHeader[1] == ZLIB_HEADER[1])
+            {
+                try
+                {
+                    byte[] decompressedData;
+                    using (MemoryStream compressedStream = new MemoryStream(dataWithoutHeader, 2, dataWithoutHeader.Length - 2))
+                    using (MemoryStream decompressedStream = new MemoryStream())
+                    {
+                        using (DeflateStream deflateStream = new DeflateStream(compressedStream, CompressionMode.Decompress))
+                        {
+                            await deflateStream.CopyToAsync(decompressedStream, cancellationToken);
+                        }
+                        decompressedData = decompressedStream.ToArray();
+                    }
+
+                    ExtractionProgress?.Invoke(this, $"解压成功，数据大小:{decompressedData.Length}字节");
+                    List<int> lbimPositions = FindSignaturePositionsEx(decompressedData, LBIM_SIGNATURE);
+
+                    if (lbimPositions.Count == 0)
+                    {
+                        ExtractionError?.Invoke(this, $"在解压数据中未找到LBIM签名");
+                        return;
+                    }
+
+                    ExtractionProgress?.Invoke(this, $"找到{lbimPositions.Count}个LBIM签名");
+                    string baseFilename = Path.GetFileNameWithoutExtension(filePath);
+                    string fileDir = Path.GetDirectoryName(filePath) ?? string.Empty;
+                    string outputDir = Path.Combine(fileDir, baseFilename);
+                    Directory.CreateDirectory(outputDir);
+
+                    for (int i = 0; i < lbimPositions.Count; i++)
+                    {
+                        ThrowIfCancellationRequested(cancellationToken);
+                        int startPos;
+                        int endPos;
+
+                        if (i == 0)
+                        {
+                            startPos = lbimPositions[i] + LBIM_SIGNATURE.Length;
+                        }
+                        else
+                        {
+                            startPos = lbimPositions[i - 1] + LBIM_SIGNATURE.Length;
+                        }
+
+                        if (i < lbimPositions.Count - 1)
+                        {
+                            endPos = lbimPositions[i + 1] + LBIM_SIGNATURE.Length;
+                        }
+                        else
+                        {
+                            endPos = decompressedData.Length;
+                        }
+
+                        if (endPos <= startPos) continue;
+
+                        byte[] segmentData = new byte[endPos - startPos];
+                        Array.Copy(decompressedData, startPos, segmentData, 0, segmentData.Length);
+                        bool hasLbimAtEnd = CheckSegmentEndsWithLbim(segmentData);
+
+                        if (!hasLbimAtEnd)
+                        {
+                            ExtractionProgress?.Invoke(this, $"警告:第{i + 1}段末尾没有LBIM签名");
+                        }
+
+                        string outputFileName = $"{baseFilename}_{i + 1:000}.lbim";
+                        string outputFilePath = Path.Combine(outputDir, outputFileName);
+
+                        if (File.Exists(outputFilePath))
+                        {
+                            int duplicateCount = 1;
+                            do
+                            {
+                                outputFileName = $"{baseFilename}_{i + 1:000}_dup{duplicateCount}.lbim";
+                                outputFilePath = Path.Combine(outputDir, outputFileName);
+                                duplicateCount++;
+                            } while (File.Exists(outputFilePath));
+                        }
+
+                        await File.WriteAllBytesAsync(outputFilePath, segmentData, cancellationToken);
+                        extractedFiles.Add(outputFilePath);
+                        OnFileExtracted(outputFilePath);
+
+                        ExtractionProgress?.Invoke(this,
+                            $"已提取:{outputFileName} (大小:{segmentData.Length}字节, 位置:0x{startPos:X}-0x{endPos:X}, 包含LBIM:{(hasLbimAtEnd ? "是" : "否")})");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ExtractionError?.Invoke(this, $"zlib解压失败:{ex.Message}");
+                }
+            }
+            else
+            {
+                ExtractionError?.Invoke(this, $"不是有效的zlib压缩数据");
             }
         }
 
@@ -215,10 +299,12 @@ namespace super_toolbox
                 string fileDir = Path.GetDirectoryName(filePath) ?? string.Empty;
                 string outputDir = Path.Combine(fileDir, baseFilename);
                 Directory.CreateDirectory(outputDir);
+
                 if (lbimPositions.Count % 2 != 0)
                 {
                     ExtractionProgress?.Invoke(this, $"警告:找到奇数个({lbimPositions.Count})LBIM签名");
                 }
+
                 int fileCount = 0;
                 int currentPos = 0;
 
@@ -228,7 +314,7 @@ namespace super_toolbox
                     int lbimPos = lbimPositions[i];
                     int nextLbimPos = (i < lbimPositions.Count - 1) ? lbimPositions[i + 1] : fileContent.Length;
                     int startPos = currentPos;
-                    int endPos = lbimPos + 4; 
+                    int endPos = lbimPos + 4;
 
                     if (endPos > fileContent.Length)
                     {
@@ -240,10 +326,12 @@ namespace super_toolbox
                     byte[] segmentData = new byte[endPos - startPos];
                     Array.Copy(fileContent, startPos, segmentData, 0, segmentData.Length);
                     bool endsWithLbim = CheckSegmentEndsWithLbim(segmentData);
+
                     if (!endsWithLbim)
                     {
                         ExtractionProgress?.Invoke(this, $"警告:第{fileCount + 1}段文件不以LBIM结尾，可能不是有效的LBIM文件");
                         endPos = lbimPos + 4;
+
                         if (endPos <= startPos || endPos > fileContent.Length)
                         {
                             ExtractionError?.Invoke(this, $"第{fileCount + 1}段数据无效，跳过");
@@ -258,6 +346,7 @@ namespace super_toolbox
                     fileCount++;
                     string outputFileName = $"{baseFilename}_{fileCount:000}.lbim";
                     string outputFilePath = Path.Combine(outputDir, outputFileName);
+
                     if (File.Exists(outputFilePath))
                     {
                         int duplicateCount = 1;
@@ -275,14 +364,16 @@ namespace super_toolbox
 
                     ExtractionProgress?.Invoke(this,
                         $"已提取:{outputFileName} (大小:{segmentData.Length}字节, 位置:0x{startPos:X}-0x{endPos:X}, 包含LBIM:{(endsWithLbim ? "是" : "否")})");
+
                     currentPos = endPos;
                     if (i + 1 < lbimPositions.Count && lbimPositions[i + 1] == currentPos)
                     {
                         ExtractionProgress?.Invoke(this, $"跳过重复的LBIM签名位置:0x{currentPos:X}");
-                        i++; 
+                        i++;
                         currentPos += 4;
                     }
                 }
+
                 if (currentPos < fileContent.Length)
                 {
                     ExtractionProgress?.Invoke(this, $"警告:有{fileContent.Length - currentPos}字节剩余数据未处理");
