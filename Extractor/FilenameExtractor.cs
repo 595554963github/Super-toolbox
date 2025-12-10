@@ -378,7 +378,7 @@ namespace super_toolbox
             return outputPath;
         }
 
-        private static int IndexOf(byte[] source, byte[] pattern, int startIndex)
+        private new static int IndexOf(byte[] source, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= source.Length - pattern.Length; i++)
             {
