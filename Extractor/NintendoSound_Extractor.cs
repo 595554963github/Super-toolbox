@@ -373,7 +373,7 @@ namespace super_toolbox
             return data[offset] | (data[offset + 1] << 8) | (data[offset + 2] << 16) | (data[offset + 3] << 24);
         }
 
-        private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
+        private new static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= data.Length - pattern.Length; i++)
             {
