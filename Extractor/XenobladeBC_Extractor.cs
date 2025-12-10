@@ -1,4 +1,4 @@
-﻿namespace super_toolbox
+namespace super_toolbox
 {
     public class XenobladeBC_Extractor : BaseExtractor
     {
@@ -150,7 +150,7 @@
             return newPath;
         }
 
-        private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
+        private new static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= data.Length - pattern.Length; i++)
             {
