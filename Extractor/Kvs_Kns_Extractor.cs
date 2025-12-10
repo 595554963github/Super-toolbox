@@ -9,7 +9,7 @@ namespace super_toolbox
         public new event EventHandler<string>? ExtractionStarted;
         public new event EventHandler<string>? ExtractionProgress;
         public new event EventHandler<string>? ExtractionError;
-        private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
+        private new static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= data.Length - pattern.Length; i++)
             {
