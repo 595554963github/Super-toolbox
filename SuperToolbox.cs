@@ -153,16 +153,18 @@ namespace super_toolbox
             { "Terminal Reality - pod/epd ahchive", ("其他档案", "Terminal Reality工作室的pod档案提取器，代表作为星球大战原力释放2，可提取pod/epd档案中的资源") },
             { "PlayStation - GPDA archive", ("其他档案", "索尼psp平台上常见的GPDA档案的专用提取器，例如我的妹妹不可能那么可爱、凉宫春日的追忆等游戏") },
             { "暗影狂奔 - data/toc archive", ("其他档案", "Xbox360游戏暗影狂奔和皇牌空战6解放之战火的专用提取器，可解data/toc这种组合打包的档案") },
+            { "异度之刃2 - ard/arh archive", ("其他档案", "switch游戏异度之刃2的提取器，可解包ard/arh这种组合打包的档案") },
             { "异度之刃3 - ard/arh archive", ("其他档案", "switch游戏异度之刃3的提取器，可解包ard/arh这种组合打包的档案") },
             { "异度之刃 - LBIM2DDS", ("图片", "异度之刃系列的LBIM转换器，可将文件尾为LBIM的文件转换成dds图像，如果是wismda文件该工具会先拆分xbc1文件，如果是xbc1文件会先移除前48字节，随后zlib解压，然后转换成dds图片，一步到位") },
             { "ahx2wav", ("音频", "此工具可以将Criware的ahx文件转换成wav格式") },
             { "异度之刃 - arc file", ("其他档案", "从3ds平台的异度之刃arc文件里面提取tpl文件") },
+            { "异度之刃 - BC file", ("其他档案", "从异度之刃系列游戏提取BC动画文件，这些文件包含ANIM签名") },
             { "异度之刃 - tpl2bclim", ("图片", "将3ds平台异度之刃的tpl文件转换成bclim文件") },
             { "异度之刃 - bclim2png", ("图片", "将bclim文件转换成png文件") },
-            { "异度之刃 - bdat提取器", ("其他档案", "异度之刃系列游戏的bdat提取器,不支持3ds平台") },
+            { "异度之刃 - bdat提取器", ("其他档案", "异度之刃系列游戏的bdat提取器,不支持3ds平台,异度之刃2的部分bdat无法正常提取，即使zlib解压后也不行") },
             { "异度之刃 - bdat打包器", ("其他档案", "将json文件夹重新打包为bdat文件,目录必须为解包后的文件夹结构(包含bschema文件和json文件夹)") },
             { "异度之刃 - MXTX file", ("其他档案", "异度之刃系列游戏的MTXT提取器，从casmt、caevd、camdo、casmda、bmn、caavp等文件里面提取mtxt文件，然后你再用转换器转换成dds") },
-            { "异度之刃 - LBIM file", ("其他档案", "异度之刃系列的LBIM提取器，从pcsmt、mot、wismt、wifnt、winvda、wismda、wilay等xbc1签名的文件里面提取并解压，不是xbc1签名的文件则按容器格式提取lbim文件，然后你再用转换器转换成dds") },
+            { "异度之刃 - LBIM file", ("其他档案", "表面上看这是个异度之刃系列的LBIM提取器，实际上它是xbc1专用分解器，从pcsmt、mot、wismt、wifnt、winvda、wismda、wilay等文件里面提取出各种文件，提取出来后有些文件还能再用它二次提取") },
             { "异度之刃 - pcbeb file", ("其他档案", "异度之刃终极版的pcbeb解包器,拆分、删除垃圾字节、解压再解压") },
             { "异度之刃 - MXTX2DDS", ("图片", "异度之刃系列游戏的MTXT转换器，可以把MTXT纹理转换成dds图像") },
             { "异度之刃 - map.pkb", ("其他档案", "wii平台异度之刃的map.pkb解包器，可提取出里面的文件") },
@@ -623,10 +625,12 @@ namespace super_toolbox
                 case "Terminal Reality - pod/epd ahchive": return new PodExtractor();
                 case "PlayStation - GPDA archive": return new GPDA_Extractor();
                 case "暗影狂奔 - data/toc archive": return new DataToc_Extractor();
+                case "异度之刃2 - ard/arh archive": return new Xenoblade2_Extractor();
                 case "异度之刃3 - ard/arh archive": return new Xenoblade3_Extractor();
                 case "异度之刃 - LBIM2DDS": return new LBIM2DDS_Converter();
                 case "ahx2wav": return new Ahx2wav_Converter();
                 case "异度之刃 - arc file": return new XenobladeTpl_Extractor();
+                case "异度之刃 - BC file": return new XenobladeBC_Extractor();
                 case "异度之刃 - tpl2bclim":return new Tpl2bclim_Converter();
                 case "异度之刃 - bclim2png": return new Bclim2png_Converter();
                 case "异度之刃 - bdat提取器":return new XenobladeBdat_Extractor();
@@ -636,7 +640,7 @@ namespace super_toolbox
                 case "异度之刃 - MXTX2DDS": return new MTXT2DDS_Converter();
                 case "异度之刃 - map.pkb": return new XenobladeMap_Extractor();
                 case "异度之刃 - sar": return new XenobladeSar_Extractor();
-                case "异度之刃 - pcbeb file" : return new Xenoblade_Pcbeb_Extractor();
+                case "异度之刃 - pcbeb file" : return new Xenoblade_Pcbeb_Extractor();               
                 case "Fate Extella/Link - pk/pfs/pkb": return new Fate_pk_Extractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
