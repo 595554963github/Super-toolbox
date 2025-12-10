@@ -1,4 +1,4 @@
-﻿namespace super_toolbox
+namespace super_toolbox
 {
     public class Msf_Extractor : BaseExtractor
     {
@@ -206,7 +206,7 @@
             return positions;
         }
 
-        private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
+        private new static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= data.Length - pattern.Length; i++)
             {
