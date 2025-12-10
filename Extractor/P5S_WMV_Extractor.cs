@@ -141,7 +141,7 @@ namespace super_toolbox
             return count;
         }
 
-        private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
+        private new static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= data.Length - pattern.Length; i++)
             {
