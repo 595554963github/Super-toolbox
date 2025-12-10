@@ -1,3 +1,4 @@
+using System.IO.MemoryMappedFiles;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -8,6 +9,8 @@ namespace super_toolbox
         [DllImport("kernel32.dll", SetLastError = true)]
         protected static extern bool SetDllDirectory(string lpPathName);
         protected static string TempDllDirectory { get; private set; } = string.Empty;
+        protected const long LARGE_FILE_THRESHOLD = 2L * 1024 * 1024 * 1024; // 2GB
+        protected const long MEMORY_MAP_BUFFER_SIZE = 64 * 1024 * 1024; // 64MB
         static BaseExtractor()
         {
             InitializeDllLoading();
@@ -56,6 +59,162 @@ namespace super_toolbox
                 }
             }
             return exePath;
+        }
+        protected async Task<T> ProcessFileAsync<T>(
+            string filePath,
+            Func<byte[], CancellationToken, Task<T>> processSmallFileFunc,
+            Func<MemoryMappedFile, long, CancellationToken, Task<T>> processLargeFileFunc,
+            CancellationToken cancellationToken = default)
+        {
+            FileInfo fileInfo = new FileInfo(filePath);
+
+            if (fileInfo.Length < LARGE_FILE_THRESHOLD)
+            {
+                byte[] content = await File.ReadAllBytesAsync(filePath, cancellationToken);
+                return await processSmallFileFunc(content, cancellationToken);
+            }
+            else
+            {
+                using (var mmf = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open, null, 0, MemoryMappedFileAccess.Read))
+                {
+                    return await processLargeFileFunc(mmf, fileInfo.Length, cancellationToken);
+                }
+            }
+        }
+        protected async Task ProcessLargeFileInBlocksAsync(
+            MemoryMappedFile mmf,
+            long fileSize,
+            Func<MemoryMappedViewAccessor, long, long, byte[], Task> processBlockFunc,
+            Action<int>? progressCallback = null,
+            CancellationToken cancellationToken = default)
+        {
+            long currentOffset = 0;
+
+            while (currentOffset < fileSize)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                long blockSize = Math.Min(MEMORY_MAP_BUFFER_SIZE, fileSize - currentOffset);
+
+                using (var accessor = mmf.CreateViewAccessor(currentOffset, blockSize, MemoryMappedFileAccess.Read))
+                {
+                    byte[] buffer = new byte[blockSize];
+                    accessor.ReadArray(0, buffer, 0, buffer.Length);
+
+                    await processBlockFunc(accessor, currentOffset, blockSize, buffer);
+                }
+
+                currentOffset += blockSize;
+
+                if (progressCallback != null && fileSize > 0)
+                {
+                    int progressPercentage = (int)(currentOffset * 100 / fileSize);
+                    progressCallback(progressPercentage);
+                }
+            }
+        }
+        protected byte[] ReadFromMemoryMap(MemoryMappedFile mmf, long start, long length)
+        {
+            if (length <= 0) return Array.Empty<byte>();
+
+            byte[] data = new byte[length];
+            using (var accessor = mmf.CreateViewAccessor(start, length, MemoryMappedFileAccess.Read))
+            {
+                accessor.ReadArray(0, data, 0, data.Length);
+            }
+            return data;
+        }
+        protected static int IndexOf(byte[] data, byte[] pattern, int startIndex)
+        {
+            for (int i = startIndex; i <= data.Length - pattern.Length; i++)
+            {
+                bool found = true;
+                for (int j = 0; j < pattern.Length; j++)
+                {
+                    if (data[i + j] != pattern[j])
+                    {
+                        found = false;
+                        break;
+                    }
+                }
+                if (found)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+        protected static long IndexOfInMemoryMap(MemoryMappedViewAccessor accessor, byte[] pattern, long startOffset, long maxOffset)
+        {
+            long maxSearchPosition = maxOffset - pattern.Length;
+            if (startOffset > maxSearchPosition)
+                return -1;
+
+            byte firstByte = pattern[0];
+            for (long i = startOffset; i <= maxSearchPosition; i++)
+            {
+                byte currentByte = accessor.ReadByte(i);
+                if (currentByte == firstByte)
+                {
+                    bool match = true;
+                    for (int j = 1; j < pattern.Length; j++)
+                    {
+                        if (accessor.ReadByte(i + j) != pattern[j])
+                        {
+                            match = false;
+                            break;
+                        }
+                    }
+                    if (match)
+                    {
+                        return i;
+                    }
+                }
+            }
+            return -1;
+        }
+        protected static  bool ContainsBytes(byte[] data, byte[] pattern, int startIndex)
+        {
+            return IndexOf(data, pattern, startIndex) != -1;
+        }
+
+        protected bool SaveExtractedFile(byte[] data, string baseFileName, string extractedDir, string format, int count,
+                                         List<string> extractedFiles, out string outputFilePath)
+        {
+            outputFilePath = string.Empty;
+
+            if (data.Length <= 0) return false;
+
+            string outputFileName = $"{baseFileName}_{count}.{format}";
+            outputFilePath = Path.Combine(extractedDir, outputFileName);
+
+            if (File.Exists(outputFilePath))
+            {
+                int duplicateCount = 1;
+                do
+                {
+                    outputFileName = $"{baseFileName}_{count}_dup{duplicateCount}.{format}";
+                    outputFilePath = Path.Combine(extractedDir, outputFileName);
+                    duplicateCount++;
+                } while (File.Exists(outputFilePath));
+            }
+
+            try
+            {
+                File.WriteAllBytes(outputFilePath, data);
+                if (!extractedFiles.Contains(outputFilePath))
+                {
+                    extractedFiles.Add(outputFilePath);
+                    OnFileExtracted(outputFilePath);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new IOException($"保存文件{outputFileName}时出错:{ex.Message}", ex);
+            }
+
+            return false;
         }
 #pragma warning disable CS0067
         public event EventHandler<string>? FileExtracted;
@@ -127,7 +286,6 @@ namespace super_toolbox
             protected set { lock (_extractionLock) _totalFilesToExtract = value; }
         }
 
-        // 转换属性
         public int ConvertedFileCount
         {
             get { lock (_conversionLock) return _convertedFileCount; }
@@ -139,7 +297,6 @@ namespace super_toolbox
             protected set { lock (_conversionLock) _totalFilesToConvert = value; }
         }
 
-        // 打包属性
         public int PackedFileCount
         {
             get { lock (_packingLock) return _packedFileCount; }
@@ -151,7 +308,6 @@ namespace super_toolbox
             protected set { lock (_packingLock) _totalFilesToPack = value; }
         }
 
-        // 压缩属性
         public int CompressedFileCount
         {
             get { lock (_compressionLock) return _compressedFileCount; }
@@ -163,7 +319,6 @@ namespace super_toolbox
             protected set { lock (_compressionLock) _totalFilesToCompress = value; }
         }
 
-        // 解压属性
         public int DecompressedFileCount
         {
             get { lock (_decompressionLock) return _decompressedFileCount; }
@@ -175,7 +330,7 @@ namespace super_toolbox
             protected set { lock (_decompressionLock) _totalFilesToDecompress = value; }
         }
 
-        // 进度百分比属性
+
         public int ProgressPercentage
         {
             get
@@ -250,7 +405,6 @@ namespace super_toolbox
             ExtractAsync(directoryPath).Wait();
         }
 
-        // 提取相关方法
         protected void OnFileExtracted(string fileName)
         {
             bool shouldTriggerCompleted = false;
@@ -295,7 +449,6 @@ namespace super_toolbox
             ExtractionFailed?.Invoke(this, errorMessage);
         }
 
-        // 转换相关方法
         protected void OnFileConverted(string fileName)
         {
             bool shouldTriggerCompleted = false;
@@ -339,7 +492,6 @@ namespace super_toolbox
             ConversionFailed?.Invoke(this, errorMessage);
         }
 
-        // 打包相关方法
         protected void OnFilePacked(string fileName)
         {
             bool shouldTriggerCompleted = false;
@@ -383,7 +535,6 @@ namespace super_toolbox
             PackingFailed?.Invoke(this, errorMessage);
         }
 
-        // 压缩相关方法
         protected void OnFileCompressed(string fileName)
         {
             bool shouldTriggerCompleted = false;
@@ -427,7 +578,6 @@ namespace super_toolbox
             CompressionFailed?.Invoke(this, errorMessage);
         }
 
-        // 解压相关方法
         protected void OnFileDecompressed(string fileName)
         {
             bool shouldTriggerCompleted = false;
