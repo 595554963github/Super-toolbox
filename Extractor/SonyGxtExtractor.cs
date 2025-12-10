@@ -9,7 +9,7 @@ namespace super_toolbox
         private const int BUFFER_SIZE = 8192;
         private const int MAX_SEARCH_SIZE = 50 * 1024 * 1024;
 
-        private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
+        private new static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= data.Length - pattern.Length; i++)
             {
