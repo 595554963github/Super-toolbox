@@ -1,6 +1,6 @@
 namespace super_toolbox
 {
-    public class DyingLightExtractor : BaseExtractor
+    public class DyingLight_rpack_Extractor : BaseExtractor
     {
         public new event EventHandler<string>? ExtractionStarted;
         public new event EventHandler<string>? ExtractionProgress;
@@ -88,7 +88,7 @@ namespace super_toolbox
         {
             string extractFolder = Path.Combine(
                 Path.GetDirectoryName(filePath) ?? Environment.CurrentDirectory,
-                Path.GetFileNameWithoutExtension(filePath) + "_extracted");
+                Path.GetFileNameWithoutExtension(filePath));
 
             if (Directory.Exists(extractFolder))
             {
