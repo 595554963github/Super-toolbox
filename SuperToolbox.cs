@@ -131,7 +131,7 @@ namespace super_toolbox
             { "PS3 - psarc提取器", ("其他档案", "索尼ps3平台的psarc解包工具，代表作为第二次超级机器人大战OG，也可解包无人深空的pak文件") },
             { "PS3 - psarc打包器", ("其他档案", "索尼ps3平台的psarc打包器，能将一个文件夹重新打包成psarc文件") },
             { "PS3 - NPDRM - sdat", ("其他档案", "索尼ps3平台的sdat解包工具，代表作为约会大作战或守安装、约会大作战凛弥理想乡等，可提取sdat文件中的资源") },
-            { "Filename - PS3DALpck", ("其他档案", "ps3约会大作战的pck文件提取器，专门针对该游戏的pck格式，能提取其中的资源") },
+            { "Filename - pck", ("其他档案", "ps3约会大作战、白色相簿的pck解包工具") },
             { "CRI - afs打包器", ("其他档案", "CRIware的afs档案打包器，可将一个文件夹及子文件夹里的所有文件重新打包成afs文件") },
             { "Mages - mpk提取器", ("其他档案", "Mages的mpk解包工具，代表作为命运石之门，可提取mpk文件中的各类资源") },
             { "Mages - mpk打包器", ("其他档案", "Mages的mpk打包器，能将一个文件夹及子文件夹里的所有文件重新打包成mpk文件") },
@@ -170,6 +170,7 @@ namespace super_toolbox
             { "异度之刃 - map.pkb", ("其他档案", "wii平台异度之刃的map.pkb解包器，可提取出里面的文件") },
             { "异度之刃 - sar", ("其他档案", "wiiu平台异度之刃x的sar解包器，可提取出里面的hkt文件，它也是switch平台异度之刃终极版的提取器，可提取mcapk和chr文件里面的数据") },
             { "Fate Extella/Link - pk/pfs/pkb", ("其他档案", "psv平台的Fate Extella和Fate Extella Link专用提取器") },
+            { "白色相簿2 - dar archive", ("其他档案", "ps3平台的白色相簿2的data.dar专用提取器，voice.dar使用RIFF/RIFX提取器提取就可以了") },
         };
         public SuperToolbox()
         {
@@ -603,7 +604,7 @@ namespace super_toolbox
                 case "PS3 - psarc提取器": return new PsarcExtractor();
                 case "PS3 - psarc打包器": return new PsarcRepacker();
                 case "PS3 - NPDRM - sdat": return new NPD_Extractor();
-                case "Filename - PS3DALpck": return new FilenameExtractor();
+                case "Filename - pck": return new FilenameExtractor();
                 case "CRI - afs打包器": return new AfsRepacker();
                 case "Mages - mpk提取器": return new MagesMpkExtractor();
                 case "Mages - mpk打包器": return new MagesMpkRepacker();
@@ -640,8 +641,9 @@ namespace super_toolbox
                 case "异度之刃 - MXTX2DDS": return new MTXT2DDS_Converter();
                 case "异度之刃 - map.pkb": return new XenobladeMap_Extractor();
                 case "异度之刃 - sar": return new XenobladeSar_Extractor();
-                case "异度之刃 - pcbeb file" : return new Xenoblade_Pcbeb_Extractor();               
+                case "异度之刃 - pcbeb file": return new Xenoblade_Pcbeb_Extractor();               
                 case "Fate Extella/Link - pk/pfs/pkb": return new Fate_pk_Extractor();
+                case "白色相簿2 - dar archive": return new DarExtractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
