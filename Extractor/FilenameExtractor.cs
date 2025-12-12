@@ -52,7 +52,7 @@ namespace super_toolbox
                     int packPos = IndexOf(content, PACK_HEADER, 0);
                     if (packPos == -1)
                     {
-                        ExtractionProgress?.Invoke(this, $"跳过无效文件: {Path.GetFileName(pckFilePath)} (未找到Pack标识)");
+                        ExtractionProgress?.Invoke(this, $"跳过无效文件:{Path.GetFileName(pckFilePath)}(未找到Pack标识)");
                         continue;
                     }
 
@@ -112,7 +112,7 @@ namespace super_toolbox
 
                         if (offset + size > content.Length)
                         {
-                            ExtractionError?.Invoke(this, $"文件 {pckName}条目{i + 1}数据范围无效");
+                            ExtractionError?.Invoke(this, $"文件{pckName}条目{i + 1}数据范围无效");
                             continue;
                         }
 
@@ -122,7 +122,12 @@ namespace super_toolbox
                         string outputFileName;
                         if (i < fileNames.Count && !string.IsNullOrEmpty(fileNames[i]))
                         {
-                            outputFileName = fileNames[i];
+                            outputFileName = SanitizeFileName(fileNames[i]);
+
+                            if (string.IsNullOrEmpty(outputFileName) || !IsValidFileName(outputFileName))
+                            {
+                                outputFileName = $"{pckName}_{i + 1:000}";
+                            }
                         }
                         else
                         {
@@ -253,27 +258,38 @@ namespace super_toolbox
         {
             if (string.IsNullOrEmpty(fileName) || fileName.Length < 2 || fileName.Length > 255)
                 return false;
-
             if (fileName == "Filename" || fileName == "Pack" ||
                 fileName.Contains("\\") || fileName.Contains("/") || fileName.Contains(":"))
                 return false;
-
-            if (fileName.Contains("."))
-                return true;
-
-            if (fileName.Contains("_") || fileName.Any(char.IsDigit))
+            foreach (char c in fileName)
             {
-                foreach (char c in fileName)
+                if (!(char.IsLetterOrDigit(c) || c == '_' || c == '.'))
                 {
-                    if (!(char.IsLetterOrDigit(c) || c == '.' || c == '_' || c == '-' || c == ' ' || c == '%'))
-                    {
-                        return false;
-                    }
+                    return false;
                 }
-                return true;
+            }
+            if (!fileName.Contains('.') && !fileName.Any(char.IsLetter))
+            {
+                return false;
             }
 
-            return false;
+            return true;
+        }
+        private string SanitizeFileName(string fileName)
+        {
+            if (string.IsNullOrEmpty(fileName))
+                return fileName;
+
+            StringBuilder sb = new StringBuilder();
+            foreach (char c in fileName)
+            {
+                if (char.IsLetterOrDigit(c) || c == '_' || c == '.')
+                {
+                    sb.Append(c);
+                }
+            }
+
+            return sb.ToString();
         }
 
         private new static int IndexOf(byte[] data, byte[] pattern, int startIndex)
