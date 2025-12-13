@@ -3,7 +3,7 @@ using System.Text;
 
 namespace super_toolbox
 {
-    public class FilenameExtractor : BaseExtractor
+    public class Filename_Pck_BE_Extractor : BaseExtractor
     {
         public new event EventHandler<string>? ExtractionStarted;
         public new event EventHandler<string>? ExtractionProgress;
