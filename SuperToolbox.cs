@@ -49,8 +49,9 @@ namespace super_toolbox
             { "万代南梦宫 - bnsf", ("音频", "万代南梦宫的bnsf音频提取器，以二进制形式从TLFILE.TLDAT文件中提取。可解析情热传说和ps3平台的狂战传说中的音频，注意狂战传说steam版因加密无法提取") },
             { "索尼 - gxt提取器", ("其他档案", "从索尼的psv、psp等平台游戏中提取gxt文件。许多游戏喜欢将多个gxt文件打包存储，该工具可有效提取这些gxt文件，为后续转换处理提供基础") },
             { "直接绘制表面 - DDS", ("图片", "以二进制形式从游戏文件中提取dds图片，亲测适用于战场女武神4等游戏，支持一般的dds和DX10纹理的dds格式，满足多种游戏的dds图片提取需求") },
-            { "超女神信仰诺瓦露 - pck", ("其他档案", "用于解包steam和switch平台的超女神信仰诺瓦露游戏的pck文件") },
-            { "超女神信仰诺瓦露 - tex", ("图片", "用于解包steam和switch平台的超女神信仰诺瓦露游戏的tex文件，专注于提取该游戏中的图片资源") },
+            { "Filename小端序 - pck", ("其他档案", "steam和switch平台的超女神信仰诺瓦露、steam和psv的约战凛绪轮回、steam传颂之物二人的白皇的专用解包工具") },
+            { "Filename大端序 - pck", ("其他档案", "ps3约会大作战凛祢理想乡和约会大作战或守安装、白色相簿的专用解包工具") },
+            { "地雷社和AQUAPLUS专用纹理 - tex", ("图片", "用于解包steam和switch平台的超女神信仰诺瓦露游戏的tex文件，专注于提取该游戏中的图片资源") },
             { "SEGS binary data - bin", ("其他档案", "苍翼默示录：刻之幻影专用bin文件解包工具，可提取其中包含的所有pac文件") },
             { "苍翼默示录_刻之幻影 - pac", ("其他档案", "苍翼默示录：刻之幻影的专用解包工具，无法用于苍翼默示录：神观之梦") },
             { "苍翼默示录_神观之梦 - pac", ("其他档案", "苍翼默示录：神观之梦的专用解包工具，支持解包压缩的pac文件和普通pac文件") },
@@ -130,8 +131,7 @@ namespace super_toolbox
             { "Nds - narc提取器", ("其他档案", "任天堂nds平台的narc文件提取器，代表作为口袋妖怪(nds)，可提取narc文件中的资源") },
             { "PS3 - psarc提取器", ("其他档案", "索尼ps3平台的psarc解包工具，代表作为第二次超级机器人大战OG，也可解包无人深空的pak文件") },
             { "PS3 - psarc打包器", ("其他档案", "索尼ps3平台的psarc打包器，能将一个文件夹重新打包成psarc文件") },
-            { "PS3 - NPDRM - sdat", ("其他档案", "索尼ps3平台的sdat解包工具，代表作为约会大作战或守安装、约会大作战凛弥理想乡等，可提取sdat文件中的资源") },
-            { "Filename - pck", ("其他档案", "ps3约会大作战、白色相簿的pck解包工具") },
+            { "PS3 - NPDRM - sdat", ("其他档案", "索尼ps3平台的sdat解包工具，代表作为约会大作战或守安装、约会大作战凛弥理想乡等，可提取sdat文件中的资源") },         
             { "CRI - afs打包器", ("其他档案", "CRIware的afs档案打包器，可将一个文件夹及子文件夹里的所有文件重新打包成afs文件") },
             { "Mages - mpk提取器", ("其他档案", "Mages的mpk解包工具，代表作为命运石之门，可提取mpk文件中的各类资源") },
             { "Mages - mpk打包器", ("其他档案", "Mages的mpk打包器，能将一个文件夹及子文件夹里的所有文件重新打包成mpk文件") },
@@ -146,17 +146,17 @@ namespace super_toolbox
             { "双截龙彩虹pak提取器", ("其他档案", "双截龙彩虹的专用pak提取器，专门针对该游戏的pak格式，能提取其中的资源") },
             { "CFSI - cfsi提取器", ("其他档案", "cfsi文件专用提取器，适用于极限脱出3：零时困境和Re：从零开始的异世界生活虚假的王选候补等游戏") },
             { "CFSI - cfsi打包器", ("其他档案", "cfsi打包器，可将一个文件夹及子文件夹里的所有文件重新打包成cfsi文件") },
-            { "消逝的光芒 - rpack", ("其他档案", "消逝的光芒rpack专用提取器，针对该游戏的rpack格式，能有效提取其中的资源") },
-            { "传颂之物二人的白皇 - sdat", ("其他档案", "传颂之物二人的白皇的sdat文件专用提取器，专门提取该游戏sdat文件中的资源") },
+            { "消逝的光芒 - rpack", ("其他档案", "消逝的光芒rpack专用提取器") },
+            { "消逝的光芒 - csb", ("其他档案", "消逝的光芒csb专用提取器") },
             { "PlayStation MultiStream File - msf", ("音频", "以二进制形式从索尼游戏中提取msf音频文件") },
             { "PlayStation - pssg archive", ("图片", "PlayStation pssg档案提取器，可提取该档案中的图片资源") },
             { "Terminal Reality - pod/epd ahchive", ("其他档案", "Terminal Reality工作室的pod档案提取器，代表作为星球大战原力释放2，可提取pod/epd档案中的资源") },
             { "PlayStation - GPDA archive", ("其他档案", "索尼psp平台上常见的GPDA档案的专用提取器，例如我的妹妹不可能那么可爱、凉宫春日的追忆等游戏") },
             { "暗影狂奔 - data/toc archive", ("其他档案", "Xbox360游戏暗影狂奔和皇牌空战6解放之战火的专用提取器，可解data/toc这种组合打包的档案") },
+            { "ahx2wav", ("音频", "此工具可以将Criware的ahx文件转换成wav格式") },
             { "异度之刃2 - ard/arh archive", ("其他档案", "switch游戏异度之刃2的提取器，可解包ard/arh这种组合打包的档案") },
             { "异度之刃3 - ard/arh archive", ("其他档案", "switch游戏异度之刃3的提取器，可解包ard/arh这种组合打包的档案") },
-            { "异度之刃 - LBIM2DDS", ("图片", "异度之刃系列的LBIM转换器，可将文件尾为LBIM的文件转换成dds图像，如果是wismda文件该工具会先拆分xbc1文件，如果是xbc1文件会先移除前48字节，随后zlib解压，然后转换成dds图片，一步到位") },
-            { "ahx2wav", ("音频", "此工具可以将Criware的ahx文件转换成wav格式") },
+            { "异度之刃 - LBIM2DDS", ("图片", "异度之刃系列的LBIM转换器，可将文件尾为LBIM的文件转换成dds图像，如果是wismda文件该工具会先拆分xbc1文件，如果是xbc1文件会先移除前48字节，随后zlib解压，然后转换成dds图片，一步到位") },          
             { "异度之刃 - arc file", ("其他档案", "从3ds平台的异度之刃arc文件里面提取tpl文件") },
             { "异度之刃 - BC file", ("其他档案", "从异度之刃系列游戏提取BC动画文件，这些文件包含ANIM签名") },
             { "异度之刃 - tpl2bclim", ("图片", "将3ds平台异度之刃的tpl文件转换成bclim文件") },
@@ -171,6 +171,8 @@ namespace super_toolbox
             { "异度之刃 - sar", ("其他档案", "wiiu平台异度之刃x的sar解包器，可提取出里面的hkt文件，它也是switch平台异度之刃终极版的提取器，可提取mcapk和chr文件里面的数据") },
             { "Fate Extella/Link - pk/pfs/pkb", ("其他档案", "psv平台的Fate Extella和Fate Extella Link专用提取器") },
             { "白色相簿2 - dar archive", ("其他档案", "ps3平台的白色相簿2的data.dar专用提取器，voice.dar使用RIFF/RIFX提取器提取就可以了") },
+            { "PlayStation - TROPHY.TRP file", ("其他档案", "索尼Playstation平台的trp奖杯文件提取器,代表游戏如ps3的白色相簿、psv的SD高达G世纪-创世") },
+            { "奥特曼格斗进化3 - bin", ("其他档案", "ps2平台的奥特曼格斗进化3专用提取器,由quickbms脚本修改而来") },
         };
         public SuperToolbox()
         {
@@ -262,7 +264,7 @@ namespace super_toolbox
         private readonly HashSet<string> _converters = new HashSet<string>
         {
          "PNG编码ASTC", "ASTC解码PNG", "Gnf2Png", "PowerVR转换png","异度之刃 - tpl2bclim","异度之刃 - bclim2png","异度之刃 - MXTX2DDS",
-         "第七史诗 - sct", "索尼 - gxt转换器", "超女神信仰诺瓦露 - tex",
+         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS专用纹理 - tex",
          "wav2qoa - 转换qoa", "Wiiu - gtx转换器", "hip2png","异度之刃 - LBIM2DDS","ahx2wav"
         };
         private bool IsConverter(string formatName) => _converters.Contains(formatName);
@@ -521,8 +523,9 @@ namespace super_toolbox
                 case "万代南梦宫 - bnsf": return new Bnsf_Extractor();
                 case "索尼 - gxt提取器": return new SonyGxtExtractor();
                 case "直接绘制表面 - DDS": return new DdsExtractor();
-                case "超女神信仰诺瓦露 - pck": return new StingPckExtractor();
-                case "超女神信仰诺瓦露 - tex": return new StingTexConverter();
+                case "Filename小端序 - pck": return new Filename_Pck_LE_Extractor();
+                case "Filename大端序 - pck": return new Filename_Pck_BE_Extractor();
+                case "地雷社和AQUAPLUS专用纹理 - tex": return new StingTexConverter();
                 case "SEGS binary data - bin": return new SEGS_BinExtractor();
                 case "苍翼默示录_刻之幻影 - pac": return new FPAC_CP_Extractor();
                 case "苍翼默示录_神观之梦 - pac": return new FPAC_CF_Extractor();
@@ -603,8 +606,7 @@ namespace super_toolbox
                 case "Nds - narc提取器": return new NarcExtractor();
                 case "PS3 - psarc提取器": return new PsarcExtractor();
                 case "PS3 - psarc打包器": return new PsarcRepacker();
-                case "PS3 - NPDRM - sdat": return new NPD_Extractor();
-                case "Filename - pck": return new FilenameExtractor();
+                case "PS3 - NPDRM - sdat": return new NPD_Extractor();             
                 case "CRI - afs打包器": return new AfsRepacker();
                 case "Mages - mpk提取器": return new MagesMpkExtractor();
                 case "Mages - mpk打包器": return new MagesMpkRepacker();
@@ -619,8 +621,8 @@ namespace super_toolbox
                 case "双截龙彩虹pak提取器": return new DoubleDragonNeon_PakExtractor();
                 case "CFSI - cfsi提取器": return new Cfsi_Extractor();
                 case "CFSI - cfsi打包器": return new Cfsi_Repacker();
-                case "消逝的光芒 - rpack": return new DyingLightExtractor();
-                case "传颂之物二人的白皇 - sdat": return new Sdat_Extractor();
+                case "消逝的光芒 - rpack": return new DyingLight_rpack_Extractor();
+                case "消逝的光芒 - csb": return new DyingLight_csb_Extractor();
                 case "PlayStation MultiStream File - msf": return new Msf_Extractor();
                 case "PlayStation - pssg archive": return new PSSG_Extractor();
                 case "Terminal Reality - pod/epd ahchive": return new PodExtractor();
@@ -644,6 +646,8 @@ namespace super_toolbox
                 case "异度之刃 - pcbeb file": return new Xenoblade_Pcbeb_Extractor();               
                 case "Fate Extella/Link - pk/pfs/pkb": return new Fate_pk_Extractor();
                 case "白色相簿2 - dar archive": return new DarExtractor();
+                case "PlayStation - TROPHY.TRP file": return new PlayStation_Trp_Extractor();
+                case "奥特曼格斗进化3 - bin": return new Ultraman3_bin_Extractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
