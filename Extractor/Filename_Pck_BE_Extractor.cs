@@ -10,7 +10,7 @@ namespace super_toolbox
         public new event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] FILENAME_HEADER = { 0x46, 0x69, 0x6C, 0x65, 0x6E, 0x61, 0x6D, 0x65 };
-        private static readonly byte[] PACK_HEADER = { 0x50, 0x61, 0x63, 0x6B, 0x20, 0x20, 0x20, 0x20 };
+        private static readonly byte[] PACK_MARKER = { 0x50, 0x61, 0x63, 0x6B, 0x20, 0x20, 0x20, 0x20 };//白色相簿(ps3)、约会大作战或守安装(ps3)、约会大作战凛祢理想乡(ps3)
 
         public override void Extract(string directoryPath)
         {
@@ -49,17 +49,17 @@ namespace super_toolbox
                         continue;
                     }
 
-                    int packPos = IndexOf(content, PACK_HEADER, 0);
+                    int packPos = IndexOf(content, PACK_MARKER, 0);
                     if (packPos == -1)
                     {
                         ExtractionProgress?.Invoke(this, $"跳过无效文件:{Path.GetFileName(pckFilePath)}(未找到Pack标识)");
                         continue;
                     }
 
-                    int fileCountPos = packPos + PACK_HEADER.Length + 4;
+                    int fileCountPos = packPos + PACK_MARKER.Length + 4;
                     if (fileCountPos + 4 > content.Length)
                     {
-                        ExtractionError?.Invoke(this, $"文件 {Path.GetFileName(pckFilePath)} 格式错误");
+                        ExtractionError?.Invoke(this, $"文件{Path.GetFileName(pckFilePath)}格式错误");
                         continue;
                     }
 
@@ -150,7 +150,7 @@ namespace super_toolbox
                                 string nameInfo = (i < fileNames.Count && !string.IsNullOrEmpty(fileNames[i]))
                                     ? $"(原文件名:{fileNames[i]})"
                                     : "";
-                                ExtractionProgress?.Invoke(this, $"已提取:{outputFileName} ({size}字节) {nameInfo}");
+                                ExtractionProgress?.Invoke(this, $"已提取:{outputFileName} ({size}字节){nameInfo}");
                             }
                         }
                         catch (Exception ex)
@@ -159,7 +159,7 @@ namespace super_toolbox
                         }
                     }
 
-                    ExtractionProgress?.Invoke(this, $"{Path.GetFileName(pckFilePath)} 提取完成，共提取{extractedCount}个文件");
+                    ExtractionProgress?.Invoke(this, $"{Path.GetFileName(pckFilePath)}提取完成，共提取{extractedCount}个文件");
                     if (fileNames.Count > 0)
                     {
                         ExtractionProgress?.Invoke(this, $"{Path.GetFileName(pckFilePath)} - 成功还原了{Math.Min(fileNames.Count, entries.Count)}个文件的原始文件名");
