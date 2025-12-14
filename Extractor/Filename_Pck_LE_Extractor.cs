@@ -12,9 +12,9 @@ namespace super_toolbox
         private static readonly byte[] ZLIB_HEADER = { 0x5A, 0x4C, 0x49, 0x42 };
         private static readonly byte[] FILENAME_HEADER = { 0x46, 0x69, 0x6C, 0x65, 0x6E, 0x61, 0x6D, 0x65 };
         private static readonly byte[] PACK_MARKER_4 = Encoding.ASCII.GetBytes("Pack    ");//超女神信仰诺瓦露(steam)、约会大作战凛绪轮回(psv)
-        private static readonly byte[] PACK_MARKER_8 = Encoding.ASCII.GetBytes("Pack        ");//超女神信仰诺瓦露(switch)、
+        private static readonly byte[] PACK_MARKER_8 = Encoding.ASCII.GetBytes("Pack        ");//超女神信仰诺瓦露(switch)、传颂之物二人的白皇(steam)
         private static readonly byte[] PACK_MARKER_12 = Encoding.ASCII.GetBytes("Pack            ");//暂未发现
-        private static readonly byte[] PACK_MARKER_16 = Encoding.ASCII.GetBytes("Pack                "); //约会大作战凛绪轮回(steam)
+        private static readonly byte[] PACK_MARKER_16 = Encoding.ASCII.GetBytes("Pack                "); //约会大作战_凛绪轮回(steam)、白色相簿_编缀的冬日回忆(steam)
 
         private new static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
