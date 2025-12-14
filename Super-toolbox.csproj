@@ -17,6 +17,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="plugins\tex2bmp.dll" />
+	  <None Remove="VGAudioCli.exe" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<EmbeddedResource Include="plugins\dds-phyre-tool.exe">
 			<LogicalName>embedded.dds_phyre_tool.exe</LogicalName>
 		</EmbeddedResource>
@@ -201,7 +206,7 @@
 			<HintPath>plugins\ByteSize.dll</HintPath>
 		</Reference>
 		<Reference Include="DALLib">
-			<HintPath>plugins\DALLib.dll</HintPath>
+		  <HintPath>plugins\DALLib.dll</HintPath>
 		</Reference>
 		<Reference Include="DyingLight">
 			<HintPath>plugins\DyingLight.dll</HintPath>
