@@ -23,156 +23,160 @@ namespace super_toolbox
         private ToolStripStatusLabel lblFileCount;
         private readonly Dictionary<string, (string category, string description)> defaultCategories = new Dictionary<string, (string, string)>
         {
-            { "RIFF - RIFF/RIFX音频", ("音频", "RIFF/RIFX资源交换文件格式家族的音频提取器，支持提取wwise的小端序wem、索尼的at3/at9、微软的xma和xwma，常见的wav和RIFX的大端序wem格式") },
-            { "RIFF - Fmod - bank", ("音频", "从游戏文件中提取Fmod音频库的bank文件，如国产手游白荆回廊、云裳羽衣等均采用此格式存储音频，提取后可进一步处理其中的音频资源") },
-            { "RIFF - cdxa - xa", ("音频", "专门从PlayStation游戏的XA文件中提取xa音频。需注意区分大小写，XA是打包多个xa音频的容器文件，该工具可有效解析并提取其中的音频内容") },
+            { "RIFF - RIFF/RIFX音频", ("音频", "RIFF/RIFX资源交换文件格式家族的音频提取器,支持提取wwise的小端序wem、索尼的at3/at9、微软的xma和xwma,常见的wav和RIFX的大端序wem格式") },
+            { "RIFF - Fmod - bank", ("音频", "从游戏文件中提取Fmod音频库的bank文件,如国产手游白荆回廊、云裳羽衣等均采用此格式存储音频,提取后可进一步处理其中的音频资源") },
+            { "RIFF - cdxa - xa", ("音频", "专门从PlayStation游戏的XA文件中提取xa音频。需注意区分大小写,XA是打包多个xa音频的容器文件,该工具可有效解析并提取其中的音频内容") },
             { "CRI - adpcm_adx - adx", ("音频", "以二进制形式从cpk、afs、awb、acb甚至uasset、uexp等多种文件中提取adx文件") },
             { "CRI - adpcm_adx - ahx", ("音频", "以二进制形式从cpk、afs等文件中提取ahx文件") },
-            { "Fmod - fsb5", ("音频", "可从Fmod的bank中提取fsb文件，也支持从steam游戏永恒轮回和女神异闻录5对决_幽灵先锋的resources.resource中提取fsb。针对正当防卫4的arc文件，还提供了专用提取方法，功能全面") },
-            { "Xiph.Org - Ogg", ("音频", "从各种游戏中提取ogg格式的音频文件。ogg是广泛使用的音频格式，该工具能适配不同游戏的打包方式，高效提取其中的ogg音频") },
-            { "CRI - HCA - hca", ("音频", "以二进制形式从cpk、awb、acb或者uexp等文件中提取打包的hca音频文件。若提取的是加密hca文件，会自带enc后缀名（如enc.hca），方便用户识别处理") },
-            { "任天堂 - libopus - lopus", ("音频", "任天堂switch平台专用音频提取器，代表作为月姬重制版。其提取的音频文件头为OPUS，实际是libopus编码的lopus格式，与普通opus不同，本工具可精准提取此类特殊格式") },
-            { "光荣特库摩 - kvs/ktss", ("音频", "提取光荣特库摩游戏的kvs和ktss音频格式，主要支持从switch平台提取kns、steam平台的kvs格式，同时兼容ps4平台的at3格式，适配多平台同类游戏音频提取") },
-            { "RIFF - Google - webp", ("图片", "基于RIFF资源交换文件格式，提取Google开发的WebP格式图片") },
-            { "联合图像专家组 - JPEG/JPG", ("图片", "以二进制形式从游戏文件中提取jpg图片，jpg是标准计算机文件，有固定文件头和文件尾") },
-            { "便携式网络图形 - PNG", ("图片", "以二进制形式从游戏文件中提取png图片。png是标准计算机文件，具有固定文件头和文件尾") },
-            { "索尼 - gxt转换器", ("图片", "将PlayStation游戏的gxt格式转换为png格式的工具，支持批量转换。与gxt提取器不同，该工具专注于格式转换") },
-            { "ENDILTLE - APK - apk", ("其他档案", "文件头为ENDILTLE的apk提取器，此类apk非安卓apk，代表游戏包括Artdink开发的龙珠Z_终极之战、万代南梦宫的刀剑神域失落之歌等") },
+            { "Fmod - fsb5", ("音频", "可从Fmod的bank中提取fsb文件,也支持从steam游戏永恒轮回和女神异闻录5对决_幽灵先锋的resources.resource中提取fsb。针对正当防卫4的arc文件,还提供了专用提取方法,功能全面") },
+            { "Xiph.Org - Ogg", ("音频", "从各种游戏中提取ogg格式的音频文件。ogg是广泛使用的音频格式,该工具能适配不同游戏的打包方式,高效提取其中的ogg音频") },
+            { "CRI - HCA - hca", ("音频", "以二进制形式从cpk、awb、acb或者uexp等文件中提取打包的hca音频文件。若提取的是加密hca文件,会自带enc后缀名（如enc.hca）,方便用户识别处理") },
+            { "任天堂 - libopus - lopus", ("音频", "任天堂switch平台专用音频提取器,代表作为月姬重制版。其提取的音频文件头为OPUS,实际是libopus编码的lopus格式,与普通opus不同,本工具可精准提取此类特殊格式") },
+            { "光荣特库摩 - kvs/ktss", ("音频", "提取光荣特库摩游戏的kvs和ktss音频格式,主要支持从switch平台提取kns、steam平台的kvs格式,同时兼容ps4平台的at3格式,适配多平台同类游戏音频提取") },
+            { "RIFF - Google - webp", ("图片", "基于RIFF资源交换文件格式,提取Google开发的WebP格式图片") },
+            { "联合图像专家组 - JPEG/JPG", ("图片", "以二进制形式从游戏文件中提取jpg图片,jpg是标准计算机文件,有固定文件头和文件尾") },
+            { "便携式网络图形 - PNG", ("图片", "以二进制形式从游戏文件中提取png图片,png是标准计算机文件,具有固定文件头和文件尾") },
+            { "位图图像文件 - BMP", ("图片", "以二进制形式从游戏文件中提取bmp图片,bmp是标准计算机文件,具有固定文件头") },
+            { "标记图形文件格式 - TGA", ("图片", "以二进制形式从游戏文件中提取tga图片") },
+            { "索尼 - gxt转换器", ("图片", "将PlayStation游戏的gxt格式转换为png格式的工具,支持批量转换。与gxt提取器不同,该工具专注于格式转换") },
+            { "ENDILTLE - APK - apk", ("其他档案", "文件头为ENDILTLE的apk提取器,此类apk非安卓apk,代表游戏包括Artdink开发的龙珠Z_终极之战、万代南梦宫的刀剑神域失落之歌等") },
             { "东方天空竞技场 - GPK - gpk", ("其他档案", "东方天空竞技场_幻想乡空战姬的专用解包器") },
-            { "GxArchivedFile - dat", ("其他档案", "Mizuchi引擎开发的游戏档案专用提取器，广泛用于地雷社游戏，如死亡终局轮回试炼系列、神狱塔断罪玛丽最终篇等") },
+            { "GxArchivedFile - dat", ("其他档案", "Mizuchi引擎开发的游戏档案专用提取器,广泛用于地雷社游戏,如死亡终局轮回试炼系列、神狱塔断罪玛丽最终篇等") },
             { "苍之彼方的四重奏EXTRA2 - dat", ("其他档案", "苍之彼方的四重奏2 Extra的专用提取器") },
-            { "Lightvn galgame engine - mcdat/vndat", ("其他档案", "Light.vn galgame引擎的提取器，可解包宝石少女1st的mcdat和爱你，我的英雄！的vndat文件") },
-            { "CRI - afs提取器", ("其他档案", "用于解包criware的afs档案，该文件在任天堂、索尼、世嘉和xbox360平台较为常见") },
-            { "CRI - cpk", ("其他档案", "用于解包CRIWARE的cpk格式档案，该格式应用广泛，可存储多种类型资源") },
-            { "IdeaFactory - tid", ("图片", "地雷社海王星系列tid文件转换工具，可将tid转换为dds格式，且支持BC7纹理的tid文件") },
-            { "第七史诗 - sct", ("图片", "第七史诗的sct转换器，支持批量将sct格式转换为png格式") },
-            { "万代南梦宫 - bnsf", ("音频", "万代南梦宫的bnsf音频提取器，以二进制形式从TLFILE.TLDAT文件中提取。可解析情热传说和ps3平台的狂战传说中的音频，注意狂战传说steam版因加密无法提取") },
-            { "索尼 - gxt提取器", ("其他档案", "从索尼的psv、psp等平台游戏中提取gxt文件。许多游戏喜欢将多个gxt文件打包存储，该工具可有效提取这些gxt文件") },
-            { "直接绘制表面 - DDS", ("图片", "以二进制形式从游戏文件中提取dds图片，亲测适用于战场女武神4等游戏，支持一般的dds和DX10纹理的dds格式") },
-            { "Filename小端序 - pck", ("其他档案", "steam和switch平台的超女神信仰诺瓦露、steam和psv的约战凛绪轮回、steam传颂之物二人的白皇的专用解包工具") },
+            { "Lightvn galgame engine - mcdat/vndat", ("其他档案", "Light.vn galgame引擎的提取器,可解包宝石少女1st的mcdat和爱你,我的英雄！的vndat文件") },
+            { "CRI - afs提取器", ("其他档案", "用于解包criware的afs档案,该文件在任天堂、索尼、世嘉和xbox360平台较为常见") },
+            { "CRI - cpk", ("其他档案", "用于解包CRIWARE的cpk格式档案,该格式应用广泛,可存储多种类型资源") },
+            { "IdeaFactory - tid", ("图片", "地雷社海王星系列tid文件转换工具,可将tid转换为dds格式,且支持BC7纹理的tid文件") },
+            { "第七史诗 - sct", ("图片", "第七史诗的sct转换器,支持批量将sct格式转换为png格式") },
+            { "万代南梦宫 - bnsf", ("音频", "万代南梦宫的bnsf音频提取器,以二进制形式从TLFILE.TLDAT文件中提取。可解析情热传说和ps3平台的狂战传说中的音频,注意狂战传说steam版因加密无法提取") },
+            { "索尼 - gxt提取器", ("其他档案", "从索尼的psv、psp等平台游戏中提取gxt文件。许多游戏喜欢将多个gxt文件打包存储,该工具可有效提取这些gxt文件") },
+            { "直接绘制表面 - DDS", ("图片", "以二进制形式从游戏文件中提取dds图片,亲测适用于战场女武神4等游戏,支持一般的dds和DX10纹理的dds格式") },
+            { "Filename小端序 - pck", ("其他档案", "steam和switch平台的超女神信仰诺瓦露、steam和psv的约战凛绪轮回、steam白色相簿_编缀的冬日回忆和传颂之物二人的白皇的专用解包工具") },
             { "Filename大端序 - pck", ("其他档案", "ps3约会大作战凛祢理想乡和约会大作战或守安装、白色相簿的专用解包工具") },
-            { "地雷社和AQUAPLUS专用纹理 - tex", ("图片", "超女神信仰诺瓦露、白色相簿、约会大作战系列、传颂之物二人的白皇专用tex转换器") },
-            { "SEGS binary data - bin", ("其他档案", "苍翼默示录_刻之幻影专用bin文件解包工具，可提取其中包含的所有pac文件") },
-            { "苍翼默示录_刻之幻影 - pac", ("其他档案", "苍翼默示录_刻之幻影的专用解包工具，无法用于苍翼默示录_神观之梦") },
-            { "苍翼默示录_神观之梦 - pac", ("其他档案", "苍翼默示录_神观之梦的专用解包工具，支持解包压缩的pac文件和普通pac文件") },
-            { "断罪的玛利亚 - dat", ("其他档案", "ps3游戏断罪的玛利亚专用提取器，可解包data.dat文件，提取其中的视频、音频和图片") },
-            { "进击的巨人_自由之翼 - bin", ("其他档案", "进击的巨人_自由之翼提取器，能从LINKDATA.bin文件中提取出g1t、g1m等文件") },
-            { "PlayStation 4 bit ADPCM - vag", ("音频", "以二进制形式从PlayStation游戏文件中提取vag音频文件，vag是采用PlayStation 4 bit ADPCM编码的音频格式") },
-            { "零_濡鸦之巫女 - fmsg", ("其他档案", "零濡鸦之巫女的fmsg转换器，可将fmsg文件转换为txt文本") },
-            { "零_濡鸦之巫女 - kscl", ("图片", "零濡鸦之巫女的kscl转换器，能将kscl文件转换为dds图片") },
-            { "PhyreEngine Texture - phyre", ("图片", "从phyre引擎的phyre文件中提取dds图片的提取器，适用于刀剑神域虚空断章、彼岸游境、东京幻都EX等采用该引擎的游戏") },
-            { "PhyreEngine package - pkg", ("其他档案", "phyre引擎的pkg文件提取器，适配东京幻都EX、闪之轨迹、创之轨迹等采用该引擎的游戏，可提取pkg文件中的各类资源") },
-            { "女神异闻录5对决_幽灵先锋 - bin", ("其他档案", "女神异闻录5对决_幽灵先锋的专用wmv提取器，能从movie文件夹的bin文件中提取上百个wmv视频") },
-            { "MPEG-4 - mp4", ("其他档案", "从游戏文件中提取mp4视频文件。尽管mp4文件头前四字节不固定，但后4字节固定，工具可依据此特征轻松提取合法mp4视频") },
-            { "IdeaFactory - bra", ("其他档案", "bra提取器，适用于地雷社妖精剑士F和Falcome的东京幻都EX等游戏") },
-            { "任天堂 - 3DS/WII/WIIU sound", ("音频", "任天堂wii、wiiu和3ds平台的音频提取器，能从brsar、bfsar和bcsar文件中提取出br/bf/bc前缀的wav波形音频文件") },
-            { "Binary Audio Archive - baa", ("其他档案", "一种未知的音频档案格式提取工具。aw文件因不包含头部信息、文件大小等标识数据而依赖baa索引文件，代表作有wiiu平台的塞尔达传说黄昏公主HD") },
-            { "Audio Archive - aw", ("音频", "baa文件配套提取器，用于从baa文件中提取wsys文件。无wsys文件则无法解包aw文件，且需将wsys文件放入aw文件夹才能提取wav，目前vgmstream已支持解码aw/baa") },
-            { "反恐精英OL - pak", ("其他档案", "反恐精英ol的pak提取器，csol的打包格式分nar和pak两种，本工具专门用于解pak文件") },
-            { "IdeaFactory - pac提取器", ("其他档案", "地雷社游戏的pac提取器，此pac格式常用于海王星系列游戏") },
-            { "IdeaFactory - pac打包器", ("其他档案", "地雷社游戏的pac打包器，能将文件夹重新打包成pac文件") },
-            { "光荣特库摩 - gz/exlilr", ("其他档案", "光荣特库摩的gz和elixir文件提取器，适用于蓝色反射_帝、幻舞少女之剑、无夜之国等游戏") },
-            { "光荣特库摩 - ebm", ("其他档案", "光荣特库摩的ebm文件提取器，适配蓝色反射_帝、幻舞少女之剑、无夜之国等游戏") },
-            { "光荣特库摩 - g1t", ("图片", "光荣特库摩的g1t文件提取器，可提取出dds图片，适用于fate系列、无夜之国2等游戏") },
-            { "光荣特库摩 - gmpk", ("其他档案", "光荣特库摩的gmpk文件提取器，适用于零系列的濡鸦之巫女等游戏") },
-            { "光荣特库摩 - pak", ("其他档案", "光荣特库摩的pak文件提取器，适用于蓝色反射_帝、幻舞少女之剑、苏菲的炼金工房2等游戏") },
-            { "PowerVR转换png", ("图片", "pvr纹理转换器，无需依赖Texturepacker的免费试用限制，可无限使用，将pvr纹理转换为png格式，适用于逆战upk文件提取的pvr") },
-            { "逆战 - upk", ("其他档案", "逆战upk提取器，解决手动逐个解包的麻烦，支持批量解包，高效提取upk文件中的资源") },
-            { "战争传说 - pak", ("其他档案", "战争传说的pak解包工具，基于bms脚本改写成c#语言，解决了原PAKTool易出现非法字符报错的问题，可彻底解包该游戏所有pak文件") },
-            { "IdeaFactory - cl3", ("其他档案", "地雷社游戏的CL3提取器，可从CL3文件中提取dat、tid等文件，代表作为妖精剑士F，解决了stcm-editor.exe工具使用不便的问题") },
-            { "5pb - LNK4 archives - dat", ("其他档案", "5pb的LNK4文件头的dat解包工具，可解xbox360游戏11只眼_交错的视线等采用该格式的文件") },
-            { "万代南梦宫 - 情热传说 - dat", ("其他档案", "万代南梦宫的情热传说TLDAT解包工具，也可解狂战传说的相关文件，但仅支持PS3平台，不支持加密的steam平台版本") },
-            { "Brotli - brotli_compress", ("压缩", "使用Brotli算法批量压缩文件，注意压缩速度较慢，若无法删除文件夹可在任务管理器中退出brotli.exe进程") },
-            { "Brotli - brotli_decompress", ("解压", "使用Brotli算法批量解压文件，解压速度较快，能高效处理采用该算法压缩的文件") },
-            { "Gzip - gzip_compress", ("压缩", "使用Gzip算法批量压缩文件，适用于需要采用该经典压缩算法处理文件的场景") },
-            { "Gzip - gzip_decompress", ("解压", "使用Gzip算法批量解压文件，可快速解压缩采用该算法压缩的文件") },
-            { "Huffman - huffman_compress", ("压缩", "使用Huffman算法批量压缩文件，利用该算法的特性对文件进行压缩处理") },
-            { "Huffman - huffman_decompress", ("解压", "使用Huffman算法批量解压文件，专门用于解压缩采用Huffman算法压缩的文件") },
-            { "Lz4 - lz4_compress", ("压缩", "使用Lz4算法批量压缩文件，基于C#第三方库实现，满足对文件进行Lz4压缩的需求") },
-            { "Lz4 - lz4_decompress", ("解压", "使用Lz4算法批量解压文件，基于C#第三方库实现，可解压缩采用Lz4算法压缩的文件") },
-            { "Lz4c - lz4c_compress", ("压缩", "使用Lz4c算法批量压缩文件，通过调用外部可执行程序实现，适用于需要Lz4c压缩的场景") },
-            { "Lz4c - lz4c_decompress", ("解压", "使用Lz4c算法批量解压文件，通过调用外部可执行程序实现，用于解压缩Lz4c算法处理的文件") },
-            { "LZ77 - lz77_compress", ("压缩", "使用Lz77算法批量压缩文件，利用该经典压缩算法对文件进行压缩处理") },
-            { "LZ77 - lz77_decompress", ("解压", "使用Lz77算法批量解压文件，专门解压缩采用Lz77算法压缩的文件") },
-            { "LZMA - 7-zip_lzma_compress", ("压缩", "使用Lzma算法批量压缩文件，基于7-zip的相关实现，适用于需要高压缩率的场景") },
-            { "LZMA - 7-zip_lzma_decompress", ("解压", "使用Lzma算法批量解压文件，可解压缩采用Lzma算法压缩的文件，包括7-zip生成的相关文件") },
-            { "LZO - lzo_compress", ("压缩", "使用Lzo算法批量压缩文件，利用该算法的特点对文件进行压缩处理") },
-            { "LZO - lzo_decompress", ("解压", "使用Lzo算法批量解压文件，用于解压缩采用Lzo算法压缩的文件") },
-            { "LZSS - lzss自定义压缩", ("压缩", "使用自定义Lzss算法批量压缩文件，针对特定场景优化的Lzss压缩实现，满足特殊压缩需求") },
-            { "LZSS - lzss自定义解压", ("解压", "使用自定义Lzss算法批量解压文件，专门用于解压缩采用自定义Lzss算法压缩的文件") },
-            { "Lzham - lzham自定义压缩", ("压缩", "使用自定义Lzham算法批量压缩文件，基于Lzham算法的定制实现，适用于特定压缩场景") },
-            { "Lzham - lzham自定义解压", ("解压", "使用自定义Lzham算法批量解压文件，用于解压缩采用自定义Lzham算法压缩的文件") },
-            { "Lzham - Lzham标准压缩", ("压缩", "使用标准Lzham算法批量压缩文件，遵循标准Lzham算法实现，保证兼容性") },
-            { "Lzham - Lzham标准解压", ("解压", "使用标准Lzham算法批量解压文件，可解压缩采用标准Lzham算法压缩的文件") },
-            { "Minlz - minlz_compress", ("压缩", "使用Minlz算法批量压缩文件，利用该算法对文件进行压缩处理") },
-            { "Minlz - minlz_decompress", ("解压", "使用Minlz算法批量解压文件，专门解压缩采用Minlz算法压缩的文件") },
-            { "Mio0 - mio0_compress", ("压缩", "使用Mio0算法批量压缩文件，适用于需要采用该算法进行压缩的场景") },
-            { "Mio0 - mio0_decompress", ("解压", "使用Mio0算法批量解压文件，用于解压缩采用Mio0算法压缩的文件") },
-            { "Oodle - oodle_compress", ("压缩", "使用Oodle算法批量压缩文件，利用该高效压缩算法对文件进行压缩处理") },
-            { "Oodle - oodle_decompress", ("解压", "使用Oodle算法批量解压文件，可解压缩采用Oodle算法压缩的文件") },
-            { "Snappy - snappy_compress", ("压缩", "使用Snappy算法批量压缩文件，该算法注重压缩速度，适用于对速度要求较高的场景") },
-            { "Snappy - snappy_decompress", ("解压", "使用Snappy算法批量解压文件，解压速度快，用于处理采用Snappy算法压缩的文件") },
-            { "Wflz - wflz_compress", ("压缩", "使用Wflz算法批量压缩文件，适用于需要采用该算法进行压缩的场景") },
-            { "Wflz - wflz_decompress", ("解压", "使用Wflz算法批量解压文件，用于解压缩采用Wflz算法压缩的文件") },
-            { "Yay0 - yay0_compress", ("压缩", "使用Yay0算法批量压缩文件，适用于相关平台或场景下的文件压缩需求") },
-            { "Yay0 - yay0_decompress", ("解压", "使用Yay0算法批量解压文件，专门解压缩采用Yay0算法压缩的文件") },
-            { "Yaz0 - yaz0_compress", ("压缩", "使用Yaz0算法批量压缩文件，适用于需要采用该算法进行压缩的场景") },
-            { "Yaz0 - yaz0_decompress", ("解压", "使用Yaz0算法批量解压文件，用于解压缩采用Yaz0算法压缩的文件") },
-            { "Zlib - zlib_compress", ("压缩", "使用Zlib算法批量压缩文件，经典的压缩算法，应用广泛，适用于多种场景") },
-            { "Zlib - zlib_decompress", ("解压", "使用Zlib算法批量解压文件，可解压缩采用Zlib算法压缩的文件") },
-            { "ZSTD - zstd_compress", ("压缩", "使用Zstd算法批量压缩文件，该算法在压缩率和速度上有较好平衡，适用于多种场景") },
-            { "ZSTD - zstd_decompress", ("解压", "使用Zstd算法批量解压文件，用于解压缩采用Zstd算法压缩的文件") },
-            { "Wiiu - gtx转换器", ("图片", "任天堂wiiu平台的gtx转换器，可将gtx格式转换为png图片") },
-            { "Wiiu - h3/app", ("其他档案", "任天堂wiiu平台的rom解包器，能将wiiu平台的h3、app文件转换成loadiine格式，方便用户解包") },
-            { "Nds - nds提取器", ("其他档案", "任天堂nds平台的rom解包工具，可解包nds rom文件，提取其中的各类资源") },
-            { "Nds - nds打包器", ("其他档案", "任天堂nds平台的rom打包器，能将解包的nds文件夹重新打包成nds rom文件") },
-            { "3ds - darc提取器", ("其他档案", "任天堂3ds平台的darc解包工具，代表作为美妙旋律七彩演唱会闪耀设计，可提取darc文件中的资源") },
-            { "3ds - darc打包器", ("其他档案", "任天堂3ds平台的darc打包器，能将文件夹里的文件打包成darc文件") },
-            { "Nds - narc提取器", ("其他档案", "任天堂nds平台的narc文件提取器，代表作为口袋妖怪(nds)，可提取narc文件中的资源") },
-            { "PS3 - psarc提取器", ("其他档案", "索尼ps3平台的psarc解包工具，代表作为第二次超级机器人大战OG，也可解包无人深空的pak文件") },
-            { "PS3 - psarc打包器", ("其他档案", "索尼ps3平台的psarc打包器，能将一个文件夹重新打包成psarc文件") },
-            { "PS3 - NPDRM - sdat", ("其他档案", "索尼ps3平台的sdat解包工具，代表作为约会大作战或守安装、约会大作战凛弥理想乡等，可提取sdat文件中的资源") },         
-            { "CRI - afs打包器", ("其他档案", "CRIware的afs档案打包器，可将一个文件夹及子文件夹里的所有文件重新打包成afs文件") },
-            { "Mages - mpk提取器", ("其他档案", "Mages的mpk解包工具，代表作为命运石之门，可提取mpk文件中的各类资源") },
-            { "Mages - mpk打包器", ("其他档案", "Mages的mpk打包器，能将一个文件夹及子文件夹里的所有文件重新打包成mpk文件") },
-            { "Gnf2Png", ("图片", "PS4平台的gnf到png的转换器，支持批量转换，解决了GFDstudio手动转换的繁琐问题") },
-            { "wav2qoa - 转换qoa", ("音频", "wav到qoa的音频转换器，转换后的qoa格式可被ffmpeg识别，也可用foobar2000播放") },
-            { "CMVS_Engine - cmv", ("其他档案", "CMVS引擎的cmv视频解码器，代表作为天津罪，可解码该引擎的cmv视频文件") },
-            { "SRPG_Studio - dts", ("其他档案", "SRPG Studio的dts提取器，代表作为刻印战记2_七圣英雄，可提取dts文件中的资源") },
-            { "XACT Wave Bank - xwb打包器", ("其他档案", "XWB打包器，能将一个文件夹里的所有wav打包成xwb文件，为了打包成功建议使用pcm_s16le的wav文件，有些编码不支持") },
-            { "PNG2ASTC", ("图片", "png到astc图像的转换器，支持批量转换，满足将png图片转换为astc格式的需求") },
-            { "ASTC2PNG", ("图片", "astc图像到png的转换器，支持批量转换，方便查看和使用astc格式的图片") },
-            { "hip2png", ("图片", "hip到png的转换器，代表作为switch平台的赛马娘，可批量处理该格式转换成png") },
+            { "地雷社和AQUAPLUS专用纹理 - tex", ("图片", "超女神信仰诺瓦露、白色相簿_编缀的冬日回忆、约会大作战系列、传颂之物二人的白皇专用tex转换器") },
+            { "SEGS binary data - bin", ("其他档案", "苍翼默示录_刻之幻影专用bin文件解包工具,可提取其中包含的所有pac文件") },
+            { "苍翼默示录_刻之幻影 - pac", ("其他档案", "苍翼默示录_刻之幻影的专用解包工具,无法用于苍翼默示录_神观之梦") },
+            { "苍翼默示录_神观之梦 - pac", ("其他档案", "苍翼默示录_神观之梦的专用解包工具,支持解包压缩的pac文件和普通pac文件") },
+            { "断罪的玛利亚 - dat", ("其他档案", "ps3游戏断罪的玛利亚专用提取器,可解包data.dat文件,提取其中的视频、音频和图片") },
+            { "进击的巨人_自由之翼 - bin", ("其他档案", "进击的巨人_自由之翼提取器,能从LINKDATA.bin文件中提取出g1t、g1m等文件") },
+            { "PlayStation 4 bit ADPCM - vag", ("音频", "以二进制形式从PlayStation游戏文件中提取vag音频文件,vag是采用PlayStation 4 bit ADPCM编码的音频格式") },
+            { "零_濡鸦之巫女 - fmsg", ("其他档案", "零濡鸦之巫女的fmsg转换器,可将fmsg文件转换为txt文本") },
+            { "零_濡鸦之巫女 - kscl", ("图片", "零濡鸦之巫女的kscl转换器,能将kscl文件转换为dds图片") },
+            { "PhyreEngine Texture - phyre", ("图片", "从phyre引擎的phyre文件中提取dds图片的提取器,适用于刀剑神域虚空断章、彼岸游境、东京幻都EX等采用该引擎的游戏") },
+            { "PhyreEngine package - pkg", ("其他档案", "phyre引擎的pkg文件提取器,适配东京幻都EX、闪之轨迹、创之轨迹等采用该引擎的游戏,可提取pkg文件中的各类资源") },
+            { "女神异闻录5对决_幽灵先锋 - bin", ("其他档案", "女神异闻录5对决_幽灵先锋的专用wmv提取器,能从movie文件夹的bin文件中提取上百个wmv视频") },
+            { "MPEG-4 - mp4", ("其他档案", "从游戏文件中提取mp4视频文件。尽管mp4文件头前四字节不固定,但后4字节固定,工具可依据此特征轻松提取合法mp4视频") },
+            { "IdeaFactory - bra", ("其他档案", "bra提取器,适用于地雷社妖精剑士F和Falcome的东京幻都EX等游戏") },
+            { "任天堂 - 3DS/WII/WIIU sound", ("音频", "任天堂wii、wiiu和3ds平台的音频提取器,能从brsar、bfsar和bcsar文件中提取出br/bf/bc前缀的wav波形音频文件") },
+            { "Binary Audio Archive - baa", ("其他档案", "一种未知的音频档案格式提取工具。aw文件因不包含头部信息、文件大小等标识数据而依赖baa索引文件,代表作有wiiu平台的塞尔达传说黄昏公主HD") },
+            { "Audio Archive - aw", ("音频", "baa文件配套提取器,用于从baa文件中提取wsys文件。无wsys文件则无法解包aw文件,且需将wsys文件放入aw文件夹才能提取wav,目前vgmstream已支持解码aw/baa") },
+            { "反恐精英OL - pak", ("其他档案", "反恐精英ol的pak提取器,csol的打包格式分nar和pak两种,本工具专门用于解pak文件") },
+            { "IdeaFactory - pac提取器", ("其他档案", "地雷社游戏的pac提取器,此pac格式常用于海王星系列游戏") },
+            { "IdeaFactory - pac打包器", ("其他档案", "地雷社游戏的pac打包器,能将文件夹重新打包成pac文件") },
+            { "光荣特库摩 - gz/exlilr", ("其他档案", "光荣特库摩的gz和elixir文件提取器,适用于蓝色反射_帝、幻舞少女之剑、无夜之国等游戏") },
+            { "光荣特库摩 - ebm", ("其他档案", "光荣特库摩的ebm文件提取器,适配蓝色反射_帝、幻舞少女之剑、无夜之国等游戏") },
+            { "光荣特库摩 - g1t", ("图片", "光荣特库摩的g1t文件提取器,可提取出dds图片,适用于fate系列、无夜之国2等游戏") },
+            { "光荣特库摩 - gmpk", ("其他档案", "光荣特库摩的gmpk文件提取器,适用于零系列的濡鸦之巫女等游戏") },
+            { "光荣特库摩 - pak", ("其他档案", "光荣特库摩的pak文件提取器,适用于蓝色反射_帝、幻舞少女之剑、苏菲的炼金工房2等游戏") },
+            { "PowerVR转换png", ("图片", "pvr纹理转换器,无需依赖Texturepacker的免费试用限制,可无限使用,将pvr纹理转换为png格式,适用于逆战upk文件提取的pvr") },
+            { "逆战 - upk", ("其他档案", "逆战upk提取器,解决手动逐个解包的麻烦,支持批量解包,高效提取upk文件中的资源") },
+            { "战争传说 - pak", ("其他档案", "战争传说的pak解包工具,基于bms脚本改写成c#语言,解决了原PAKTool易出现非法字符报错的问题,可彻底解包该游戏所有pak文件") },
+            { "IdeaFactory - cl3", ("其他档案", "地雷社游戏的CL3提取器,可从CL3文件中提取dat、tid等文件,代表作为妖精剑士F,解决了stcm-editor.exe工具使用不便的问题") },
+            { "5pb - LNK4 archives - dat", ("其他档案", "5pb的LNK4文件头的dat解包工具,可解xbox360游戏11只眼_交错的视线等采用该格式的文件") },
+            { "万代南梦宫 - 情热传说 - dat", ("其他档案", "万代南梦宫的情热传说TLDAT解包工具,也可解狂战传说的相关文件,但仅支持PS3平台,不支持加密的steam平台版本") },
+            { "Brotli - brotli_compress", ("压缩", "使用Brotli算法批量压缩文件,注意压缩速度较慢,若无法删除文件夹可在任务管理器中退出brotli.exe进程") },
+            { "Brotli - brotli_decompress", ("解压", "使用Brotli算法批量解压文件,解压速度较快,能高效处理采用该算法压缩的文件") },
+            { "Gzip - gzip_compress", ("压缩", "使用Gzip算法批量压缩文件,适用于需要采用该经典压缩算法处理文件的场景") },
+            { "Gzip - gzip_decompress", ("解压", "使用Gzip算法批量解压文件,可快速解压缩采用该算法压缩的文件") },
+            { "Huffman - huffman_compress", ("压缩", "使用Huffman算法批量压缩文件,利用该算法的特性对文件进行压缩处理") },
+            { "Huffman - huffman_decompress", ("解压", "使用Huffman算法批量解压文件,专门用于解压缩采用Huffman算法压缩的文件") },
+            { "Lz4 - lz4_compress", ("压缩", "使用Lz4算法批量压缩文件,基于C#第三方库实现,满足对文件进行Lz4压缩的需求") },
+            { "Lz4 - lz4_decompress", ("解压", "使用Lz4算法批量解压文件,基于C#第三方库实现,可解压缩采用Lz4算法压缩的文件") },
+            { "Lz4c - lz4c_compress", ("压缩", "使用Lz4c算法批量压缩文件,通过调用外部可执行程序实现,适用于需要Lz4c压缩的场景") },
+            { "Lz4c - lz4c_decompress", ("解压", "使用Lz4c算法批量解压文件,通过调用外部可执行程序实现,用于解压缩Lz4c算法处理的文件") },
+            { "LZ77 - lz77_compress", ("压缩", "使用Lz77算法批量压缩文件,利用该经典压缩算法对文件进行压缩处理") },
+            { "LZ77 - lz77_decompress", ("解压", "使用Lz77算法批量解压文件,专门解压缩采用Lz77算法压缩的文件") },
+            { "LZMA - 7-zip_lzma_compress", ("压缩", "使用Lzma算法批量压缩文件,基于7-zip的相关实现,适用于需要高压缩率的场景") },
+            { "LZMA - 7-zip_lzma_decompress", ("解压", "使用Lzma算法批量解压文件,可解压缩采用Lzma算法压缩的文件,包括7-zip生成的相关文件") },
+            { "LZO - lzo_compress", ("压缩", "使用Lzo算法批量压缩文件,利用该算法的特点对文件进行压缩处理") },
+            { "LZO - lzo_decompress", ("解压", "使用Lzo算法批量解压文件,用于解压缩采用Lzo算法压缩的文件") },
+            { "LZSS - lzss自定义压缩", ("压缩", "使用自定义Lzss算法批量压缩文件,针对特定场景优化的Lzss压缩实现,满足特殊压缩需求") },
+            { "LZSS - lzss自定义解压", ("解压", "使用自定义Lzss算法批量解压文件,专门用于解压缩采用自定义Lzss算法压缩的文件") },
+            { "Lzham - lzham自定义压缩", ("压缩", "使用自定义Lzham算法批量压缩文件,基于Lzham算法的定制实现,适用于特定压缩场景") },
+            { "Lzham - lzham自定义解压", ("解压", "使用自定义Lzham算法批量解压文件,用于解压缩采用自定义Lzham算法压缩的文件") },
+            { "Lzham - Lzham标准压缩", ("压缩", "使用标准Lzham算法批量压缩文件,遵循标准Lzham算法实现,保证兼容性") },
+            { "Lzham - Lzham标准解压", ("解压", "使用标准Lzham算法批量解压文件,可解压缩采用标准Lzham算法压缩的文件") },
+            { "Minlz - minlz_compress", ("压缩", "使用Minlz算法批量压缩文件,利用该算法对文件进行压缩处理") },
+            { "Minlz - minlz_decompress", ("解压", "使用Minlz算法批量解压文件,专门解压缩采用Minlz算法压缩的文件") },
+            { "Mio0 - mio0_compress", ("压缩", "使用Mio0算法批量压缩文件,适用于需要采用该算法进行压缩的场景") },
+            { "Mio0 - mio0_decompress", ("解压", "使用Mio0算法批量解压文件,用于解压缩采用Mio0算法压缩的文件") },
+            { "Oodle - oodle_compress", ("压缩", "使用Oodle算法批量压缩文件,利用该高效压缩算法对文件进行压缩处理") },
+            { "Oodle - oodle_decompress", ("解压", "使用Oodle算法批量解压文件,可解压缩采用Oodle算法压缩的文件") },
+            { "Snappy - snappy_compress", ("压缩", "使用Snappy算法批量压缩文件,该算法注重压缩速度,适用于对速度要求较高的场景") },
+            { "Snappy - snappy_decompress", ("解压", "使用Snappy算法批量解压文件,解压速度快,用于处理采用Snappy算法压缩的文件") },
+            { "Wflz - wflz_compress", ("压缩", "使用Wflz算法批量压缩文件,适用于需要采用该算法进行压缩的场景") },
+            { "Wflz - wflz_decompress", ("解压", "使用Wflz算法批量解压文件,用于解压缩采用Wflz算法压缩的文件") },
+            { "Yay0 - yay0_compress", ("压缩", "使用Yay0算法批量压缩文件,适用于相关平台或场景下的文件压缩需求") },
+            { "Yay0 - yay0_decompress", ("解压", "使用Yay0算法批量解压文件,专门解压缩采用Yay0算法压缩的文件") },
+            { "Yaz0 - yaz0_compress", ("压缩", "使用Yaz0算法批量压缩文件,适用于需要采用该算法进行压缩的场景") },
+            { "Yaz0 - yaz0_decompress", ("解压", "使用Yaz0算法批量解压文件,用于解压缩采用Yaz0算法压缩的文件") },
+            { "Zlib - zlib_compress", ("压缩", "使用Zlib算法批量压缩文件,经典的压缩算法,应用广泛,适用于多种场景") },
+            { "Zlib - zlib_decompress", ("解压", "使用Zlib算法批量解压文件,可解压缩采用Zlib算法压缩的文件") },
+            { "ZSTD - zstd_compress", ("压缩", "使用Zstd算法批量压缩文件,该算法在压缩率和速度上有较好平衡,适用于多种场景") },
+            { "ZSTD - zstd_decompress", ("解压", "使用Zstd算法批量解压文件,用于解压缩采用Zstd算法压缩的文件") },
+            { "Wiiu - gtx转换器", ("图片", "任天堂wiiu平台的gtx转换器,可将gtx格式转换为png图片") },
+            { "Wiiu - h3/app", ("其他档案", "任天堂wiiu平台的rom解包器,能将wiiu平台的h3、app文件转换成loadiine格式,方便用户解包") },
+            { "Nds - nds提取器", ("其他档案", "任天堂nds平台的rom解包工具,可解包nds rom文件,提取其中的各类资源") },
+            { "Nds - nds打包器", ("其他档案", "任天堂nds平台的rom打包器,能将解包的nds文件夹重新打包成nds rom文件") },
+            { "3ds - darc提取器", ("其他档案", "任天堂3ds平台的darc解包工具,代表作为美妙旋律七彩演唱会闪耀设计,可提取darc文件中的资源") },
+            { "3ds - darc打包器", ("其他档案", "任天堂3ds平台的darc打包器,能将文件夹里的文件打包成darc文件") },
+            { "Nds - narc提取器", ("其他档案", "任天堂nds平台的narc文件提取器,代表作为口袋妖怪(nds),可提取narc文件中的资源") },
+            { "PS3 - psarc提取器", ("其他档案", "索尼ps3平台的psarc解包工具,代表作为第二次超级机器人大战OG,也可解包无人深空的pak文件") },
+            { "PS3 - psarc打包器", ("其他档案", "索尼ps3平台的psarc打包器,能将一个文件夹重新打包成psarc文件") },
+            { "PS3 - NPDRM - sdat", ("其他档案", "索尼ps3平台的sdat解包工具,代表作为约会大作战或守安装、约会大作战凛弥理想乡等,可提取sdat文件中的资源") },         
+            { "CRI - afs打包器", ("其他档案", "CRIware的afs档案打包器,可将一个文件夹及子文件夹里的所有文件重新打包成afs文件") },
+            { "Mages - mpk提取器", ("其他档案", "Mages的mpk解包工具,代表作为命运石之门,可提取mpk文件中的各类资源") },
+            { "Mages - mpk打包器", ("其他档案", "Mages的mpk打包器,能将一个文件夹及子文件夹里的所有文件重新打包成mpk文件") },
+            { "Gnf2Png", ("图片", "PS4平台的gnf到png的转换器,支持批量转换,解决了GFDstudio手动转换的繁琐问题") },
+            { "wav2qoa - 转换qoa", ("音频", "wav到qoa的音频转换器,转换后的qoa格式可被ffmpeg识别,也可用foobar2000播放") },
+            { "CMVS_Engine - cmv", ("其他档案", "CMVS引擎的cmv视频解码器,代表作为天津罪,可解码该引擎的cmv视频文件") },
+            { "SRPG_Studio - dts", ("其他档案", "SRPG Studio的dts提取器,代表作为刻印战记2_七圣英雄,可提取dts文件中的资源") },
+            { "XACT Wave Bank - xwb打包器", ("其他档案", "XWB打包器,能将一个文件夹里的所有wav打包成xwb文件,为了打包成功建议使用pcm_s16le的wav文件,有些编码不支持") },
+            { "PNG2ASTC", ("图片", "png到astc图像的转换器,支持批量转换,满足将png图片转换为astc格式的需求") },
+            { "ASTC2PNG", ("图片", "astc图像到png的转换器,支持批量转换,方便查看和使用astc格式的图片") },
+            { "hip2png", ("图片", "hip到png的转换器,代表作为switch平台的赛马娘,可批量处理该格式转换成png") },
             { "双截龙彩虹pak提取器", ("其他档案", "双截龙彩虹的专用pak提取器") },
-            { "CFSI - cfsi提取器", ("其他档案", "cfsi文件专用提取器，适用于极限脱出3_零时困境和Re_从零开始的异世界生活虚假的王选候补等游戏") },
-            { "CFSI - cfsi打包器", ("其他档案", "cfsi打包器，可将一个文件夹及子文件夹里的所有文件重新打包成cfsi文件") },
+            { "CFSI - cfsi提取器", ("其他档案", "cfsi文件专用提取器,适用于极限脱出3_零时困境和Re_从零开始的异世界生活虚假的王选候补等游戏") },
+            { "CFSI - cfsi打包器", ("其他档案", "cfsi打包器,可将一个文件夹及子文件夹里的所有文件重新打包成cfsi文件") },
             { "消逝的光芒 - rpack", ("其他档案", "消逝的光芒rpack专用提取器") },
             { "消逝的光芒 - csb", ("其他档案", "消逝的光芒csb专用提取器") },
             { "PlayStation MultiStream File - msf", ("音频", "以二进制形式从索尼游戏中提取msf音频文件") },
-            { "PlayStation - pssg archive", ("图片", "PlayStation pssg档案提取器，可提取该档案中的图片资源") },
-            { "Terminal Reality - pod/epd ahchive", ("其他档案", "Terminal Reality工作室的pod档案提取器，代表作为星球大战原力释放2，可提取pod/epd档案中的资源") },
-            { "PlayStation - GPDA archive", ("其他档案", "索尼psp平台上常见的GPDA档案的专用提取器，例如我的妹妹不可能那么可爱、凉宫春日的追忆等游戏") },
-            { "暗影狂奔 - data/toc archive", ("其他档案", "Xbox360游戏暗影狂奔和皇牌空战6解放之战火的专用提取器，可解data/toc这种组合打包的档案") },
+            { "PlayStation - pssg archive", ("图片", "PlayStation pssg档案提取器,可提取该档案中的图片资源") },
+            { "Terminal Reality - pod/epd ahchive", ("其他档案", "Terminal Reality工作室的pod档案提取器,代表作为星球大战原力释放2,可提取pod/epd档案中的资源") },
+            { "PlayStation - GPDA archive", ("其他档案", "索尼psp平台上常见的GPDA档案的专用提取器,例如我的妹妹不可能那么可爱、凉宫春日的追忆等游戏") },
+            { "暗影狂奔 - data/toc archive", ("其他档案", "Xbox360游戏暗影狂奔和皇牌空战6解放之战火的专用提取器,可解data/toc这种组合打包的档案") },
             { "ahx2wav", ("音频", "此工具可以将Criware的ahx文件转换成wav格式") },
-            { "异度之刃2 - ard/arh archive", ("其他档案", "switch游戏异度之刃2的提取器，可解包ard/arh这种组合打包的档案") },
-            { "异度之刃3 - ard/arh archive", ("其他档案", "switch游戏异度之刃3的提取器，可解包ard/arh这种组合打包的档案") },
-            { "异度之刃 - LBIM2DDS", ("图片", "异度之刃系列的LBIM转换器，可将文件尾为LBIM的文件转换成dds图像，如果是wismda文件该工具会先拆分xbc1文件，如果是xbc1文件会先移除前48字节，随后zlib解压，然后转换成dds图片，一步到位") },          
+            { "异度之刃2 - ard/arh archive", ("其他档案", "switch游戏异度之刃2的提取器,可解包ard/arh这种组合打包的档案") },
+            { "异度之刃3 - ard/arh archive", ("其他档案", "switch游戏异度之刃3的提取器,可解包ard/arh这种组合打包的档案") },
+            { "异度之刃 - LBIM2DDS", ("图片", "异度之刃系列的LBIM转换器,可将文件尾为LBIM的文件转换成dds图像,如果是wismda文件该工具会先拆分xbc1文件,如果是xbc1文件会先移除前48字节,随后zlib解压,然后转换成dds图片,一步到位") },          
             { "异度之刃 - arc file", ("其他档案", "从3ds平台的异度之刃arc文件里面提取tpl文件") },
-            { "异度之刃 - BC file", ("其他档案", "从异度之刃系列游戏提取BC动画文件，这些文件包含ANIM签名") },
+            { "异度之刃 - BC file", ("其他档案", "从异度之刃系列游戏提取BC动画文件,这些文件包含ANIM签名") },
             { "异度之刃 - tpl2bclim", ("图片", "将3ds平台异度之刃的tpl文件转换成bclim文件") },
             { "异度之刃 - bclim2png", ("图片", "将bclim文件转换成png文件") },
-            { "异度之刃 - bdat提取器", ("其他档案", "异度之刃系列游戏的bdat提取器,不支持3ds平台,异度之刃2的部分bdat无法正常提取，即使zlib解压后也不行") },
+            { "异度之刃 - bdat提取器", ("其他档案", "异度之刃系列游戏的bdat提取器,不支持3ds平台,异度之刃2的部分bdat无法正常提取,即使zlib解压后也不行") },
             { "异度之刃 - bdat打包器", ("其他档案", "将json文件夹重新打包为bdat文件,目录必须为解包后的文件夹结构(包含bschema文件和json文件夹)") },
-            { "异度之刃 - MXTX file", ("其他档案", "异度之刃系列游戏的MTXT提取器，从casmt、caevd、camdo、casmda、bmn、caavp等文件里面提取mtxt文件，然后你再用转换器转换成dds") },
-            { "异度之刃 - LBIM file", ("其他档案", "表面上看这是个异度之刃系列的LBIM提取器，实际上它是xbc1专用分解器，从pcsmt、mot、wismt、wifnt、winvda、wismda、wilay等文件里面提取出各种文件，提取出来后有些文件还能再用它二次提取") },
+            { "异度之刃 - MXTX file", ("其他档案", "异度之刃系列游戏的MTXT提取器,从casmt、caevd、camdo、casmda、bmn、caavp等文件里面提取mtxt文件,然后你再用转换器转换成dds") },
+            { "异度之刃 - LBIM file", ("其他档案", "表面上看这是个异度之刃系列的LBIM提取器,实际上它是xbc1专用分解器,从pcsmt、mot、wismt、wifnt、winvda、wismda、wilay等文件里面提取出各种文件,提取出来后有些文件还能再用它二次提取") },
             { "异度之刃 - pcbeb file", ("其他档案", "异度之刃终极版的pcbeb解包器,拆分、删除垃圾字节、解压再解压") },
-            { "异度之刃 - MXTX2DDS", ("图片", "异度之刃系列游戏的MTXT转换器，可以把MTXT纹理转换成dds图像") },
+            { "异度之刃 - MXTX2DDS", ("图片", "异度之刃系列游戏的MTXT转换器,可以把MTXT纹理转换成dds图像") },
             { "异度之刃 - map.pkb", ("其他档案", "wii平台异度之刃的map.pkb专用器") },
-            { "异度之刃 - sar", ("其他档案", "wiiu平台异度之刃x的sar解包器，可提取出里面的hkt文件，它也是switch平台异度之刃终极版的提取器，可提取mcapk和chr文件里面的数据") },
+            { "异度之刃 - sar", ("其他档案", "wiiu平台异度之刃x的sar解包器,可提取出里面的hkt文件,它也是switch平台异度之刃终极版的提取器,可提取mcapk和chr文件里面的数据") },
             { "Fate Extella/Link - pk/pfs/pkb", ("其他档案", "psv平台的Fate Extella和Fate Extella Link专用提取器") },
-            { "白色相簿2 - dar archive", ("其他档案", "ps3平台的白色相簿2的data.dar专用提取器，voice.dar使用RIFF/RIFX提取器提取就可以了") },
+            { "白色相簿2 - dar archive", ("其他档案", "ps3平台的白色相簿2的data.dar专用提取器,voice.dar使用RIFF/RIFX提取器提取就可以了") },
+            { "白色相簿2 - pak archive", ("其他档案", "steam平台的白色相簿2的pak专用提取器，和ps3的dar完全不同") },
             { "PlayStation - TROPHY.TRP file", ("其他档案", "索尼Playstation平台的trp奖杯文件提取器,代表游戏如ps3的白色相簿、psv的SD高达G世纪-创世") },
             { "奥特曼格斗进化3 - bin", ("其他档案", "ps2平台的奥特曼格斗进化3专用提取器,由quickbms脚本修改而来") },
+
         };
         public SuperToolbox()
         {
@@ -272,7 +276,7 @@ namespace super_toolbox
         {
             if (isExtracting)
             {
-                EnqueueMessage("正在进行操作，请等待...");
+                EnqueueMessage("正在进行操作,请等待...");
                 return;
             }
             string dirPath = txtFolderPath.Text;
@@ -336,7 +340,7 @@ namespace super_toolbox
                         {
                             UpdateFileCountDisplay();
                             int count = isConverter ? totalConvertedCount : totalFileCount;
-                            EnqueueMessage($"{operationType}操作完成，总共{operationType}了{count}个文件");
+                            EnqueueMessage($"{operationType}操作完成,总共{operationType}了{count}个文件");
                         }));
                     }
                     catch (OperationCanceledException)
@@ -388,7 +392,7 @@ namespace super_toolbox
                 };
                 extractor.ConversionCompleted += (s, count) =>
                 {
-                    EnqueueMessage($"转换完成，共转换{count}个文件");
+                    EnqueueMessage($"转换完成,共转换{count}个文件");
                 };
                 extractor.ConversionFailed += (s, error) =>
                 {
@@ -405,7 +409,7 @@ namespace super_toolbox
                 };
                 extractor.PackingCompleted += (s, count) =>
                 {
-                    EnqueueMessage($"打包完成，共打包{count}个文件");
+                    EnqueueMessage($"打包完成,共打包{count}个文件");
                 };
                 extractor.PackingFailed += (s, error) =>
                 {
@@ -422,7 +426,7 @@ namespace super_toolbox
                 };
                 extractor.CompressionCompleted += (s, count) =>
                 {
-                    EnqueueMessage($"压缩完成，共压缩{count}个文件");
+                    EnqueueMessage($"压缩完成,共压缩{count}个文件");
                 };
 
                 extractor.CompressionFailed += (s, error) =>
@@ -440,7 +444,7 @@ namespace super_toolbox
                 };
                 extractor.DecompressionCompleted += (s, count) =>
                 {
-                    EnqueueMessage($"解压完成，共解压{count}个文件");
+                    EnqueueMessage($"解压完成,共解压{count}个文件");
                 };
                 extractor.DecompressionFailed += (s, error) =>
                 {
@@ -457,7 +461,7 @@ namespace super_toolbox
                 };
                 extractor.ExtractionCompleted += (s, count) =>
                 {
-                    EnqueueMessage($"提取完成，共提取出{totalFileCount}个文件");
+                    EnqueueMessage($"提取完成,共提取出{totalFileCount}个文件");
                 };
                 extractor.ExtractionFailed += (s, error) =>
                 {
@@ -510,6 +514,8 @@ namespace super_toolbox
                 case "Xiph.Org - Ogg": return new OggExtractor();
                 case "联合图像专家组 - JPEG/JPG": return new JpgExtractor();
                 case "便携式网络图形 - PNG": return new PngExtractor();
+                case "位图图像文件 - BMP": return new BmpExtractor();
+                case "标记图形文件格式 - TGA": return new TgaExtractor();
                 case "CRI - HCA - hca": return new HcaExtractor();
                 case "ENDILTLE - APK - apk": return new ApkExtractor();
                 case "东方天空竞技场 - GPK - gpk": return new GpkExtractor();
@@ -646,6 +652,7 @@ namespace super_toolbox
                 case "异度之刃 - pcbeb file": return new Xenoblade_Pcbeb_Extractor();               
                 case "Fate Extella/Link - pk/pfs/pkb": return new Fate_pk_Extractor();
                 case "白色相簿2 - dar archive": return new DarExtractor();
+                case "白色相簿2 - pak archive": return new WA2_Pak_Extractor();
                 case "PlayStation - TROPHY.TRP file": return new PlayStation_Trp_Extractor();
                 case "奥特曼格斗进化3 - bin": return new Ultraman3_bin_Extractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
@@ -1019,7 +1026,7 @@ namespace super_toolbox
             }
             if (selectedNode.Nodes.Count > 0)
             {
-                MessageBox.Show("无法删除非空分组，请先将其中的提取器移至其他分组!", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("无法删除非空分组,请先将其中的提取器移至其他分组!", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
             if (defaultCategories.Values.Select(x => x.category).Contains(selectedNode.Text))
