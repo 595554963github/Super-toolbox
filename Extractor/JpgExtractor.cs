@@ -24,8 +24,6 @@ namespace super_toolbox
                 OnExtractionFailed($"错误:{directoryPath}不是有效的目录");
                 return;
             }
-            string extractedDir = Path.Combine(directoryPath, "Extracted");
-            Directory.CreateDirectory(extractedDir);
 
             var files = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
             TotalFilesToExtract = files.Length;
@@ -46,7 +44,8 @@ namespace super_toolbox
                         continue;
                     }
 
-                    await ProcessFileAsync(file, extractedDir, cancellationToken);
+                    string fileDir = Path.GetDirectoryName(file) ?? directoryPath;
+                    await ProcessFileAsync(file, fileDir, cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
