@@ -24,9 +24,6 @@ namespace super_toolbox
                 return;
             }
 
-            string extractedDir = Path.Combine(directoryPath, "Extracted");
-            Directory.CreateDirectory(extractedDir);
-
             var files = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
             TotalFilesToExtract = files.Length;
 
@@ -45,7 +42,15 @@ namespace super_toolbox
                         continue;
                     }
 
-                    await ProcessFileAsync(file, extractedDir, Path.GetFileNameWithoutExtension(file), cancellationToken);
+                    string sourceDirectory = Path.GetDirectoryName(file) ?? string.Empty;
+
+                    if (string.IsNullOrEmpty(sourceDirectory))
+                    {
+                        ExtractionError?.Invoke(this, $"无法获取文件{file}的目录路径");
+                        continue;
+                    }
+
+                    await ProcessFileAsync(file, sourceDirectory, Path.GetFileNameWithoutExtension(file), cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
