@@ -30,7 +30,7 @@ namespace super_toolbox
 
             ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
-            var pckFiles = Directory.GetFiles(directoryPath, "*.pck", SearchOption.AllDirectories);
+            var pckFiles = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
 
             TotalFilesToExtract = 0;
 
