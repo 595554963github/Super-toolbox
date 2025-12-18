@@ -292,7 +292,7 @@ namespace super_toolbox
             return sb.ToString();
         }
 
-        private new static int IndexOf(byte[] data, byte[] pattern, int startIndex)
+        private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= data.Length - pattern.Length; i++)
             {
