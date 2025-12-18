@@ -176,7 +176,8 @@ namespace super_toolbox
             { "白色相簿2 - pak archive", ("其他档案", "steam平台的白色相簿2的pak专用提取器，和ps3的dar完全不同") },
             { "PlayStation - TROPHY.TRP file", ("其他档案", "索尼Playstation平台的trp奖杯文件提取器,代表游戏如ps3的白色相簿、psv的SD高达G世纪-创世") },
             { "奥特曼格斗进化3 - bin", ("其他档案", "ps2平台的奥特曼格斗进化3专用提取器,由quickbms脚本修改而来") },
-
+            { "混乱特工 - vpp_pc", ("其他档案", "混乱特工的专用提取器") },
+            { "捍卫雄鹰2 - gtp archive", ("其他档案", "捍卫雄鹰IL-2斯大林格勒战役的gtp专用提取器") },
         };
         public SuperToolbox()
         {
@@ -655,6 +656,8 @@ namespace super_toolbox
                 case "白色相簿2 - pak archive": return new WA2_Pak_Extractor();
                 case "PlayStation - TROPHY.TRP file": return new PlayStation_Trp_Extractor();
                 case "奥特曼格斗进化3 - bin": return new Ultraman3_bin_Extractor();
+                case "混乱特工 - vpp_pc": return new Vpp_pc_Extractor();
+                case "捍卫雄鹰2 - gtp archive": return new Gtp_Extractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
