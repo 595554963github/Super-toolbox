@@ -41,7 +41,7 @@ namespace super_toolbox
             return bankDataList;
         }
 
-        private new static int IndexOf(byte[] source, byte[] pattern, int startIndex)
+        private static int IndexOf(byte[] source, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= source.Length - pattern.Length; i++)
             {
