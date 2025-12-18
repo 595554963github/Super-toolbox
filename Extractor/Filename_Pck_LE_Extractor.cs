@@ -16,7 +16,7 @@ namespace super_toolbox
         private static readonly byte[] PACK_MARKER_12 = Encoding.ASCII.GetBytes("Pack            ");//暂未发现
         private static readonly byte[] PACK_MARKER_16 = Encoding.ASCII.GetBytes("Pack                "); //约会大作战_凛绪轮回(steam)、白色相簿_编缀的冬日回忆(steam)
 
-        private new static int IndexOf(byte[] data, byte[] pattern, int startIndex)
+        private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
             if (data == null || pattern == null || startIndex < 0 || startIndex > data.Length - pattern.Length)
                 return -1;
