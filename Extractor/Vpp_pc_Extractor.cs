@@ -12,7 +12,7 @@ namespace super_toolbox
 
         private const uint VPP_MAGIC = 0x51890ACE;
         private const uint VPP_VERSION = 0x11;
-
+        private const long LARGE_FILE_THRESHOLD = 2L * 1024 * 1024 * 1024; // 2GB
         public override void Extract(string directoryPath)
         {
             ExtractAsync(directoryPath).Wait();
