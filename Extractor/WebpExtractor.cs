@@ -7,7 +7,7 @@ namespace super_toolbox
         public new event EventHandler<string>? ExtractionError;
         private static readonly byte[] RIFF_HEADER = { 0x52, 0x49, 0x46, 0x46 };
         private static readonly byte[] WEBP_BLOCK = { 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38 };
-        private new static int IndexOf(byte[] data, byte[] pattern, int startIndex)
+        private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= data.Length - pattern.Length; i++)
             {
