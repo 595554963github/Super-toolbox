@@ -272,7 +272,7 @@ namespace super_toolbox
             catch { }
         }
 
-        private new static int IndexOf(byte[] data, byte[] pattern, int startIndex)
+        private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= data.Length - pattern.Length; i++)
             {
@@ -294,3 +294,4 @@ namespace super_toolbox
         }
     }
 }
+
