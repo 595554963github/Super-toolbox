@@ -14,7 +14,7 @@ namespace super_toolbox
             new byte[] { 0x03, 0x12, 0x04, 0x02, 0x00, 0x00 }
         };
 
-        private new static int IndexOf(byte[] data, byte[] pattern, int startIndex)
+        private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= data.Length - pattern.Length; i++)
             {
