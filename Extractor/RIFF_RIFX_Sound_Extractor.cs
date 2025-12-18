@@ -13,6 +13,98 @@ namespace super_toolbox
         private static readonly byte[] WEM_BLOCK = { 0x57, 0x41, 0x56, 0x45, 0x66, 0x6D, 0x74 };
         private static readonly byte[] XWMA_PATTERN = { 0x12, 0x00, 0x00, 0x00, 0x61, 0x01 };
 
+        private const long LARGE_FILE_THRESHOLD = 2L * 1024 * 1024 * 1024; // 2GB
+        private const long MEMORY_MAP_BUFFER_SIZE = 64 * 1024 * 1024; // 64MB
+
+        private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
+        {
+            for (int i = startIndex; i <= data.Length - pattern.Length; i++)
+            {
+                bool found = true;
+                for (int j = 0; j < pattern.Length; j++)
+                {
+                    if (data[i + j] != pattern[j])
+                    {
+                        found = false;
+                        break;
+                    }
+                }
+                if (found)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static bool ContainsBytes(byte[] data, byte[] pattern, int startIndex)
+        {
+            return IndexOf(data, pattern, startIndex) != -1;
+        }
+
+        private async Task<int> ProcessLargeFileWithMemoryMapAsync(string filePath, string extractedDir,
+                                                                  List<string> extractedFiles, CancellationToken cancellationToken)
+        {
+            int extractedCount = 0;
+            int waveCount = 0;
+
+            using (var mmf = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open, null, 0, MemoryMappedFileAccess.Read))
+            {
+                long fileSize = new FileInfo(filePath).Length;
+
+                await ProcessLargeFileInBlocksAsync(
+                    mmf,
+                    fileSize,
+                    async (accessor, currentOffset, blockSize, buffer) =>
+                    {
+                        int localExtractedCount = ProcessMemoryMapBlock(buffer, currentOffset, filePath,
+                                                                       extractedDir, extractedFiles, ref waveCount);
+                        extractedCount += localExtractedCount;
+                        await Task.CompletedTask;
+                    },
+                    progressPercentage =>
+                    {
+                        ExtractionProgress?.Invoke(this, $"处理大文件:{Path.GetFileName(filePath)} - 进度{progressPercentage}%");
+                    },
+                    cancellationToken
+                );
+            }
+
+            return extractedCount;
+        }
+        private async Task ProcessLargeFileInBlocksAsync(
+            MemoryMappedFile mmf,
+            long fileSize,
+            Func<MemoryMappedViewAccessor, long, long, byte[], Task> processBlockFunc,
+            Action<int>? progressCallback = null,
+            CancellationToken cancellationToken = default)
+        {
+            long currentOffset = 0;
+
+            while (currentOffset < fileSize)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                long blockSize = Math.Min(MEMORY_MAP_BUFFER_SIZE, fileSize - currentOffset);
+
+                using (var accessor = mmf.CreateViewAccessor(currentOffset, blockSize, MemoryMappedFileAccess.Read))
+                {
+                    byte[] buffer = new byte[blockSize];
+                    accessor.ReadArray(0, buffer, 0, buffer.Length);
+
+                    await processBlockFunc(accessor, currentOffset, blockSize, buffer);
+                }
+
+                currentOffset += blockSize;
+
+                if (progressCallback != null && fileSize > 0)
+                {
+                    int progressPercentage = (int)(currentOffset * 100 / fileSize);
+                    progressCallback(progressPercentage);
+                }
+            }
+        }
+
         public override void Extract(string directoryPath)
         {
             ExtractAsync(directoryPath).Wait();
@@ -43,19 +135,25 @@ namespace super_toolbox
 
             foreach (var filePath in filePaths)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                ThrowIfCancellationRequested(cancellationToken);
                 processedSourceFiles++;
 
                 ExtractionProgress?.Invoke(this, $"正在处理源文件({processedSourceFiles}/{TotalFilesToExtract}):{Path.GetFileName(filePath)}");
 
                 try
                 {
-                    int extractedCount = await ProcessFileAsync(
-                        filePath,
-                        async (content, ct) => ProcessFileContent(content, filePath, extractedDir, extractedFiles),
-                        async (mmf, fileSize, ct) => await ProcessLargeFileWithMemoryMapAsync(mmf, fileSize, filePath, extractedDir, extractedFiles, ct),
-                        cancellationToken
-                    );
+                    FileInfo fileInfo = new FileInfo(filePath);
+                    int extractedCount = 0;
+
+                    if (fileInfo.Length < LARGE_FILE_THRESHOLD)
+                    {
+                        byte[] content = await File.ReadAllBytesAsync(filePath, cancellationToken);
+                        extractedCount = ProcessFileContent(content, filePath, extractedDir, extractedFiles);
+                    }
+                    else
+                    {
+                        extractedCount = await ProcessLargeFileWithMemoryMapAsync(filePath, extractedDir, extractedFiles, cancellationToken);
+                    }
 
                     totalExtractedFiles += extractedCount;
                 }
@@ -124,6 +222,47 @@ namespace super_toolbox
                 else
                 {
                     extractedCount += ProcessRiffContent(content, filePath, extractedDir, extractedFiles, ref index, ref waveCount);
+                }
+            }
+
+            return extractedCount;
+        }
+
+        private int ProcessMemoryMapBlock(byte[] buffer, long blockOffset, string filePath,
+                                        string extractedDir, List<string> extractedFiles, ref int waveCount)
+        {
+            int extractedCount = 0;
+            int index = 0;
+
+            while (index < buffer.Length)
+            {
+                int riffStart = IndexOf(buffer, RIFF_HEADER, index);
+                int rifxStart = IndexOf(buffer, RIFX_HEADER, index);
+                int headerStart = -1;
+                bool isRifx = false;
+
+                if (riffStart != -1 && (rifxStart == -1 || riffStart < rifxStart))
+                {
+                    headerStart = riffStart;
+                }
+                else if (rifxStart != -1)
+                {
+                    headerStart = rifxStart;
+                    isRifx = true;
+                }
+                else
+                {
+                    break;
+                }
+
+                if (isRifx)
+                {
+                    extractedCount += ProcessRifxMemoryMapBlock(buffer, blockOffset, filePath, extractedDir, extractedFiles, ref index);
+                    continue;
+                }
+                else
+                {
+                    extractedCount += ProcessRiffMemoryMapBlock(buffer, blockOffset, filePath, extractedDir, extractedFiles, ref index, ref waveCount);
                 }
             }
 
@@ -272,74 +411,6 @@ namespace super_toolbox
                 if (!hasValidFormat)
                 {
                     index = headerStart + 4;
-                }
-            }
-
-            return extractedCount;
-        }
-
-        private async Task<int> ProcessLargeFileWithMemoryMapAsync(MemoryMappedFile mmf, long fileSize,
-                                                                 string filePath, string extractedDir,
-                                                                 List<string> extractedFiles, CancellationToken cancellationToken)
-        {
-            int extractedCount = 0;
-            int waveCount = 0;
-
-            await ProcessLargeFileInBlocksAsync(
-                mmf,
-                fileSize,
-                async (accessor, currentOffset, blockSize, buffer) =>
-                {
-                    int localExtractedCount = ProcessMemoryMapBlock(buffer, currentOffset, filePath,
-                                                                   extractedDir, extractedFiles, ref waveCount);
-                    extractedCount += localExtractedCount;
-                    await Task.CompletedTask;
-                },
-                progressPercentage =>
-                {
-                    ExtractionProgress?.Invoke(this, $"处理大文件:{Path.GetFileName(filePath)} - 进度{progressPercentage}%");
-                },
-                cancellationToken
-            );
-
-            return extractedCount;
-        }
-
-        private int ProcessMemoryMapBlock(byte[] buffer, long blockOffset, string filePath,
-                                        string extractedDir, List<string> extractedFiles, ref int waveCount)
-        {
-            int extractedCount = 0;
-            int index = 0;
-
-            while (index < buffer.Length)
-            {
-                int riffStart = IndexOf(buffer, RIFF_HEADER, index);
-                int rifxStart = IndexOf(buffer, RIFX_HEADER, index);
-                int headerStart = -1;
-                bool isRifx = false;
-
-                if (riffStart != -1 && (rifxStart == -1 || riffStart < rifxStart))
-                {
-                    headerStart = riffStart;
-                }
-                else if (rifxStart != -1)
-                {
-                    headerStart = rifxStart;
-                    isRifx = true;
-                }
-                else
-                {
-                    break;
-                }
-
-                if (isRifx)
-                {
-                    extractedCount += ProcessRifxMemoryMapBlock(buffer, blockOffset, filePath, extractedDir, extractedFiles, ref index);
-                    continue;
-                }
-                else
-                {
-                    extractedCount += ProcessRiffMemoryMapBlock(buffer, blockOffset, filePath, extractedDir, extractedFiles, ref index, ref waveCount);
                 }
             }
 
