@@ -159,7 +159,7 @@ namespace super_toolbox
             return positions;
         }
 
-        private new int IndexOf(byte[] source, byte[] pattern, int startIndex)
+        private int IndexOf(byte[] source, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= source.Length - pattern.Length; i++)
             {
