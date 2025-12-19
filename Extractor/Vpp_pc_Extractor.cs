@@ -10,8 +10,7 @@ namespace super_toolbox
         public new event EventHandler<string>? ExtractionProgress;
         public new event EventHandler<string>? ExtractionError;
 
-        private const uint VPP_MAGIC = 0x51890ACE;
-        private const uint VPP_VERSION = 0x11;
+        private readonly byte[] VPP_MAGIC_HEADER = new byte[] { 0xCE, 0x0A, 0x89, 0x51, 0x11, 0x00, 0x00, 0x00 };
         private const long LARGE_FILE_THRESHOLD = 2L * 1024 * 1024 * 1024;
 
         public override void Extract(string directoryPath)
@@ -32,9 +31,17 @@ namespace super_toolbox
 
             ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
-            var vppFiles = Directory.EnumerateFiles(directoryPath, "*.vpp_pc", SearchOption.AllDirectories)
-                .Concat(Directory.EnumerateFiles(directoryPath, "*.vpp_ps4", SearchOption.AllDirectories))
-                .ToList();
+            var allFiles = Directory.EnumerateFiles(directoryPath, "*.*", SearchOption.AllDirectories);
+            var vppFiles = new List<string>();
+
+            foreach (var file in allFiles)
+            {
+                if (await HasVppHeaderAsync(file))
+                {
+                    vppFiles.Add(file);
+                    ExtractionProgress?.Invoke(this, $"发现VPP文件:{Path.GetFileName(file)}");
+                }
+            }
 
             TotalFilesToExtract = vppFiles.Count;
 
@@ -74,10 +81,37 @@ namespace super_toolbox
             }
             else
             {
-                ExtractionProgress?.Invoke(this, "处理完成,未找到有效VPP文件");
+                ExtractionProgress?.Invoke(this, "处理完成,未找到有效vpp文件");
             }
 
             OnExtractionCompleted();
+        }
+
+        private async Task<bool> HasVppHeaderAsync(string filePath)
+        {
+            try
+            {
+                using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    if (fileStream.Length < 8)
+                        return false;
+
+                    byte[] header = new byte[8];
+                    await fileStream.ReadAsync(header, 0, 8);
+
+                    for (int i = 0; i < 8; i++)
+                    {
+                        if (header[i] != VPP_MAGIC_HEADER[i])
+                            return false;
+                    }
+
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private async Task<int> ProcessVppFileAsync(string vppFilePath, CancellationToken cancellationToken, List<string> extractedFiles)
@@ -115,16 +149,10 @@ namespace super_toolbox
             using (var ms = new MemoryStream(content))
             using (var reader = new BinaryReader(ms))
             {
-                uint magic = reader.ReadUInt32();
-                if (magic != VPP_MAGIC)
+                byte[] header = reader.ReadBytes(8);
+                if (!IsValidVppHeader(header))
                 {
-                    throw new InvalidDataException($"无效的VPP文件:魔术字不匹配(期望0x{VPP_MAGIC:X8},实际0x{magic:X8})");
-                }
-
-                uint version = reader.ReadUInt32();
-                if (version != VPP_VERSION)
-                {
-                    ExtractionProgress?.Invoke(this, $"警告:不支持的VPP版本(0x{version:X8}),尝试继续...");
+                    throw new InvalidDataException("无效的VPP文件头");
                 }
 
                 reader.ReadInt64();
@@ -275,26 +303,33 @@ namespace super_toolbox
             return extractedCount;
         }
 
+        private bool IsValidVppHeader(byte[] header)
+        {
+            if (header.Length < 8) return false;
+
+            for (int i = 0; i < 8; i++)
+            {
+                if (header[i] != VPP_MAGIC_HEADER[i])
+                    return false;
+            }
+
+            return true;
+        }
+
         private async Task<int> ProcessLargeVppFileAsync(string vppFilePath, CancellationToken cancellationToken, List<string> extractedFiles)
         {
             int extractedCount = 0;
             long fileSize = new FileInfo(vppFilePath).Length;
 
-            ExtractionProgress?.Invoke(this, $"处理大文件: {Path.GetFileName(vppFilePath)} ({FormatFileSize(fileSize)})");
+            ExtractionProgress?.Invoke(this, $"处理大文件:{Path.GetFileName(vppFilePath)} ({FormatFileSize(fileSize)})");
 
             using (var fileStream = new FileStream(vppFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, FileOptions.SequentialScan))
             using (var reader = new BinaryReader(fileStream))
             {
-                uint magic = reader.ReadUInt32();
-                if (magic != VPP_MAGIC)
+                byte[] header = reader.ReadBytes(8);
+                if (!IsValidVppHeader(header))
                 {
-                    throw new InvalidDataException($"无效的VPP文件:魔术字不匹配(期望0x{VPP_MAGIC:X8},实际0x{magic:X8})");
-                }
-
-                uint version = reader.ReadUInt32();
-                if (version != VPP_VERSION)
-                {
-                    ExtractionProgress?.Invoke(this, $"警告:不支持的VPP版本(0x{version:X8}),尝试继续...");
+                    throw new InvalidDataException("无效的VPP文件头");
                 }
 
                 reader.ReadInt64();
