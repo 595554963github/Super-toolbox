@@ -12,7 +12,8 @@ namespace super_toolbox
 
         private const uint VPP_MAGIC = 0x51890ACE;
         private const uint VPP_VERSION = 0x11;
-        private const long LARGE_FILE_THRESHOLD = 2L * 1024 * 1024 * 1024; // 2GB
+        private const long LARGE_FILE_THRESHOLD = 2L * 1024 * 1024 * 1024;
+
         public override void Extract(string directoryPath)
         {
             ExtractAsync(directoryPath).Wait();
@@ -221,8 +222,6 @@ namespace super_toolbox
 
                         bool isCompressed = (entry.Flags & 0x1) != 0;
 
-                        ExtractionProgress?.Invoke(this, $"提取:{fullPath}({entry.UncompressedSize}字节,压缩:{isCompressed})");
-
                         ms.Seek(absoluteDataOffset, SeekOrigin.Begin);
 
                         if (isCompressed)
@@ -258,7 +257,6 @@ namespace super_toolbox
                         {
                             extractedFiles.Add(outputFilePath);
                             OnFileExtracted(outputFilePath);
-                            ExtractionProgress?.Invoke(this, $"已提取:{fullPath}");
                         }
 
                         if ((i + 1) % 50 == 0)
@@ -394,8 +392,6 @@ namespace super_toolbox
 
                         bool isCompressed = (entry.Flags & 0x1) != 0;
 
-                        ExtractionProgress?.Invoke(this, $"提取:{fullPath}({FormatFileSize(entry.UncompressedSize)}字节,压缩:{isCompressed})");
-
                         fileStream.Seek(absoluteDataOffset, SeekOrigin.Begin);
 
                         if (isCompressed)
@@ -420,7 +416,6 @@ namespace super_toolbox
                         {
                             extractedFiles.Add(outputFilePath);
                             OnFileExtracted(outputFilePath);
-                            ExtractionProgress?.Invoke(this, $"已提取:{fullPath}");
                         }
 
                         if ((i + 1) % 50 == 0)
@@ -479,6 +474,7 @@ namespace super_toolbox
                 return path;
 
             path = path.Replace('\\', '/');
+            path = path.TrimStart('/');
 
             var parts = path.Split('/');
             for (int i = 0; i < parts.Length; i++)
@@ -495,6 +491,11 @@ namespace super_toolbox
                 }
 
                 parts[i] = parts[i].Trim();
+
+                if (string.IsNullOrEmpty(parts[i]))
+                {
+                    parts[i] = $"part_{i}";
+                }
             }
 
             path = string.Join(Path.DirectorySeparatorChar.ToString(), parts);
