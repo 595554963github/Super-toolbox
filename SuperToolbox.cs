@@ -178,6 +178,11 @@ namespace super_toolbox
             { "奥特曼格斗进化3 - bin", ("其他档案", "ps2平台的奥特曼格斗进化3专用提取器,由quickbms脚本修改而来") },
             { "混乱特工 - vpp_pc", ("其他档案", "混乱特工的专用提取器") },
             { "捍卫雄鹰2 - gtp archive", ("其他档案", "捍卫雄鹰IL-2斯大林格勒战役的gtp专用提取器") },
+            { "DXBC - DirectX Bytecode", ("其他档案", "DirectX字节码文件专用提取器") },
+            { "DXBC2HLSL", ("其他档案", "DXBC到HLSL文件的转换器,使用CMD_Decompiler反编译转换") },
+            { "地雷社 - cat archive", ("其他档案", "激次元组合布兰+涅普缇努VS僵尸军团、神次元偶像:海王星PP和海王星U的cat专用提取器") },
+            { "rad game tools - rada提取器", ("音频", "rad game tools开发的rada音频文件专用提取器,先用Fmodel把pak和ucas文件里的uasset跟ubulk文件全部提取出来再提取rada文件") },
+            { "rad game tools - rada转换器", ("音频", "rad game tools开发的rada音频转换器，可以将vgmstream不支持的rada转换成wav") },
         };
         public SuperToolbox()
         {
@@ -269,7 +274,7 @@ namespace super_toolbox
         private readonly HashSet<string> _converters = new HashSet<string>
         {
          "PNG编码ASTC", "ASTC解码PNG", "Gnf2Png", "PowerVR转换png","异度之刃 - tpl2bclim","异度之刃 - bclim2png","异度之刃 - MXTX2DDS",
-         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS专用纹理 - tex",
+         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS专用纹理 - tex","DXBC2HLSL","rad game tools - rada转换器",
          "wav2qoa - 转换qoa", "Wiiu - gtx转换器", "hip2png","异度之刃 - LBIM2DDS","ahx2wav"
         };
         private bool IsConverter(string formatName) => _converters.Contains(formatName);
@@ -658,6 +663,11 @@ namespace super_toolbox
                 case "奥特曼格斗进化3 - bin": return new Ultraman3_bin_Extractor();
                 case "混乱特工 - vpp_pc": return new Vpp_pc_Extractor();
                 case "捍卫雄鹰2 - gtp archive": return new Gtp_Extractor();
+                case "DXBC - DirectX Bytecode": return new DXBC_Extractor();
+                case "DXBC2HLSL": return new DXBC2HLSL_Converter();
+                case "地雷社 - cat archive": return new CatExtractor();
+                case "rad game tools - rada提取器": return new Rada_Extractor();
+                case "rad game tools - rada转换器": return new Rada2wav_Converter();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
