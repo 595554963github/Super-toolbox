@@ -178,6 +178,12 @@
 		<EmbeddedResource Include="plugins\xenoTextureConvert.exe">
 			<LogicalName>embedded.xenoTextureConvert.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\CMD_Decompiler.exe">
+			<LogicalName>embedded.CMD_Decompiler.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\radadec.exe">
+			<LogicalName>embedded.radadec.exe</LogicalName>
+		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
