@@ -21,6 +21,8 @@ namespace super_toolbox
         private StatusStrip statusStrip1;
         private ToolStripStatusLabel lblStatus;
         private ToolStripStatusLabel lblFileCount;
+        private Preferences preferences;
+        private Dictionary<string, bool> categoryExpansionState = new Dictionary<string, bool>();
         private readonly Dictionary<string, (string category, string description)> defaultCategories = new Dictionary<string, (string, string)>
         {
             { "RIFF - RIFF/RIFX音频", ("音频", "RIFF/RIFX资源交换文件格式家族的音频提取器,支持提取wwise的小端序wem、索尼的at3/at9、微软的xma和xwma,常见的wav和RIFX的大端序wem格式") },
@@ -183,6 +185,10 @@ namespace super_toolbox
             { "地雷社 - cat archive", ("其他档案", "激次元组合布兰+涅普缇努VS僵尸军团、神次元偶像:海王星PP和海王星U的cat专用提取器") },
             { "rad game tools - rada提取器", ("音频", "rad game tools开发的rada音频文件专用提取器,先用Fmodel把pak和ucas文件里的uasset跟ubulk文件全部提取出来再提取rada文件") },
             { "rad game tools - rada转换器", ("音频", "rad game tools开发的rada音频转换器，可以将vgmstream不支持的rada转换成wav") },
+            { "Xbox360 - god2iso打包器", ("其他档案", "xbox360 iso打包器,从god镜像格式打包成iso镜像格式") },
+            { "Xbox360 - iso提取器", ("其他档案", "xbox360 iso提取器，从iso镜像里把游戏文件全部提取出来") },
+            { "Dreamcast - cdi提取器", ("其他档案", "Dreamcast的cdi提取器，从cdi rom提取里面的游戏文件") },
+            { "Dreamcast - Bin/Cue转换GDI", ("其他档案", "将Dreamcast游戏的Bin/Cue镜像文件转换为GDI格式") },
         };
         public SuperToolbox()
         {
@@ -191,6 +197,8 @@ namespace super_toolbox
             txtFolderPath.DragEnter += TxtFolderPath_DragEnter;
             txtFolderPath.DragDrop += TxtFolderPath_DragDrop;
             txtFolderPath.DragLeave += TxtFolderPath_DragLeave;
+            btnAbout.Click += BtnAbout_Click;
+            preferences = Preferences.Load();
             statusStrip1 = new StatusStrip();
             lblStatus = new ToolStripStatusLabel { Text = "就绪" };
             lblFileCount = new ToolStripStatusLabel { Text = "已提取:0个文件" };
@@ -207,6 +215,8 @@ namespace super_toolbox
             extractionCancellationTokenSource = new CancellationTokenSource();
 
             treeView1.MouseMove += TreeView1_MouseMove;
+            treeView1.AfterExpand += TreeView1_AfterExpand;
+            treeView1.AfterCollapse += TreeView1_AfterCollapse;
         }
         private void InitializeTreeView()
         {
@@ -241,9 +251,22 @@ namespace super_toolbox
 
                 categoryNode.Nodes.Clear();
                 categoryNode.Nodes.AddRange(sortedChildren.ToArray());
-            }
+                string categoryName = categoryNode.Text;
+                bool shouldExpand = preferences.ExpandedCategories.ContainsKey(categoryName)
+                    ? preferences.ExpandedCategories[categoryName]
+                    : false; 
 
-            treeView1.ExpandAll();
+                if (shouldExpand)
+                {
+                    categoryNode.Expand();
+                }
+                else
+                {
+                    categoryNode.Collapse();
+                }
+
+                categoryExpansionState[categoryName] = shouldExpand;
+            }
         }
         private TreeNode AddCategory(string categoryName)
         {
@@ -275,7 +298,7 @@ namespace super_toolbox
         {
          "PNG编码ASTC", "ASTC解码PNG", "Gnf2Png", "PowerVR转换png","异度之刃 - tpl2bclim","异度之刃 - bclim2png","异度之刃 - MXTX2DDS",
          "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS专用纹理 - tex","DXBC2HLSL","rad game tools - rada转换器",
-         "wav2qoa - 转换qoa", "Wiiu - gtx转换器", "hip2png","异度之刃 - LBIM2DDS","ahx2wav"
+         "wav2qoa - 转换qoa", "Wiiu - gtx转换器", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin/Cue转换GDI"
         };
         private bool IsConverter(string formatName) => _converters.Contains(formatName);
         private async void btnExtract_Click(object sender, EventArgs e)
@@ -668,6 +691,10 @@ namespace super_toolbox
                 case "地雷社 - cat archive": return new CatExtractor();
                 case "rad game tools - rada提取器": return new Rada_Extractor();
                 case "rad game tools - rada转换器": return new Rada2wav_Converter();
+                case "Xbox360 - god2iso打包器": return new Xbox360_iso_packer();
+                case "Xbox360 - iso提取器": return new Xbox360_iso_Extractor();
+                case "Dreamcast - cdi提取器": return new CDI_Extractor();
+                case "Dreamcast - Bin/Cue转换GDI": return new BinCue2GDI_Converter();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
@@ -875,6 +902,7 @@ namespace super_toolbox
                 updateTimer?.Dispose();
                 extractionCancellationTokenSource?.Cancel();
                 extractionCancellationTokenSource?.Dispose();
+                preferences?.Save();
             }
             catch { }
             base.OnFormClosing(e);
@@ -1101,7 +1129,22 @@ namespace super_toolbox
                 }
             }
         }
-
+        private void BtnAbout_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                using (var aboutForm = new AboutForm())
+                {
+                    aboutForm.StartPosition = FormStartPosition.CenterParent;
+                    aboutForm.ShowDialog();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"无法打开关于窗口:{ex.Message}", "错误",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
         private void TxtFolderPath_DragLeave(object? sender, EventArgs e)
         {
             if (txtFolderPath == null) return;
@@ -1110,6 +1153,27 @@ namespace super_toolbox
         }       
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+        }
+        private void TreeView1_AfterExpand(object? sender, TreeViewEventArgs e)
+        {
+            if (e.Node != null && e.Node.Tag as string == "category")
+            {
+                string categoryName = e.Node.Text;
+                categoryExpansionState[categoryName] = true;
+                preferences.ExpandedCategories[categoryName] = true;
+                preferences.Save();
+            }
+        }
+
+        private void TreeView1_AfterCollapse(object? sender, TreeViewEventArgs e)
+        {
+            if (e.Node != null && e.Node.Tag as string == "category")
+            {
+                string categoryName = e.Node.Text;
+                categoryExpansionState[categoryName] = false;
+                preferences.ExpandedCategories[categoryName] = false;
+                preferences.Save();
+            }
         }
     }
 }
