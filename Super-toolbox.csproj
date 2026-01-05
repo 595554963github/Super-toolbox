@@ -17,11 +17,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <None Remove="plugins\tex2bmp.dll" />
-	  <None Remove="VGAudioCli.exe" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<EmbeddedResource Include="plugins\dds-phyre-tool.exe">
 			<LogicalName>embedded.dds_phyre_tool.exe</LogicalName>
 		</EmbeddedResource>
@@ -184,6 +179,9 @@
 		<EmbeddedResource Include="plugins\radadec.exe">
 			<LogicalName>embedded.radadec.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\exiso.exe">
+			<LogicalName>embedded.exiso.exe</LogicalName>
+		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
@@ -217,6 +215,9 @@
 		<Reference Include="DyingLight">
 			<HintPath>plugins\DyingLight.dll</HintPath>
 		</Reference>
+		<Reference Include="gdidrop">
+		  <HintPath>plugins\gdidrop.dll</HintPath>
+		</Reference>
 		<Reference Include="GXTConvert">
 		  <HintPath>plugins\GXTConvert.dll</HintPath>
 		</Reference>
@@ -238,5 +239,18 @@
 		<Reference Include="ZstdNet">
 			<HintPath>plugins\ZstdNet.dll</HintPath>
 		</Reference>
+	</ItemGroup>
+	<ItemGroup>
+	  <Compile Update="Properties\Resources.Designer.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>Resources.resx</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+	<ItemGroup>
+	  <EmbeddedResource Update="Properties\Resources.resx">
+	    <Generator>ResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
 	</ItemGroup>
 </Project>
