@@ -187,7 +187,6 @@ namespace super_toolbox
             { "rad game tools - rada转换器", ("音频", "rad game tools开发的rada音频转换器，可以将vgmstream不支持的rada转换成wav") },
             { "Xbox360 - god2iso打包器", ("其他档案", "xbox360 iso打包器,从god镜像格式打包成iso镜像格式") },
             { "Xbox360 - iso提取器", ("其他档案", "xbox360 iso提取器，从iso镜像里把游戏文件全部提取出来") },
-            { "Dreamcast - cdi提取器", ("其他档案", "Dreamcast的cdi提取器，从cdi rom提取里面的游戏文件") },
             { "Dreamcast - Bin/Cue转换GDI", ("其他档案", "将Dreamcast游戏的Bin/Cue镜像文件转换为GDI格式") },
         };
         public SuperToolbox()
@@ -693,7 +692,6 @@ namespace super_toolbox
                 case "rad game tools - rada转换器": return new Rada2wav_Converter();
                 case "Xbox360 - god2iso打包器": return new Xbox360_iso_packer();
                 case "Xbox360 - iso提取器": return new Xbox360_iso_Extractor();
-                case "Dreamcast - cdi提取器": return new CDI_Extractor();
                 case "Dreamcast - Bin/Cue转换GDI": return new BinCue2GDI_Converter();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
