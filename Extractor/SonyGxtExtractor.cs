@@ -59,10 +59,12 @@ namespace super_toolbox
                 try
                 {
                     await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, BUFFER_SIZE, FileOptions.Asynchronous);
-                    string filePrefix = Path.GetFileNameWithoutExtension(filePath);
+                    string sourceFileName = Path.GetFileNameWithoutExtension(filePath);
                     long position = 0;
                     byte[] buffer = new byte[BUFFER_SIZE];
                     byte[] leftover = Array.Empty<byte>();
+                    List<long> gxtPositions = new List<long>();
+                    List<long> gxtSizes = new List<long>();
 
                     while (position < fileStream.Length)
                     {
@@ -93,7 +95,9 @@ namespace super_toolbox
 
                             if (gxtSize > 0)
                             {
-                                await ExtractGxtSegmentAsync(fileStream, headerFilePos, gxtSize, filePrefix, extractedDir, extractedFiles);
+                                gxtPositions.Add(headerFilePos);
+                                gxtSizes.Add(gxtSize);
+
                                 position = headerFilePos + gxtSize;
                                 fileStream.Seek(position, SeekOrigin.Begin);
                                 leftover = Array.Empty<byte>();
@@ -105,6 +109,27 @@ namespace super_toolbox
                             : currentData;
 
                         position += bytesRead;
+                    }
+
+                    if (gxtPositions.Count > 0)
+                    {
+                        if (gxtPositions.Count == 1)
+                        {
+                            string gxtFileName = $"{sourceFileName}.gxt";
+                            gxtFileName = GetAvailableFileName(gxtFileName, extractedDir, extractedFiles);
+                            await ExtractGxtSegmentAsync(fileStream, gxtPositions[0], gxtSizes[0],
+                                extractedDir, extractedFiles, gxtFileName);
+                        }
+                        else
+                        {
+                            for (int i = 0; i < gxtPositions.Count; i++)
+                            {
+                                string gxtFileName = $"{sourceFileName}_{i + 1}.gxt";
+                                gxtFileName = GetAvailableFileName(gxtFileName, extractedDir, extractedFiles);
+                                await ExtractGxtSegmentAsync(fileStream, gxtPositions[i], gxtSizes[i],
+                                    extractedDir, extractedFiles, gxtFileName);
+                            }
+                        }
                     }
                 }
                 catch (OperationCanceledException)
@@ -122,13 +147,29 @@ namespace super_toolbox
             TotalFilesToExtract = extractedFiles.Count;
             if (extractedFiles.Count > 0)
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，从{sourceFileCount}个源文件中提取出{extractedFiles.Count}个GXT文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,从{sourceFileCount}个源文件中提取出{extractedFiles.Count}个gxt文件");
             }
             else
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，从{sourceFileCount}个源文件中未找到GXT文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,从{sourceFileCount}个源文件中未找到gxt文件");
             }
             OnExtractionCompleted();
+        }
+        private string GetAvailableFileName(string baseFileName, string extractedDir, List<string> extractedFiles)
+        {
+            string fileName = baseFileName;
+            int counter = 1;
+            string fileNameWithoutExt = Path.GetFileNameWithoutExtension(baseFileName);
+            string fileExt = Path.GetExtension(baseFileName);
+
+            while (File.Exists(Path.Combine(extractedDir, fileName)) ||
+                   extractedFiles.Contains(Path.Combine(extractedDir, fileName)))
+            {
+                fileName = $"{fileNameWithoutExt}_{counter}{fileExt}";
+                counter++;
+            }
+
+            return fileName;
         }
         private async Task<long> DetermineGxtSizeAsync(FileStream fileStream, long headerPosition, CancellationToken cancellationToken)
         {
@@ -177,23 +218,12 @@ namespace super_toolbox
             return fileSize - headerPosition;
         }
         private async Task ExtractGxtSegmentAsync(FileStream sourceStream, long startPosition, long length,
-                                                string filePrefix, string extractedDir, List<string> extractedFiles)
+                                                string extractedDir, List<string> extractedFiles, string gxtFileName)
         {
             if (length <= 0) return;
 
-            string outputFileName = $"{filePrefix}_{extractedFiles.Count + 1}.gxt";
-            string outputFilePath = Path.Combine(extractedDir, outputFileName);
+            string outputFilePath = Path.Combine(extractedDir, gxtFileName);
 
-            if (File.Exists(outputFilePath))
-            {
-                int duplicateCount = 1;
-                do
-                {
-                    outputFileName = $"{filePrefix}_{extractedFiles.Count + 1}_dup{duplicateCount}.gxt";
-                    outputFilePath = Path.Combine(extractedDir, outputFileName);
-                    duplicateCount++;
-                } while (File.Exists(outputFilePath));
-            }
             try
             {
                 await using var outputStream = new FileStream(outputFilePath, FileMode.Create, FileAccess.Write, FileShare.None, BUFFER_SIZE, FileOptions.Asynchronous);
@@ -220,13 +250,13 @@ namespace super_toolbox
                     {
                         extractedFiles.Add(outputFilePath);
                         OnFileExtracted(outputFilePath);
-                        ExtractionProgress?.Invoke(this, $"已提取:{outputFileName}");
+                        ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(outputFilePath)}");
                     }
                 }
                 else
                 {
-                    ExtractionError?.Invoke(this, $"文件{outputFileName}提取不完整(预期:{length}字节, 实际:{totalBytesWritten}字节)");
-                    OnExtractionFailed($"文件{outputFileName}提取不完整(预期:{length} 字节, 实际:{totalBytesWritten}字节)");
+                    ExtractionError?.Invoke(this, $"文件{Path.GetFileName(outputFilePath)}提取不完整(预期:{length}字节,实际:{totalBytesWritten}字节)");
+                    OnExtractionFailed($"文件{Path.GetFileName(outputFilePath)}提取不完整(预期:{length}字节, 实际:{totalBytesWritten}字节)");
                     try { File.Delete(outputFilePath); } catch { }
                 }
             }
