@@ -175,7 +175,7 @@ namespace super_toolbox
             { "异度之刃 - sar", ("其他档案", "wiiu平台异度之刃x的sar解包器,可提取出里面的hkt文件,它也是switch平台异度之刃终极版的提取器,可提取mcapk和chr文件里面的数据") },
             { "Fate Extella/Link - pk/pfs/pkb", ("其他档案", "psv平台的Fate Extella和Fate Extella Link专用提取器") },
             { "白色相簿2 - dar archive", ("其他档案", "ps3平台的白色相簿2的data.dar专用提取器,voice.dar使用RIFF/RIFX提取器提取就可以了") },
-            { "白色相簿2 - pak archive", ("其他档案", "steam平台的白色相簿2的pak专用提取器，和ps3的dar完全不同") },
+            { "白色相簿2 - pak archive", ("其他档案", "steam平台的白色相簿2的pak专用提取器,和ps3的dar完全不同") },
             { "PlayStation - TROPHY.TRP file", ("其他档案", "索尼Playstation平台的trp奖杯文件提取器,代表游戏如ps3的白色相簿、psv的SD高达G世纪-创世") },
             { "奥特曼格斗进化3 - bin", ("其他档案", "ps2平台的奥特曼格斗进化3专用提取器,由quickbms脚本修改而来") },
             { "混乱特工 - vpp_pc", ("其他档案", "混乱特工的专用提取器") },
@@ -184,10 +184,13 @@ namespace super_toolbox
             { "DXBC2HLSL", ("其他档案", "DXBC到HLSL文件的转换器,使用CMD_Decompiler反编译转换") },
             { "地雷社 - cat archive", ("其他档案", "激次元组合布兰+涅普缇努VS僵尸军团、神次元偶像:海王星PP和海王星U的cat专用提取器") },
             { "rad game tools - rada提取器", ("音频", "rad game tools开发的rada音频文件专用提取器,先用Fmodel把pak和ucas文件里的uasset跟ubulk文件全部提取出来再提取rada文件") },
-            { "rad game tools - rada转换器", ("音频", "rad game tools开发的rada音频转换器，可以将vgmstream不支持的rada转换成wav") },
+            { "rad game tools - rada转换器", ("音频", "rad game tools开发的rada音频转换器,可以将vgmstream不支持的rada转换成wav") },
             { "Xbox360 - god2iso打包器", ("其他档案", "xbox360 iso打包器,从god镜像格式打包成iso镜像格式") },
-            { "Xbox360 - iso提取器", ("其他档案", "xbox360 iso提取器，从iso镜像里把游戏文件全部提取出来") },
+            { "Xbox360 - iso提取器", ("其他档案", "xbox360 iso提取器,从iso镜像里把游戏文件全部提取出来") },
             { "Dreamcast - Bin/Cue转换GDI", ("其他档案", "将Dreamcast游戏的Bin/Cue镜像文件转换为GDI格式") },
+            { "猎天使魔女pc版", ("其他档案", "steam版猎天使魔女的专用提取器,可解包dat、wtb、wmb、mod、eff5种格式") },
+            { "SEGA女武神 - hmt提取器", ("其他档案", "从psv游戏苍蓝革命女武神的MLX文件里提取hmt文件") },
+            { "SEGA女武神 - MMF", ("其他档案", "从psv游戏苍蓝革命女武神和战场女武神4的MMF文件里提取bin、hmd、hcm、hmt等文件") },
         };
         public SuperToolbox()
         {
@@ -693,6 +696,9 @@ namespace super_toolbox
                 case "Xbox360 - god2iso打包器": return new Xbox360_iso_packer();
                 case "Xbox360 - iso提取器": return new Xbox360_iso_Extractor();
                 case "Dreamcast - Bin/Cue转换GDI": return new BinCue2GDI_Converter();
+                case "猎天使魔女pc版": return new Bayonetta_PC_Extractor();
+                case "SEGA女武神 - hmt提取器": return new Hmt_Extractor();
+                case "SEGA女武神 - MMF": return new MMF_Extractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
