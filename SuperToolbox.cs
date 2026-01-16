@@ -56,8 +56,10 @@ namespace super_toolbox
             { "Filename小端序 - pck", ("其他档案", "steam和switch平台的超女神信仰诺瓦露、steam和psv的约战凛绪轮回、steam白色相簿_编缀的冬日回忆和传颂之物二人的白皇的专用解包工具") },
             { "Filename大端序 - pck", ("其他档案", "ps3约会大作战凛祢理想乡和约会大作战或守安装、白色相簿的专用解包工具") },
             { "地雷社和AQUAPLUS专用纹理 - tex", ("图片", "超女神信仰诺瓦露、白色相簿_编缀的冬日回忆、约会大作战系列、传颂之物二人的白皇专用tex转换器") },
-            { "SEGS binary data - bin", ("其他档案", "苍翼默示录_刻之幻影专用bin文件解包工具,可提取其中包含的所有pac文件") },
-            { "苍翼默示录_刻之幻影 - pac", ("其他档案", "苍翼默示录_刻之幻影的专用解包工具,无法用于苍翼默示录_神观之梦") },
+            { "ps3苍翼默示录_刻之幻影 - bin", ("其他档案", "ps3平台的苍翼默示录_刻之幻影专用bin文件解包工具,可提取其中包含的所有pac文件") },
+            { "ps3苍翼默示录_刻之幻影 - pac", ("其他档案", "ps3平台的苍翼默示录_刻之幻影的专用解包工具,无法用于psv版和苍翼默示录_神观之梦") },
+            { "psv苍翼默示录_刻之幻影 - pac", ("其他档案", "psv平台的苍翼默示录_刻之幻影的专用解包工具,无法用于ps3版和苍翼默示录_神观之梦") },
+            { "psv苍翼默示录_连续变换 - pac", ("其他档案", "psv平台的苍翼默示录_连续变换的专用解包工具,无法用于苍翼默示录_刻之幻影和苍翼默示录_神观之梦") },
             { "苍翼默示录_神观之梦 - pac", ("其他档案", "苍翼默示录_神观之梦的专用解包工具,支持解包压缩的pac文件和普通pac文件") },
             { "断罪的玛利亚 - dat", ("其他档案", "ps3游戏断罪的玛利亚专用提取器,可解包data.dat文件,提取其中的视频、音频和图片") },
             { "进击的巨人_自由之翼 - bin", ("其他档案", "进击的巨人_自由之翼提取器,能从LINKDATA.bin文件中提取出g1t、g1m等文件") },
@@ -563,8 +565,10 @@ namespace super_toolbox
                 case "Filename小端序 - pck": return new Filename_Pck_LE_Extractor();
                 case "Filename大端序 - pck": return new Filename_Pck_BE_Extractor();
                 case "地雷社和AQUAPLUS专用纹理 - tex": return new StingTexConverter();
-                case "SEGS binary data - bin": return new SEGS_BinExtractor();
-                case "苍翼默示录_刻之幻影 - pac": return new FPAC_CP_Extractor();
+                case "ps3苍翼默示录_刻之幻影 - bin": return new SEGS_BinExtractor();
+                case "ps3苍翼默示录_刻之幻影 - pac": return new FPAC_CP3_Extractor();
+                case "psv苍翼默示录_刻之幻影 - pac": return new FPAC_CPV_Extractor();
+                case "psv苍翼默示录_连续变换 - pac": return new FPAC_CS_Extractor();
                 case "苍翼默示录_神观之梦 - pac": return new FPAC_CF_Extractor();
                 case "PlayStation 4 bit ADPCM - vag": return new VagExtractor();
                 case "断罪的玛利亚 - dat": return new DataDatExtractor();
