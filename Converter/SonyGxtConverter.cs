@@ -1,4 +1,7 @@
-using GXTConvert;
+using GXTConvert.Conversion;
+using GXTConvert.Exceptions;
+using GXTConvert.FileFormat;
+using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Formats.Png;
 
 namespace super_toolbox
@@ -28,18 +31,21 @@ namespace super_toolbox
             {
                 foreach (var gxtFilePath in gxtFiles)
                 {
-                    ThrowIfCancellationRequested(cancellationToken);
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        ConversionError?.Invoke(this, "操作已取消");
+                        OnConversionFailed("操作已取消");
+                        return;
+                    }
 
                     string fileName = Path.GetFileNameWithoutExtension(gxtFilePath);
                     ConversionProgress?.Invoke(this, $"正在处理:{fileName}.gxt");
 
-                    string fileDirectory = Path.GetDirectoryName(gxtFilePath) ?? string.Empty;
-
                     try
                     {
-                        bool conversionSuccess = await ConvertGxtToPng(gxtFilePath, fileDirectory, cancellationToken);
+                        bool success = await ProcessGxtFileAsync(gxtFilePath, cancellationToken);
 
-                        if (conversionSuccess)
+                        if (success)
                         {
                             successCount++;
                             ConversionProgress?.Invoke(this, $"转换成功:{fileName}.gxt");
@@ -53,26 +59,21 @@ namespace super_toolbox
                     }
                     catch (Exception ex)
                     {
-                        ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
+                        ConversionError?.Invoke(this, $"{fileName}.gxt处理错误:{ex.Message}");
                         OnConversionFailed($"{fileName}.gxt处理错误:{ex.Message}");
                     }
                 }
 
                 if (successCount > 0)
                 {
-                    ConversionProgress?.Invoke(this, $"转换完成，成功转换{successCount}/{TotalFilesToConvert}个GXT文件");
+                    ConversionProgress?.Invoke(this, $"转换完成,成功{successCount}/{TotalFilesToConvert}个文件");
+                    OnConversionCompleted();
                 }
                 else
                 {
-                    ConversionProgress?.Invoke(this, "转换完成，但未成功转换任何GXT文件");
+                    ConversionError?.Invoke(this, "未成功转换任何文件");
+                    OnConversionFailed("未成功转换任何文件");
                 }
-
-                OnConversionCompleted();
-            }
-            catch (OperationCanceledException)
-            {
-                ConversionError?.Invoke(this, "操作已取消");
-                OnConversionFailed("操作已取消");
             }
             catch (Exception ex)
             {
@@ -81,83 +82,104 @@ namespace super_toolbox
             }
         }
 
-        private async Task<bool> ConvertGxtToPng(string gxtFilePath, string outputDirectory, CancellationToken cancellationToken)
+        private async Task<bool> ProcessGxtFileAsync(string gxtFilePath, CancellationToken cancellationToken)
         {
+            string fileName = Path.GetFileNameWithoutExtension(gxtFilePath);
+            string outputDirectory = Path.GetDirectoryName(gxtFilePath)!;
+            string baseOutputName = Path.Combine(outputDirectory, fileName);
+
             try
             {
-                string fileName = Path.GetFileNameWithoutExtension(gxtFilePath);
-                string baseOutputName = Path.Combine(outputDirectory, fileName);
+                using var fs = new FileStream(gxtFilePath, FileMode.Open, FileAccess.Read);
+                var gxt = new GxtBinary(fs);
 
-                using (FileStream fs = new FileStream(gxtFilePath, FileMode.Open, FileAccess.Read))
-                using (GxtBinary gxt = new GxtBinary(fs))
+                for (int i = 0; i < gxt.TextureBundles.Length; i++)
                 {
-                    ConversionProgress?.Invoke(this, $"[GXT]正在保存{fileName}.gxt的纹理...");
-                    var pngEncoder = new PngEncoder();
+                    if (cancellationToken.IsCancellationRequested) return false;
 
-                    for (int i = 0; i < gxt.Textures.Length; i++)
-                    {
-                        string outputPath = gxt.Textures.Length == 1
-                            ? $"{baseOutputName}.png"
-                            : $"{baseOutputName}_{i + 1}.png";
+                    var bundle = gxt.TextureBundles[i];
+                    string outputPath = GetOutputPath(baseOutputName, i, gxt.TextureBundles.Length);
 
-                        await using (var outputStream = File.Create(outputPath))
-                        {
-                            await gxt.Textures[i].SaveAsync(outputStream, pngEncoder, cancellationToken);
-                        }
+                    var image = CreateImageFromBundle(bundle);
 
-                        ConversionProgress?.Invoke(this, $"[GXT]已保存:{Path.GetFileName(outputPath)}");
-                    }
+                    await using var outputStream = File.Create(outputPath);
+                    await image.SaveAsync(outputStream, new PngEncoder(), cancellationToken);
 
-                    if (gxt.BUVTextures != null && gxt.BUVTextures.Length > 0)
-                    {
-                        ConversionProgress?.Invoke(this, $"[GXT]正在保存{fileName}.gxt的BUV纹理...");
-                        for (int i = 0; i < gxt.BUVTextures.Length; i++)
-                        {
-                            string outputPath = gxt.BUVTextures.Length == 1
-                                ? $"{baseOutputName}_buv.png"
-                                : $"{baseOutputName}_buv_{i + 1}.png";
-                            await using (var outputStream = File.Create(outputPath))
-                            {
-                                await gxt.BUVTextures[i].SaveAsync(outputStream, pngEncoder, cancellationToken);
-                            }
-
-                            ConversionProgress?.Invoke(this, $"[GXT]已保存BUV纹理:{Path.GetFileName(outputPath)}");
-                        }
-                    }
-
-                    ConversionProgress?.Invoke(this, $"[GXT]{fileName}.gxt转换完成");
-                    return true;
+                    ConversionProgress?.Invoke(this, $"已保存:{Path.GetFileName(outputPath)}");
                 }
+
+                return true;
             }
             catch (FormatNotImplementedException ex)
             {
-                ConversionError?.Invoke(this, $"[GXT]不支持的纹理格式:{ex.Format}");
+                ConversionError?.Invoke(this, $"不支持格式:{ex.Format}");
                 return false;
             }
             catch (TypeNotImplementedException ex)
             {
-                ConversionError?.Invoke(this, $"[GXT]不支持的纹理类型:{ex.Type}");
+                ConversionError?.Invoke(this, $"不支持类型:{ex.Type}");
                 return false;
             }
             catch (VersionNotImplementedException ex)
             {
-                ConversionError?.Invoke(this, $"[GXT]不支持的GXT版本:0x{ex.Version:X8}");
+                ConversionError?.Invoke(this, $"不支持版本:0x{ex.Version:X8}");
                 return false;
             }
             catch (UnknownMagicException)
             {
-                ConversionError?.Invoke(this, $"[GXT]未知的文件格式或损坏的文件");
-                return false;
-            }
-            catch (PaletteNotImplementedException ex)
-            {
-                ConversionError?.Invoke(this, $"[GXT]不支持的调色板格式:{ex.Format}");
+                ConversionError?.Invoke(this, "文件格式错误或已损坏");
                 return false;
             }
             catch (Exception ex)
             {
-                ConversionError?.Invoke(this, $"[GXT]转换过程异常:{ex.Message}");
+                ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
                 return false;
+            }
+        }
+
+        private static string GetOutputPath(string baseName, int index, int totalBundles)
+        {
+            return totalBundles == 1
+                ? $"{baseName}.png"
+                : $"{baseName}_{index + 1}.png";
+        }
+
+        private SixLabors.ImageSharp.Image CreateImageFromBundle(TextureBundle bundle)
+        {
+            var pixelFormat = bundle.PixelFormat;
+
+            if (pixelFormat == System.Drawing.Imaging.PixelFormat.Format32bppArgb ||
+                pixelFormat == System.Drawing.Imaging.PixelFormat.Format32bppRgb)
+            {
+                return SixLabors.ImageSharp.Image.LoadPixelData<Rgba32>(bundle.PixelData, bundle.Width, bundle.Height);
+            }
+            else if (pixelFormat == System.Drawing.Imaging.PixelFormat.Format24bppRgb)
+            {
+                return SixLabors.ImageSharp.Image.LoadPixelData<Rgb24>(bundle.PixelData, bundle.Width, bundle.Height);
+            }
+            else if (pixelFormat == System.Drawing.Imaging.PixelFormat.Format16bppRgb565)
+            {
+                var rgbaData = new byte[bundle.Width * bundle.Height * 4];
+
+                for (int i = 0; i < bundle.Width * bundle.Height; i++)
+                {
+                    ushort pixel = BitConverter.ToUInt16(bundle.PixelData, i * 2);
+
+                    byte r = (byte)((pixel >> 11) & 0x1F);
+                    byte g = (byte)((pixel >> 5) & 0x3F);
+                    byte b = (byte)(pixel & 0x1F);
+
+                    rgbaData[i * 4] = (byte)((r << 3) | (r >> 2));
+                    rgbaData[i * 4 + 1] = (byte)((g << 2) | (g >> 4));
+                    rgbaData[i * 4 + 2] = (byte)((b << 3) | (b >> 2));
+                    rgbaData[i * 4 + 3] = 255;
+                }
+
+                return SixLabors.ImageSharp.Image.LoadPixelData<Rgba32>(rgbaData, bundle.Width, bundle.Height);
+            }
+            else
+            {
+                return SixLabors.ImageSharp.Image.LoadPixelData<Rgba32>(bundle.PixelData, bundle.Width, bundle.Height);
             }
         }
     }
