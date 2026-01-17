@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace super_toolbox
 {
     public class CatExtractor : BaseExtractor
@@ -113,18 +115,21 @@ namespace super_toolbox
 
                         if (size > 0 && offset + size <= content.Length)
                         {
-                            string name = totalValidFiles == 1 ? $"{catFileNamePrefix}.dat":$"{catFileNamePrefix}_{fileIndex}.dat";
-                            string safeName = SanitizeFileName(name);
-                            string outputPath = Path.Combine(outputDir, safeName);
-                            EnsureUniqueFileName(ref outputPath);
-
                             byte[] fileData = new byte[size];
                             Array.Copy(content, offset, fileData, 0, size);
+
+                            string extension = GetExtensionFromHeader(fileData);
+                            string fileName = totalValidFiles == 1 ?
+                                $"{catFileNamePrefix}.{extension}" :
+                                $"{catFileNamePrefix}_{fileIndex}.{extension}";
+
+                            string outputPath = Path.Combine(outputDir, fileName);
+                            outputPath = GetUniqueFilePath(outputPath);
 
                             await File.WriteAllBytesAsync(outputPath, fileData, cancellationToken);
                             extractedFiles.Add(outputPath);
                             OnFileExtracted(outputPath);
-                            ExtractionProgress?.Invoke(this, $"已提取:{safeName}");
+                            ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(outputPath)}");
 
                             fileIndex++;
                         }
@@ -192,59 +197,75 @@ namespace super_toolbox
                     {
                         if (sizes[i] > 0 && offsets[i] + sizes[i] <= content.Length)
                         {
-                            string name = totalValidFiles == 1 ? $"{catFileNamePrefix}.dat":$"{catFileNamePrefix}_{i + 1}.dat";
-                            string safeName = SanitizeFileName(name);
-                            string outputPath = Path.Combine(outputDir, safeName);
-                            EnsureUniqueFileName(ref outputPath);
-
                             byte[] fileData = new byte[sizes[i]];
                             Array.Copy(content, offsets[i], fileData, 0, sizes[i]);
+
+                            string extension = GetExtensionFromHeader(fileData);
+                            string fileName = totalValidFiles == 1 ?
+                                $"{catFileNamePrefix}.{extension}" :
+                                $"{catFileNamePrefix}_{i + 1}.{extension}";
+
+                            string outputPath = Path.Combine(outputDir, fileName);
+                            outputPath = GetUniqueFilePath(outputPath);
 
                             await File.WriteAllBytesAsync(outputPath, fileData, cancellationToken);
                             extractedFiles.Add(outputPath);
                             OnFileExtracted(outputPath);
-                            ExtractionProgress?.Invoke(this, $"已提取:{safeName}");
+                            ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(outputPath)}");
                         }
                     }
                 }
             }
         }
-
-        private string SanitizeFileName(string fileName)
+        private string GetExtensionFromHeader(byte[] fileData)
         {
-            if (string.IsNullOrEmpty(fileName))
-                return "unnamed.dat";
+            if (fileData == null || fileData.Length < 4)
+                return "dat";
 
-            fileName = fileName.Replace('/', '_').Replace('\\', '_');
-            fileName = new string(fileName.Where(c => !char.IsControl(c)).ToArray());
-
-            if (string.IsNullOrEmpty(fileName) || fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            StringBuilder headerBuilder = new StringBuilder();
+            for (int i = 0; i < 4 && i < fileData.Length; i++)
             {
-                return "unnamed.dat";
+                byte b = fileData[i];
+                if (b >= 32 && b <= 126)
+                {
+                    headerBuilder.Append((char)b);
+                }
+                else
+                {
+                    return "dat";
+                }
             }
 
-            if (!fileName.Contains('.'))
-            {
-                fileName += ".dat";
-            }
+            string header = headerBuilder.ToString().Trim();
+            if (string.IsNullOrEmpty(header) || header.Length < 2)
+                return "dat";
+            string cleanHeader = new string(header.Where(c => char.IsLetterOrDigit(c)).ToArray());
+            if (string.IsNullOrEmpty(cleanHeader) || cleanHeader.Length < 2)
+                return "dat";
 
-            return fileName;
+            return cleanHeader.ToLower();
         }
 
-        private void EnsureUniqueFileName(ref string filePath)
+        private string GetUniqueFilePath(string filePath)
         {
-            string directory = Path.GetDirectoryName(filePath) ?? string.Empty;
-            string fileNameWithoutExt = Path.GetFileNameWithoutExtension(filePath);
-            string extension = Path.GetExtension(filePath);
-
-            int counter = 1;
-            string newFilePath = filePath;
-            while (File.Exists(newFilePath))
+            if (!File.Exists(filePath))
             {
-                newFilePath = Path.Combine(directory, $"{fileNameWithoutExt}_{counter}{extension}");
-                counter++;
+                return filePath;
             }
-            filePath = newFilePath;
+
+            string directory = Path.GetDirectoryName(filePath) ?? string.Empty;
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
+            string fileExtension = Path.GetExtension(filePath);
+
+            int duplicateCount = 1;
+            string newFilePath;
+            do
+            {
+                newFilePath = Path.Combine(directory, $"{fileNameWithoutExtension}_{duplicateCount}{fileExtension}");
+                duplicateCount++;
+            } while (File.Exists(newFilePath));
+
+            return newFilePath;
         }
     }
 }
