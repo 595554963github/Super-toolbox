@@ -219,31 +219,35 @@ namespace super_toolbox
         }
         private string GetExtensionFromHeader(byte[] fileData)
         {
-            if (fileData == null || fileData.Length < 4)
+            if (fileData == null || fileData.Length < 3)
                 return "dat";
 
             StringBuilder headerBuilder = new StringBuilder();
-            for (int i = 0; i < 4 && i < fileData.Length; i++)
+
+            for (int i = 0; i < Math.Min(4, fileData.Length); i++)
             {
                 byte b = fileData[i];
-                if (b >= 32 && b <= 126)
+                if (b >= 33 && b <= 126)
                 {
                     headerBuilder.Append((char)b);
                 }
                 else
                 {
-                    return "dat";
+                    break;
                 }
             }
 
-            string header = headerBuilder.ToString().Trim();
-            if (string.IsNullOrEmpty(header) || header.Length < 2)
-                return "dat";
-            string cleanHeader = new string(header.Where(c => char.IsLetterOrDigit(c)).ToArray());
-            if (string.IsNullOrEmpty(cleanHeader) || cleanHeader.Length < 2)
-                return "dat";
+            string header = headerBuilder.ToString();
 
-            return cleanHeader.ToLower();
+            if (header.Length >= 2)
+            {
+                string cleanHeader = new string(header.Where(c => char.IsLetter(c)).ToArray());
+
+                if (cleanHeader.Length >= 2)
+                    return cleanHeader.ToLower();
+            }
+
+            return "dat";
         }
 
         private string GetUniqueFilePath(string filePath)
