@@ -185,7 +185,7 @@ namespace super_toolbox
             { "DXBC - DirectX Bytecode", ("其他档案", "DirectX字节码文件专用提取器") },
             { "DXBC2HLSL", ("其他档案", "DXBC到HLSL文件的转换器,使用CMD_Decompiler反编译转换") },
             { "地雷社 - cat archive", ("其他档案", "激次元组合布兰+涅普缇努VS僵尸军团、神次元偶像:海王星PP和海王星U的cat专用提取器") },
-            { "rad game tools - rada提取器", ("音频", "rad game tools开发的rada音频文件专用提取器,先用Fmodel把pak和ucas文件里的uasset跟ubulk文件全部提取出来再提取rada文件") },
+            { "rad game tools - rada/binka提取器", ("音频", "rad game tools开发的音频文件专用提取器,先用Fmodel把pak和ucas文件里的uasset跟ubulk文件全部提取出来再提取rada/binka文件") },
             { "rad game tools - rada转换器", ("音频", "rad game tools开发的rada音频转换器,可以将vgmstream不支持的rada转换成wav") },
             { "Xbox360 - god2iso打包器", ("其他档案", "xbox360 iso打包器,从god镜像格式打包成iso镜像格式") },
             { "Xbox360 - iso提取器", ("其他档案", "xbox360 iso提取器,从iso镜像里把游戏文件全部提取出来") },
@@ -695,7 +695,7 @@ namespace super_toolbox
                 case "DXBC - DirectX Bytecode": return new DXBC_Extractor();
                 case "DXBC2HLSL": return new DXBC2HLSL_Converter();
                 case "地雷社 - cat archive": return new CatExtractor();
-                case "rad game tools - rada提取器": return new Rada_Extractor();
+                case "rad game tools - rada/binka提取器": return new Radgametools_Audio_Extractor();
                 case "rad game tools - rada转换器": return new Rada2wav_Converter();
                 case "Xbox360 - god2iso打包器": return new Xbox360_iso_packer();
                 case "Xbox360 - iso提取器": return new Xbox360_iso_Extractor();
