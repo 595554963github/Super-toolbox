@@ -137,7 +137,7 @@ namespace super_toolbox
             { "Nds - narc提取器", ("其他档案", "任天堂nds平台的narc文件提取器,代表作为口袋妖怪(nds),可提取narc文件中的资源") },
             { "PS3 - psarc提取器", ("其他档案", "索尼ps3平台的psarc解包工具,代表作为第二次超级机器人大战OG,也可解包无人深空的pak文件") },
             { "PS3 - psarc打包器", ("其他档案", "索尼ps3平台的psarc打包器,能将一个文件夹重新打包成psarc文件") },
-            { "PS3 - NPDRM - sdat", ("其他档案", "索尼ps3平台的sdat解包工具,代表作为约会大作战或守安装、约会大作战凛弥理想乡等,可提取sdat文件中的资源") },         
+            { "PS3 - NPDRM - sdat", ("其他档案", "索尼ps3平台的sdat解包工具,代表作为约会大作战或守安装、约会大作战凛弥理想乡等,可提取sdat文件中的资源") },
             { "CRI - afs打包器", ("其他档案", "CRIware的afs档案打包器,可将一个文件夹及子文件夹里的所有文件重新打包成afs文件") },
             { "Mages - mpk提取器", ("其他档案", "Mages的mpk解包工具,代表作为命运石之门,可提取mpk文件中的各类资源") },
             { "Mages - mpk打包器", ("其他档案", "Mages的mpk打包器,能将一个文件夹及子文件夹里的所有文件重新打包成mpk文件") },
@@ -162,7 +162,7 @@ namespace super_toolbox
             { "ahx2wav", ("音频", "此工具可以将Criware的ahx文件转换成wav格式") },
             { "异度之刃2 - ard/arh archive", ("其他档案", "switch游戏异度之刃2的提取器,可解包ard/arh这种组合打包的档案") },
             { "异度之刃3 - ard/arh archive", ("其他档案", "switch游戏异度之刃3的提取器,可解包ard/arh这种组合打包的档案") },
-            { "异度之刃 - LBIM2DDS", ("图片", "异度之刃系列的LBIM转换器,可将文件尾为LBIM的文件转换成dds图像,如果是wismda文件该工具会先拆分xbc1文件,如果是xbc1文件会先移除前48字节,随后zlib解压,然后转换成dds图片,一步到位") },          
+            { "异度之刃 - LBIM2DDS", ("图片", "异度之刃系列的LBIM转换器,可将文件尾为LBIM的文件转换成dds图像,如果是wismda文件该工具会先拆分xbc1文件,如果是xbc1文件会先移除前48字节,随后zlib解压,然后转换成dds图片,一步到位") },
             { "异度之刃 - arc file", ("其他档案", "从3ds平台的异度之刃arc文件里面提取tpl文件") },
             { "异度之刃 - BC file", ("其他档案", "从异度之刃系列游戏提取BC动画文件,这些文件包含ANIM签名") },
             { "异度之刃 - tpl2bclim", ("图片", "将3ds平台异度之刃的tpl文件转换成bclim文件") },
@@ -193,7 +193,8 @@ namespace super_toolbox
             { "猎天使魔女pc版", ("其他档案", "steam版猎天使魔女的专用提取器,可解包dat、wtb、wmb、mod、eff5种格式") },
             { "SEGA女武神 - hmt提取器", ("其他档案", "从psv游戏苍蓝革命女武神的MLX文件里提取hmt文件") },
             { "SEGA女武神 - MMF", ("其他档案", "从psv游戏苍蓝革命女武神和战场女武神4的MMF文件里提取bin、hmd、hcm、hmt等文件") },
-            { "东京幻想乡 - pkg", ("其他档案", "psv游戏东京幻想乡的专用pkg提取器") },
+            { "东京幻都 - pkg", ("其他档案", "psv游戏东京幻都(台湾翻译为东京幻想乡)的专用pkg提取器") },
+            { "东方红魔乡 - DAT", ("其他档案", "东方红魔乡的专用DAT提取器") },
         };
         public SuperToolbox()
         {
@@ -259,7 +260,7 @@ namespace super_toolbox
                 string categoryName = categoryNode.Text;
                 bool shouldExpand = preferences.ExpandedCategories.ContainsKey(categoryName)
                     ? preferences.ExpandedCategories[categoryName]
-                    : false; 
+                    : false;
 
                 if (shouldExpand)
                 {
@@ -648,7 +649,7 @@ namespace super_toolbox
                 case "Nds - narc提取器": return new NarcExtractor();
                 case "PS3 - psarc提取器": return new PsarcExtractor();
                 case "PS3 - psarc打包器": return new PsarcRepacker();
-                case "PS3 - NPDRM - sdat": return new NPD_Extractor();             
+                case "PS3 - NPDRM - sdat": return new NPD_Extractor();
                 case "CRI - afs打包器": return new AfsRepacker();
                 case "Mages - mpk提取器": return new MagesMpkExtractor();
                 case "Mages - mpk打包器": return new MagesMpkRepacker();
@@ -676,16 +677,16 @@ namespace super_toolbox
                 case "ahx2wav": return new Ahx2wav_Converter();
                 case "异度之刃 - arc file": return new XenobladeTpl_Extractor();
                 case "异度之刃 - BC file": return new XenobladeBC_Extractor();
-                case "异度之刃 - tpl2bclim":return new Tpl2bclim_Converter();
+                case "异度之刃 - tpl2bclim": return new Tpl2bclim_Converter();
                 case "异度之刃 - bclim2png": return new Bclim2png_Converter();
-                case "异度之刃 - bdat提取器":return new XenobladeBdat_Extractor();
-                case "异度之刃 - bdat打包器":return new XenobladeBdat_Repacker();
+                case "异度之刃 - bdat提取器": return new XenobladeBdat_Extractor();
+                case "异度之刃 - bdat打包器": return new XenobladeBdat_Repacker();
                 case "异度之刃 - MXTX file": return new XenobladeMTXT_Extractor();
                 case "异度之刃 - LBIM file": return new XenobladeLBIM_Extractor();
                 case "异度之刃 - MXTX2DDS": return new MTXT2DDS_Converter();
                 case "异度之刃 - map.pkb": return new XenobladeMap_Extractor();
                 case "异度之刃 - sar": return new XenobladeSar_Extractor();
-                case "异度之刃 - pcbeb file": return new Xenoblade_Pcbeb_Extractor();               
+                case "异度之刃 - pcbeb file": return new Xenoblade_Pcbeb_Extractor();
                 case "Fate Extella/Link - pk/pfs/pkb": return new Fate_pk_Extractor();
                 case "白色相簿2 - dar archive": return new DarExtractor();
                 case "白色相簿2 - pak archive": return new WA2_Pak_Extractor();
@@ -705,6 +706,7 @@ namespace super_toolbox
                 case "SEGA女武神 - hmt提取器": return new Hmt_Extractor();
                 case "SEGA女武神 - MMF": return new MMF_Extractor();
                 case "东京幻想乡 - pkg": return new LotusLandStory_pkg_Extractor();
+                case "东方红魔乡 - DAT": return new PBG3_Extractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
@@ -1169,7 +1171,7 @@ namespace super_toolbox
             if (txtFolderPath == null) return;
 
             txtFolderPath.BackColor = SystemColors.Window;
-        }       
+        }
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
         }
