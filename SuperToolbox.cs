@@ -48,7 +48,7 @@ namespace super_toolbox
             { "Lightvn galgame engine - mcdat/vndat", ("其他档案", "Light.vn galgame引擎的提取器,可解包宝石少女1st的mcdat和爱你,我的英雄！的vndat文件") },
             { "CRI - afs提取器", ("其他档案", "用于解包criware的afs档案,该文件在任天堂、索尼、世嘉和xbox360平台较为常见") },
             { "CRI - cpk", ("其他档案", "用于解包CRIWARE的cpk格式档案,该格式应用广泛,可存储多种类型资源") },
-            { "IdeaFactory - tid", ("图片", "地雷社海王星系列tid文件转换工具,可将tid转换为dds格式,且支持BC7纹理的tid文件") },
+            { "IdeaFactory - tid", ("图片", "地雷社海王星系列tid文件转换器,可将tid转换为dds格式,且支持BC7纹理的tid文件") },
             { "第七史诗 - sct", ("图片", "第七史诗的sct转换器,支持批量将sct格式转换为png格式") },
             { "万代南梦宫 - bnsf", ("音频", "万代南梦宫的bnsf音频提取器,以二进制形式从TLFILE.TLDAT文件中提取。可解析情热传说和ps3平台的狂战传说中的音频,注意狂战传说steam版因加密无法提取") },
             { "索尼 - gxt提取器", ("其他档案", "从索尼的psv、psp等平台游戏中提取gxt文件。许多游戏喜欢将多个gxt文件打包存储,该工具可有效提取这些gxt文件") },
@@ -193,6 +193,7 @@ namespace super_toolbox
             { "猎天使魔女pc版", ("其他档案", "steam版猎天使魔女的专用提取器,可解包dat、wtb、wmb、mod、eff5种格式") },
             { "SEGA女武神 - hmt提取器", ("其他档案", "从psv游戏苍蓝革命女武神的MLX文件里提取hmt文件") },
             { "SEGA女武神 - MMF", ("其他档案", "从psv游戏苍蓝革命女武神和战场女武神4的MMF文件里提取bin、hmd、hcm、hmt等文件") },
+            { "东京幻想乡 - pkg", ("其他档案", "psv游戏东京幻想乡的专用pkg提取器") },
         };
         public SuperToolbox()
         {
@@ -300,7 +301,7 @@ namespace super_toolbox
         }
         private readonly HashSet<string> _converters = new HashSet<string>
         {
-         "PNG编码ASTC", "ASTC解码PNG", "Gnf2Png", "PowerVR转换png","异度之刃 - tpl2bclim","异度之刃 - bclim2png","异度之刃 - MXTX2DDS",
+         "PNG编码ASTC", "ASTC解码PNG", "Gnf2Png", "PowerVR转换png","异度之刃 - tpl2bclim","异度之刃 - bclim2png","异度之刃 - MXTX2DDS","IdeaFactory - tid",
          "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS专用纹理 - tex","DXBC2HLSL","rad game tools - rada转换器",
          "wav2qoa - 转换qoa", "Wiiu - gtx转换器", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin/Cue转换GDI"
         };
@@ -557,7 +558,7 @@ namespace super_toolbox
                 case "Lightvn galgame engine - mcdat/vndat": return new LightvnExtractor();
                 case "CRI - afs提取器": return new AfsExtractor();
                 case "CRI - cpk": return new CpkExtractor();
-                case "IdeaFactory - tid": return new TidExtractor();
+                case "IdeaFactory - tid": return new Tid2DDS_Converter();
                 case "第七史诗 - sct": return new Sct2Png_Converter();
                 case "万代南梦宫 - bnsf": return new Bnsf_Extractor();
                 case "索尼 - gxt提取器": return new SonyGxtExtractor();
@@ -703,6 +704,7 @@ namespace super_toolbox
                 case "猎天使魔女pc版": return new Bayonetta_PC_Extractor();
                 case "SEGA女武神 - hmt提取器": return new Hmt_Extractor();
                 case "SEGA女武神 - MMF": return new MMF_Extractor();
+                case "东京幻想乡 - pkg": return new LotusLandStory_pkg_Extractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
@@ -767,29 +769,36 @@ namespace super_toolbox
             {
                 richTextBox1.SuspendLayout();
 
-                int currentSelectionStart = richTextBox1.SelectionStart;
-                int currentSelectionLength = richTextBox1.SelectionLength;
-
                 bool isAtBottom = IsRichTextBoxAtBottom();
+                int firstVisibleIndex = richTextBox1.GetCharIndexFromPosition(new Point(0, 0));
 
                 StringBuilder sb = new StringBuilder();
                 foreach (string message in messages)
                 {
                     sb.AppendLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - {message}");
                 }
-
                 richTextBox1.AppendText(sb.ToString());
+
+                richTextBox1.PerformLayout();
 
                 if (isAtBottom)
                 {
-                    richTextBox1.ScrollToCaret();
+                    richTextBox1.BeginInvoke(new Action(() =>
+                    {
+                        richTextBox1.SelectionStart = richTextBox1.TextLength;
+                        richTextBox1.ScrollToCaret();
+                    }));
                 }
                 else
                 {
-                    richTextBox1.SelectionStart = currentSelectionStart;
-                    richTextBox1.SelectionLength = currentSelectionLength;
-                    richTextBox1.ScrollToCaret();
+                    richTextBox1.BeginInvoke(new Action(() =>
+                    {
+                        richTextBox1.SelectionStart = firstVisibleIndex;
+                        richTextBox1.ScrollToCaret();
+                    }));
                 }
+
+                richTextBox1.ResumeLayout();
             }
             catch (Exception ex)
             {
@@ -797,17 +806,19 @@ namespace super_toolbox
             }
             finally
             {
-                richTextBox1.ResumeLayout();
                 isUpdatingUI = false;
             }
         }
 
         private bool IsRichTextBoxAtBottom()
         {
-            int firstVisibleCharIndex = richTextBox1.GetCharIndexFromPosition(new Point(0, 0));
-            int lastVisibleCharIndex = richTextBox1.GetCharIndexFromPosition(new Point(0, richTextBox1.ClientSize.Height));
+            if (richTextBox1.TextLength == 0) return true;
 
-            return lastVisibleCharIndex >= richTextBox1.TextLength - 50;
+            int lastCharIndex = richTextBox1.TextLength - 1;
+            Point lastCharPos = richTextBox1.GetPositionFromCharIndex(lastCharIndex);
+            int clientBottom = richTextBox1.ClientSize.Height;
+
+            return lastCharPos.Y <= clientBottom + 10;
         }
         private void treeView1_AfterSelect(object sender, TreeViewEventArgs e)
         {
