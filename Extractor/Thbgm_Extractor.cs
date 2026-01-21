@@ -43,43 +43,42 @@ namespace super_toolbox
                 return;
             }
 
-            int processedPairs = 0;
-            TotalFilesToExtract = fmtFiles.Count();
-
-            foreach (var fmtFile in fmtFiles)
+            string fmtFile = fmtFiles.First();
+            string datFile = FindMatchingDatFile(fmtFile, directoryPath);
+            
+            if (string.IsNullOrEmpty(datFile))
             {
-                ThrowIfCancellationRequested(cancellationToken);
-                string datFile = FindMatchingDatFile(fmtFile, directoryPath);
-                if (string.IsNullOrEmpty(datFile))
-                {
-                    ExtractionError?.Invoke(this, $"未找到与{fmtFile}匹配的Thbgm.dat文件");
-                    continue;
-                }
+                ExtractionError?.Invoke(this, $"未找到与{fmtFile}匹配的Thbgm.dat文件");
+                OnExtractionFailed($"未找到与{fmtFile}匹配的Thbgm.dat文件");
+                return;
+            }
 
-                try
-                {
-                    ExtractionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(fmtFile)}和{Path.GetFileName(datFile)}");
+            try
+            {
+                ExtractionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(fmtFile)}和{Path.GetFileName(datFile)}");
 
-                    string outputDir = Path.Combine(Path.GetDirectoryName(fmtFile) ?? directoryPath,
-                                                   Path.GetFileNameWithoutExtension(datFile));
-                    Directory.CreateDirectory(outputDir);
+                string outputDir = Path.Combine(Path.GetDirectoryName(fmtFile) ?? directoryPath,
+                                               Path.GetFileNameWithoutExtension(datFile));
+                Directory.CreateDirectory(outputDir);
 
-                    List<BgmInfo> bgmList = ReadBgmList(fmtFile);
-                    await ProcessDatFile(datFile, bgmList, outputDir, extractedFiles, cancellationToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    ExtractionError?.Invoke(this, "提取操作已取消");
-                    OnExtractionFailed("提取操作已取消");
-                    throw;
-                }
-                catch (Exception e)
-                {
-                    ExtractionError?.Invoke(this, $"处理文件时出错:{e.Message}");
-                    OnExtractionFailed($"处理文件时出错:{e.Message}");
-                }
+                List<BgmInfo> bgmList = ReadBgmList(fmtFile);
+                
+                TotalFilesToExtract = bgmList.Count;
+                ExtractionProgress?.Invoke(this, $"共发现{TotalFilesToExtract}个音频文件");
 
-                processedPairs++;
+                await ProcessDatFile(datFile, bgmList, outputDir, extractedFiles, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                ExtractionError?.Invoke(this, "提取操作已取消");
+                OnExtractionFailed("提取操作已取消");
+                throw;
+            }
+            catch (Exception e)
+            {
+                ExtractionError?.Invoke(this, $"处理文件时出错:{e.Message}");
+                OnExtractionFailed($"处理文件时出错:{e.Message}");
+                return;
             }
 
             ExtractionProgress?.Invoke(this, $"处理完成,共提取出{extractedFiles.Count}个音频文件");
@@ -165,9 +164,6 @@ namespace super_toolbox
             using (FileStream fs = new FileStream(datPath, FileMode.Open, FileAccess.Read))
             using (BinaryReader br = new BinaryReader(fs))
             {
-                TotalFilesToExtract = bgmList.Count;
-                int processedFiles = 0;
-
                 foreach (var bgm in bgmList)
                 {
                     ThrowIfCancellationRequested(cancellationToken);
@@ -203,8 +199,6 @@ namespace super_toolbox
                     {
                         ExtractionError?.Invoke(this, $"处理{bgm.Name}时出错:{e.Message}");
                     }
-
-                    processedFiles++;
                 }
             }
         }
