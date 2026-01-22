@@ -180,8 +180,8 @@
 		<EmbeddedResource Include="plugins\exiso.exe">
 			<LogicalName>embedded.exiso.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\THUnpacker.exe">
-			<LogicalName>embedded.THUnpacker.exe</LogicalName>
+		<EmbeddedResource Include="plugins\thdat.exe">
+			<LogicalName>embedded.thdat.exe</LogicalName>
 		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
