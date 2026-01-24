@@ -194,7 +194,14 @@ namespace super_toolbox
             { "SEGA女武神 - hmt提取器", ("其他档案", "从psv游戏苍蓝革命女武神的MLX文件里提取hmt文件") },
             { "SEGA女武神 - MMF", ("其他档案", "从psv游戏苍蓝革命女武神和战场女武神4的MMF文件里提取bin、hmd、hcm、hmt等文件") },
             { "东京幻都 - pkg", ("其他档案", "psv游戏东京幻都(台湾翻译为东京幻想乡)的专用pkg提取器") },
-            { "东方红魔乡 - DAT", ("其他档案", "东方红魔乡的专用DAT提取器") },
+            { "东方红魔乡/东方妖妖梦 - dat", ("其他档案", "东方红魔乡、东方妖妖梦的专用dat提取器") },
+            { "东方永夜抄/东方花映塚 - dat", ("其他档案", "东方永夜抄和东方花映塚的专用dat提取器,PBGZ头,比东方红魔乡和东方妖妖梦稍微困难些") },
+            { "东方project系列 - Thbgm.dat", ("音频", "东方project系列的Thbgm.dat提取器,如东方红魔乡、东方妖妖梦、东方永夜抄、东方花映塚,要解包此文件必须得先从普通dat文件里提取出thbgm.fmt,把它放到Thbgm.dat所在目录") },
+            { "东方project系列 - dat", ("其他档案", "th95及后续版本的专用dat提取器,可解东方文花帖、东方风神录、东方地灵殿、东方绯想天、东方星莲船、东方非想天则、东方文花帖DS、\r\n妖精大战争、东方神灵庙、东方辉针城、弹幕天邪鬼、东方绀珠传、东方天空璋、秘封噩梦日记、东方鬼形兽、东方虹龙洞、东方兽王园、东方锦上京") },
+            { "东方project系列 - cv0/cv1", ("其他档案", "东方project系列的cv0和cv1文本转换器") },
+            { "东方project系列 - cv2", ("图片", "东方project系列的cv2纹理转换器") },
+            { "东方project系列 - cv3", ("音频", "东方project系列的cv3音频转换器") },
+            { "东方project系列 - pal", ("图片", "东方project系列的pal调色板转换器") },
         };
         public SuperToolbox()
         {
@@ -302,8 +309,8 @@ namespace super_toolbox
         }
         private readonly HashSet<string> _converters = new HashSet<string>
         {
-         "PNG编码ASTC", "ASTC解码PNG", "Gnf2Png", "PowerVR转换png","异度之刃 - tpl2bclim","异度之刃 - bclim2png","异度之刃 - MXTX2DDS","IdeaFactory - tid",
-         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS专用纹理 - tex","DXBC2HLSL","rad game tools - rada转换器",
+         "PNG编码ASTC", "ASTC解码PNG", "Gnf2Png", "PowerVR转换png","异度之刃 - tpl2bclim","异度之刃 - bclim2png","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal",
+         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS专用纹理 - tex","DXBC2HLSL","rad game tools - rada转换器","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3",
          "wav2qoa - 转换qoa", "Wiiu - gtx转换器", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin/Cue转换GDI"
         };
         private bool IsConverter(string formatName) => _converters.Contains(formatName);
@@ -706,7 +713,14 @@ namespace super_toolbox
                 case "SEGA女武神 - hmt提取器": return new Hmt_Extractor();
                 case "SEGA女武神 - MMF": return new MMF_Extractor();
                 case "东京幻想乡 - pkg": return new LotusLandStory_pkg_Extractor();
-                case "东方红魔乡 - DAT": return new PBG3_Extractor();
+                case "东方红魔乡/东方妖妖梦 - dat": return new PBG_Extractor();
+                case "东方永夜抄/东方花映塚 - dat": return new PBGZ_Extractor();
+                case "东方project系列 - Thbgm.dat": return new Thbgm_Extractor();
+                case "东方project系列 - dat": return new Thdat_Extractor();
+                case "东方project系列 - cv0/cv1": return new Cv01_Converter();
+                case "东方project系列 - cv2": return new Cv2_Converter();
+                case "东方project系列 - cv3": return new Cv3_Converter();
+                case "东方project系列 - pal": return new Pal_Converter();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
