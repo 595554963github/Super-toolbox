@@ -188,7 +188,6 @@
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
-		<PackageReference Include="CriFsV2Lib" Version="2.1.2" />
 		<PackageReference Include="Fody" Version="6.9.3">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -211,25 +210,25 @@
 			<HintPath>plugins\ByteSize.dll</HintPath>
 		</Reference>
 		<Reference Include="DALLib">
-		  <HintPath>plugins\DALLib.dll</HintPath>
+			<HintPath>plugins\DALLib.dll</HintPath>
 		</Reference>
 		<Reference Include="DyingLight">
 			<HintPath>plugins\DyingLight.dll</HintPath>
 		</Reference>
 		<Reference Include="gdidrop">
-		  <HintPath>plugins\gdidrop.dll</HintPath>
+			<HintPath>plugins\gdidrop.dll</HintPath>
 		</Reference>
 		<Reference Include="GXTConvert">
-		  <HintPath>plugins\GXTConvert.dll</HintPath>
+			<HintPath>plugins\GXTConvert.dll</HintPath>
 		</Reference>
 		<Reference Include="MiscUtil">
-		  <HintPath>plugins\MiscUtil.dll</HintPath>
+			<HintPath>plugins\MiscUtil.dll</HintPath>
 		</Reference>
 		<Reference Include="Narchive">
 			<HintPath>plugins\Narchive.dll</HintPath>
 		</Reference>
 		<Reference Include="Shadowrun">
-		  <HintPath>plugins\Shadowrun.dll</HintPath>
+			<HintPath>plugins\Shadowrun.dll</HintPath>
 		</Reference>
 		<Reference Include="WarTales_PakExtractor">
 			<HintPath>plugins\WarTales_PakExtractor.dll</HintPath>
@@ -242,16 +241,16 @@
 		</Reference>
 	</ItemGroup>
 	<ItemGroup>
-	  <Compile Update="Properties\Resources.Designer.cs">
-	    <DesignTime>True</DesignTime>
-	    <AutoGen>True</AutoGen>
-	    <DependentUpon>Resources.resx</DependentUpon>
-	  </Compile>
+		<Compile Update="Properties\Resources.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
 	</ItemGroup>
 	<ItemGroup>
-	  <EmbeddedResource Update="Properties\Resources.resx">
-	    <Generator>ResXFileCodeGenerator</Generator>
-	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-	  </EmbeddedResource>
+		<EmbeddedResource Update="Properties\Resources.resx">
+			<Generator>ResXFileCodeGenerator</Generator>
+			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
 	</ItemGroup>
 </Project>
