@@ -93,6 +93,19 @@ namespace super_toolbox
                 using var fs = new FileStream(gxtFilePath, FileMode.Open, FileAccess.Read);
                 var gxt = new GxtBinary(fs);
 
+                var palettes = new Dictionary<int, Color[]>();
+                for (int i = 0; i < gxt.TextureBundles.Length; i++)
+                {
+                    var bundle = gxt.TextureBundles[i];
+
+                    if (bundle.TextureFormat.ToString().StartsWith("P4_") ||
+                        bundle.TextureFormat.ToString().StartsWith("P8_"))
+                    {
+                        var palette = gxt.FetchPalette(bundle.TextureFormat, bundle.PaletteIndex);
+                        palettes[i] = palette;
+                    }
+                }
+
                 for (int i = 0; i < gxt.TextureBundles.Length; i++)
                 {
                     if (cancellationToken.IsCancellationRequested) return false;
@@ -100,10 +113,19 @@ namespace super_toolbox
                     var bundle = gxt.TextureBundles[i];
                     string outputPath = GetOutputPath(baseOutputName, i, gxt.TextureBundles.Length);
 
-                    var image = CreateImageFromBundle(bundle);
+                    Bitmap bitmap;
+                    if (palettes.ContainsKey(i))
+                    {
+                        bitmap = bundle.CreateTexture(palettes[i]);
+                    }
+                    else
+                    {
+                        bitmap = bundle.CreateTexture();
+                    }
 
-                    await using var outputStream = File.Create(outputPath);
-                    await image.SaveAsync(outputStream, new PngEncoder(), cancellationToken);
+                    await ConvertBitmapToImageSharpAndSaveAsync(bitmap, outputPath, cancellationToken);
+
+                    bitmap.Dispose();
 
                     ConversionProgress?.Invoke(this, $"已保存:{Path.GetFileName(outputPath)}");
                 }
@@ -115,72 +137,29 @@ namespace super_toolbox
                 ConversionError?.Invoke(this, $"不支持格式:{ex.Format}");
                 return false;
             }
-            catch (TypeNotImplementedException ex)
-            {
-                ConversionError?.Invoke(this, $"不支持类型:{ex.Type}");
-                return false;
-            }
-            catch (VersionNotImplementedException ex)
-            {
-                ConversionError?.Invoke(this, $"不支持版本:0x{ex.Version:X8}");
-                return false;
-            }
-            catch (UnknownMagicException)
-            {
-                ConversionError?.Invoke(this, "文件格式错误或已损坏");
-                return false;
-            }
             catch (Exception ex)
             {
                 ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
                 return false;
             }
         }
+        private async Task ConvertBitmapToImageSharpAndSaveAsync(Bitmap bitmap, string outputPath, CancellationToken cancellationToken)
+        {
+            using (var ms = new MemoryStream())
+            {
+                bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                ms.Position = 0;
 
+                var image = await SixLabors.ImageSharp.Image.LoadAsync(ms, cancellationToken);
+                await using var outputStream = File.Create(outputPath);
+                await image.SaveAsync(outputStream, new PngEncoder(), cancellationToken);
+            }
+        }
         private static string GetOutputPath(string baseName, int index, int totalBundles)
         {
             return totalBundles == 1
                 ? $"{baseName}.png"
                 : $"{baseName}_{index + 1}.png";
-        }
-
-        private SixLabors.ImageSharp.Image CreateImageFromBundle(TextureBundle bundle)
-        {
-            var pixelFormat = bundle.PixelFormat;
-
-            if (pixelFormat == System.Drawing.Imaging.PixelFormat.Format32bppArgb ||
-                pixelFormat == System.Drawing.Imaging.PixelFormat.Format32bppRgb)
-            {
-                return SixLabors.ImageSharp.Image.LoadPixelData<Rgba32>(bundle.PixelData, bundle.Width, bundle.Height);
-            }
-            else if (pixelFormat == System.Drawing.Imaging.PixelFormat.Format24bppRgb)
-            {
-                return SixLabors.ImageSharp.Image.LoadPixelData<Rgb24>(bundle.PixelData, bundle.Width, bundle.Height);
-            }
-            else if (pixelFormat == System.Drawing.Imaging.PixelFormat.Format16bppRgb565)
-            {
-                var rgbaData = new byte[bundle.Width * bundle.Height * 4];
-
-                for (int i = 0; i < bundle.Width * bundle.Height; i++)
-                {
-                    ushort pixel = BitConverter.ToUInt16(bundle.PixelData, i * 2);
-
-                    byte r = (byte)((pixel >> 11) & 0x1F);
-                    byte g = (byte)((pixel >> 5) & 0x3F);
-                    byte b = (byte)(pixel & 0x1F);
-
-                    rgbaData[i * 4] = (byte)((r << 3) | (r >> 2));
-                    rgbaData[i * 4 + 1] = (byte)((g << 2) | (g >> 4));
-                    rgbaData[i * 4 + 2] = (byte)((b << 3) | (b >> 2));
-                    rgbaData[i * 4 + 3] = 255;
-                }
-
-                return SixLabors.ImageSharp.Image.LoadPixelData<Rgba32>(rgbaData, bundle.Width, bundle.Height);
-            }
-            else
-            {
-                return SixLabors.ImageSharp.Image.LoadPixelData<Rgba32>(bundle.PixelData, bundle.Width, bundle.Height);
-            }
         }
     }
 }
