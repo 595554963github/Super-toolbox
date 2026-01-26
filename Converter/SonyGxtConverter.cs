@@ -1,7 +1,5 @@
-using GXTConvert.Conversion;
 using GXTConvert.Exceptions;
 using GXTConvert.FileFormat;
-using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Formats.Png;
 
 namespace super_toolbox
@@ -24,8 +22,8 @@ namespace super_toolbox
             ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
             var gxtFiles = Directory.GetFiles(directoryPath, "*.gxt", SearchOption.AllDirectories);
-            TotalFilesToConvert = gxtFiles.Length;
-            int successCount = 0;
+            int totalPngFilesConverted = 0;
+            int processedGxtFiles = 0;
 
             try
             {
@@ -43,30 +41,30 @@ namespace super_toolbox
 
                     try
                     {
-                        bool success = await ProcessGxtFileAsync(gxtFilePath, cancellationToken);
+                        int pngCount = await ProcessGxtFileAsync(gxtFilePath, cancellationToken);
 
-                        if (success)
+                        if (pngCount > 0)
                         {
-                            successCount++;
-                            ConversionProgress?.Invoke(this, $"转换成功:{fileName}.gxt");
-                            OnFileConverted(gxtFilePath);
+                            totalPngFilesConverted += pngCount;
+                            processedGxtFiles++;
+                            ConversionProgress?.Invoke(this, $"{fileName}.gxt转换成功,生成{pngCount}个png图片");
                         }
                         else
                         {
-                            ConversionError?.Invoke(this, $"{fileName}.gxt转换失败");
-                            OnConversionFailed($"{fileName}.gxt转换失败");
+                            ConversionError?.Invoke(this, $"{fileName}.gxt未生成任何png图片");
+                            OnConversionFailed($"{fileName}.gxt 未生成任何png图片");
                         }
                     }
                     catch (Exception ex)
                     {
                         ConversionError?.Invoke(this, $"{fileName}.gxt处理错误:{ex.Message}");
-                        OnConversionFailed($"{fileName}.gxt处理错误:{ex.Message}");
+                        OnConversionFailed($"{fileName}.gxt 处理错误:{ex.Message}");
                     }
                 }
 
-                if (successCount > 0)
+                if (totalPngFilesConverted > 0)
                 {
-                    ConversionProgress?.Invoke(this, $"转换完成,成功{successCount}/{TotalFilesToConvert}个文件");
+                    ConversionProgress?.Invoke(this, $"转换完成,处理了{processedGxtFiles}/{gxtFiles.Length}个GXT文件,共生成{totalPngFilesConverted}个png图片");
                     OnConversionCompleted();
                 }
                 else
@@ -82,11 +80,12 @@ namespace super_toolbox
             }
         }
 
-        private async Task<bool> ProcessGxtFileAsync(string gxtFilePath, CancellationToken cancellationToken)
+        private async Task<int> ProcessGxtFileAsync(string gxtFilePath, CancellationToken cancellationToken)
         {
             string fileName = Path.GetFileNameWithoutExtension(gxtFilePath);
             string outputDirectory = Path.GetDirectoryName(gxtFilePath)!;
             string baseOutputName = Path.Combine(outputDirectory, fileName);
+            int pngCount = 0;
 
             try
             {
@@ -108,7 +107,7 @@ namespace super_toolbox
 
                 for (int i = 0; i < gxt.TextureBundles.Length; i++)
                 {
-                    if (cancellationToken.IsCancellationRequested) return false;
+                    if (cancellationToken.IsCancellationRequested) return pngCount;
 
                     var bundle = gxt.TextureBundles[i];
                     string outputPath = GetOutputPath(baseOutputName, i, gxt.TextureBundles.Length);
@@ -127,22 +126,26 @@ namespace super_toolbox
 
                     bitmap.Dispose();
 
+                    pngCount++;
                     ConversionProgress?.Invoke(this, $"已保存:{Path.GetFileName(outputPath)}");
+
+                    OnFileConverted(outputPath);
                 }
 
-                return true;
+                return pngCount;
             }
             catch (FormatNotImplementedException ex)
             {
                 ConversionError?.Invoke(this, $"不支持格式:{ex.Format}");
-                return false;
+                return 0;
             }
             catch (Exception ex)
             {
                 ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
-                return false;
+                return 0;
             }
         }
+
         private async Task ConvertBitmapToImageSharpAndSaveAsync(Bitmap bitmap, string outputPath, CancellationToken cancellationToken)
         {
             using (var ms = new MemoryStream())
@@ -155,6 +158,7 @@ namespace super_toolbox
                 await image.SaveAsync(outputStream, new PngEncoder(), cancellationToken);
             }
         }
+
         private static string GetOutputPath(string baseName, int index, int totalBundles)
         {
             return totalBundles == 1
