@@ -93,15 +93,6 @@
 		<EmbeddedResource Include="plugins\huffman.exe">
 			<LogicalName>embedded.huffman.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\LZ77.exe">
-			<LogicalName>embedded.LZ77.exe</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\LZ77.dll">
-			<LogicalName>embedded.LZ77.dll</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\LZ77.runtimeconfig.json">
-			<LogicalName>embedded.LZ77.runtimeconfig.json</LogicalName>
-		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\psarc.exe">
 			<LogicalName>embedded.psarc.exe</LogicalName>
 		</EmbeddedResource>
@@ -227,6 +218,9 @@
 		<Reference Include="Narchive">
 			<HintPath>plugins\Narchive.dll</HintPath>
 		</Reference>
+		<Reference Include="NARToolLib">
+		  <HintPath>plugins\NARToolLib.dll</HintPath>
+		</Reference>
 		<Reference Include="Shadowrun">
 			<HintPath>plugins\Shadowrun.dll</HintPath>
 		</Reference>
@@ -239,18 +233,5 @@
 		<Reference Include="ZstdNet">
 			<HintPath>plugins\ZstdNet.dll</HintPath>
 		</Reference>
-	</ItemGroup>
-	<ItemGroup>
-		<Compile Update="Properties\Resources.Designer.cs">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>Resources.resx</DependentUpon>
-		</Compile>
-	</ItemGroup>
-	<ItemGroup>
-		<EmbeddedResource Update="Properties\Resources.resx">
-			<Generator>ResXFileCodeGenerator</Generator>
-			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
-		</EmbeddedResource>
 	</ItemGroup>
 </Project>
