@@ -1,44 +1,11 @@
-using System.Diagnostics;
-using System.Reflection;
-
 namespace super_toolbox
 {
     public class Lzma_Decompressor : BaseExtractor
     {
-        private static string _tempExePath;
-        private static readonly byte[] LzmaMagicNumber = new byte[] { 0x5D, 0x00, 0x00 };
         public new event EventHandler<string>? DecompressionStarted;
         public new event EventHandler<string>? DecompressionProgress;
         public new event EventHandler<string>? DecompressionError;
-        static Lzma_Decompressor()
-        {
-            _tempExePath = ExtractLzmaToTemp();
-        }
-        private static string ExtractLzmaToTemp()
-        {
-            string tempPath = Path.Combine(Path.GetTempPath(), "super_toolbox_lzma.exe");
-            if (File.Exists(tempPath))
-            {
-                return tempPath;
-            }
-            var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = assembly.GetManifestResourceNames()
-                .FirstOrDefault(name => name.EndsWith("lzma.exe"));
-            if (string.IsNullOrEmpty(resourceName))
-            {
-                throw new FileNotFoundException("找不到嵌入的lzma.exe资源");
-            }
-            using (var resourceStream = assembly.GetManifestResourceStream(resourceName))
-            {
-                if (resourceStream == null)
-                    throw new FileNotFoundException("无法读取嵌入的lzma.exe资源");
-                using (var fileStream = File.Create(tempPath))
-                {
-                    resourceStream.CopyTo(fileStream);
-                }
-            }
-            return tempPath;
-        }
+
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
@@ -47,34 +14,67 @@ namespace super_toolbox
                 OnDecompressionFailed($"源文件夹{directoryPath}不存在");
                 return;
             }
+
+            string decompressedDir = Path.Combine(directoryPath, "Decompressed");
+            Directory.CreateDirectory(decompressedDir);
+            DecompressionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
+
             try
             {
                 await Task.Run(() =>
                 {
                     var allFiles = Directory.GetFiles(directoryPath, "*.*");
-                    var filesToProcess = allFiles.Where(IsLzmaFile).ToArray();
+                    var filesToProcess = allFiles.Where(f => Path.GetExtension(f).ToLower() == ".lzma").ToArray();
+
                     if (filesToProcess.Length == 0)
                     {
                         DecompressionError?.Invoke(this, "未找到有效的LZMA压缩文件");
                         OnDecompressionFailed("未找到有效的LZMA压缩文件");
                         return;
                     }
-                    string decompressedDir = Path.Combine(directoryPath, "Decompressed");
-                    Directory.CreateDirectory(decompressedDir);
+
                     TotalFilesToDecompress = filesToProcess.Length;
-                    DecompressionStarted?.Invoke(this, $"开始解压，共{TotalFilesToDecompress}个文件");
+                    int processedFiles = 0;
+
                     foreach (var filePath in filesToProcess)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        if (DecompressLzmaFile(filePath, decompressedDir))
+                        processedFiles++;
+                        DecompressionProgress?.Invoke(this, $"正在解压文件({processedFiles}/{TotalFilesToDecompress}): {Path.GetFileName(filePath)}");
+
+                        string fileName = Path.GetFileNameWithoutExtension(filePath);
+                        string outputPath = Path.Combine(decompressedDir, fileName);
+
+                        try
                         {
-                            string fileName = Path.GetFileNameWithoutExtension(filePath);
-                            string outputPath = Path.Combine(decompressedDir, fileName);
-                            OnFileDecompressed(outputPath);
+                            if (DecompressLzmaFile(filePath, outputPath))
+                            {
+                                if (File.Exists(outputPath) && new FileInfo(outputPath).Length > 0)
+                                {
+                                    DecompressionProgress?.Invoke(this, $"已解压:{Path.GetFileName(outputPath)}");
+                                    OnFileDecompressed(outputPath);
+                                }
+                                else
+                                {
+                                    DecompressionError?.Invoke(this, $"解压成功但输出文件异常:{outputPath}");
+                                    OnDecompressionFailed($"解压成功但输出文件异常:{outputPath}");
+                                }
+                            }
+                            else
+                            {
+                                DecompressionError?.Invoke(this, $"解压文件失败:{filePath}");
+                                OnDecompressionFailed($"解压文件失败:{filePath}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            DecompressionError?.Invoke(this, $"解压文件{filePath}时出错:{ex.Message}");
+                            OnDecompressionFailed($"解压文件{filePath}时出错:{ex.Message}");
                         }
                     }
+
                     OnDecompressionCompleted();
-                    DecompressionProgress?.Invoke(this, $"解压完成，共解压{TotalFilesToDecompress}个文件");
+                    DecompressionProgress?.Invoke(this, $"解压完成,共解压{TotalFilesToDecompress}个文件");
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -85,74 +85,26 @@ namespace super_toolbox
             }
             catch (Exception ex)
             {
-                DecompressionError?.Invoke(this, $"解压失败:{ex.Message}");
-                OnDecompressionFailed($"解压失败:{ex.Message}");
+                DecompressionError?.Invoke(this, $"解压过程出错:{ex.Message}");
+                OnDecompressionFailed($"解压过程出错:{ex.Message}");
             }
         }
-        private bool IsLzmaFile(string filePath)
+
+        private bool DecompressLzmaFile(string inputPath, string outputPath)
         {
             try
             {
-                using (var file = File.OpenRead(filePath))
-                {
-                    if (file.Length < 13) return false;
-                    byte[] header = new byte[3];
-                    file.Read(header, 0, 3);
-                    return header[0] == LzmaMagicNumber[0] &&
-                           header[1] == LzmaMagicNumber[1] &&
-                           header[2] == LzmaMagicNumber[2];
-                }
+                byte[] compressedData = File.ReadAllBytes(inputPath);
+                byte[] decompressedData = LzmaHelper.Decompress(compressedData);
+                File.WriteAllBytes(outputPath, decompressedData);
+                return true;
             }
             catch
             {
                 return false;
             }
         }
-        private bool DecompressLzmaFile(string inputPath, string outputDir)
-        {
-            try
-            {
-                string fileName = Path.GetFileNameWithoutExtension(inputPath);
-                string outputPath = Path.Combine(outputDir, fileName);
-                DecompressionProgress?.Invoke(this, $"正在解压:{Path.GetFileName(inputPath)}");
-                var process = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = _tempExePath,
-                        Arguments = $"d \"{inputPath}\" \"{outputPath}\"",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    }
-                };
-                process.Start();
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-                process.WaitForExit();
-                if (process.ExitCode != 0)
-                {
-                    DecompressionError?.Invoke(this, $"LZMA解压错误:{error}");
-                    return false;
-                }
-                if (File.Exists(outputPath))
-                {
-                    DecompressionProgress?.Invoke(this, $"已解压:{Path.GetFileName(outputPath)}");
-                    return true;
-                }
-                else
-                {
-                    DecompressionError?.Invoke(this, $"解压成功但输出文件不存在:{outputPath}");
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                DecompressionError?.Invoke(this, $"LZMA解压错误:{ex.Message}");
-                return false;
-            }
-        }
+
         public override void Extract(string directoryPath)
         {
             ExtractAsync(directoryPath).Wait();
