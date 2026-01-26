@@ -1,39 +1,46 @@
-using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace super_toolbox
 {
     public class LzhamStandard_Decompressor : BaseExtractor
     {
-        private static string _tempExePath;
-        private static string _tempDllPath;
         public new event EventHandler<string>? DecompressionStarted;
         public new event EventHandler<string>? DecompressionProgress;
         public new event EventHandler<string>? DecompressionError;
+
         static LzhamStandard_Decompressor()
         {
-            string tempDir = Path.Combine(Path.GetTempPath(), "supertoolbox_temp");
-            Directory.CreateDirectory(tempDir);
-            _tempExePath = Path.Combine(tempDir, "lzhamtest_x64.exe");
-            _tempDllPath = Path.Combine(tempDir, "lzham_x64.dll");
-            ExtractEmbeddedResource("embedded.lzhamtest_x64.exe", _tempExePath);
-            ExtractEmbeddedResource("embedded.lzham_x64.dll", _tempDllPath);
+            LoadLzhamDll();
         }
+
+        private static void LoadLzhamDll()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), "supertoolbox_lzham");
+            Directory.CreateDirectory(tempDir);
+            string dllPath = Path.Combine(tempDir, "lzham_x64.dll");
+
+            if (!File.Exists(dllPath))
+            {
+                ExtractEmbeddedResource("embedded.lzham_x64.dll", dllPath);
+            }
+
+            NativeLibrary.Load(dllPath);
+        }
+
         private static void ExtractEmbeddedResource(string resourceName, string outputPath)
         {
-            if (!File.Exists(outputPath))
+            using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName))
             {
-                using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName))
-                {
-                    if (stream == null)
-                        throw new FileNotFoundException($"嵌入的LZHAM资源未找到: {resourceName}");
+                if (stream == null)
+                    throw new FileNotFoundException($"嵌入的LZHAM资源未找到:{resourceName}");
 
-                    byte[] buffer = new byte[stream.Length];
-                    stream.Read(buffer, 0, buffer.Length);
-                    File.WriteAllBytes(outputPath, buffer);
-                }
+                byte[] buffer = new byte[stream.Length];
+                stream.Read(buffer, 0, buffer.Length);
+                File.WriteAllBytes(outputPath, buffer);
             }
         }
+
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
@@ -42,6 +49,7 @@ namespace super_toolbox
                 OnDecompressionFailed($"源文件夹{directoryPath}不存在");
                 return;
             }
+
             try
             {
                 await Task.Run(() =>
@@ -54,10 +62,12 @@ namespace super_toolbox
                         OnDecompressionFailed("未找到有效的LZHAM压缩文件");
                         return;
                     }
+
                     string decompressedDir = Path.Combine(directoryPath, "Decompressed");
                     Directory.CreateDirectory(decompressedDir);
                     TotalFilesToDecompress = filesToProcess.Length;
-                    DecompressionStarted?.Invoke(this, $"开始解压，共{TotalFilesToDecompress}个文件");
+                    DecompressionStarted?.Invoke(this, $"开始解压,共{TotalFilesToDecompress}个文件");
+
                     foreach (var filePath in filesToProcess)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
@@ -68,8 +78,9 @@ namespace super_toolbox
                             OnFileDecompressed(outputPath);
                         }
                     }
+
                     OnDecompressionCompleted();
-                    DecompressionProgress?.Invoke(this, $"解压完成，共解压{TotalFilesToDecompress}个文件");
+                    DecompressionProgress?.Invoke(this, $"解压完成,共解压{TotalFilesToDecompress}个文件");
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -84,40 +95,49 @@ namespace super_toolbox
                 OnDecompressionFailed($"解压失败:{ex.Message}");
             }
         }
+
         private bool IsLzhamFile(string filePath)
         {
             string extension = Path.GetExtension(filePath).ToLower();
             return extension == ".lzham";
         }
+
         private bool DecompressLzhamFile(string inputPath, string outputDir)
         {
             try
             {
                 string fileName = Path.GetFileNameWithoutExtension(inputPath);
                 string outputPath = Path.Combine(outputDir, fileName);
+
                 DecompressionProgress?.Invoke(this, $"正在解压:{Path.GetFileName(inputPath)}");
-                var process = new Process
+
+                byte[] compressedData = File.ReadAllBytes(inputPath);
+
+                var parameters = new global::LzhamWrapper.DecompressionParameters
                 {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = _tempExePath,
-                        Arguments = $"d \"{inputPath}\" \"{outputPath}\"",
-                        WorkingDirectory = Path.GetDirectoryName(_tempExePath) ?? string.Empty,
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    }
+                    DictionarySize = 26,
+                    UpdateRate = global::LzhamWrapper.Enums.TableUpdateRate.Default,
+                    Flags = global::LzhamWrapper.Enums.DecompressionFlag.ComputeAdler32
                 };
-                process.Start();
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-                process.WaitForExit();
-                if (process.ExitCode != 0)
+
+                uint adler32 = 0;
+                int outBufSize = compressedData.Length * 10;
+                byte[] outBuf = new byte[outBufSize];
+
+                var status = global::LzhamWrapper.Lzham.DecompressMemory(parameters, compressedData, compressedData.Length, 0,
+                    outBuf, ref outBufSize, 0, ref adler32);
+
+                if (status != global::LzhamWrapper.Enums.DecompressStatus.Success)
                 {
-                    DecompressionError?.Invoke(this, $"LZHAM解压错误:{error}");
+                    DecompressionError?.Invoke(this, $"LZHAM解压失败: {status}");
                     return false;
                 }
+
+                byte[] decompressedData = new byte[outBufSize];
+                Array.Copy(outBuf, 0, decompressedData, 0, outBufSize);
+
+                File.WriteAllBytes(outputPath, decompressedData);
+
                 if (File.Exists(outputPath))
                 {
                     DecompressionProgress?.Invoke(this, $"已解压:{Path.GetFileName(outputPath)}");
@@ -135,6 +155,7 @@ namespace super_toolbox
                 return false;
             }
         }
+
         public override void Extract(string directoryPath)
         {
             ExtractAsync(directoryPath).Wait();
