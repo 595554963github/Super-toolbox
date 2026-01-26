@@ -69,17 +69,11 @@
 		<EmbeddedResource Include="plugins\yaz0.exe">
 			<LogicalName>embedded.yaz0.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\lzma.exe">
-			<LogicalName>embedded.lzma.exe</LogicalName>
-		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\cdecrypt.exe">
 			<LogicalName>embedded.cdecrypt.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\sample.exe">
 			<LogicalName>embedded.sample.exe</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\brotli.exe">
-			<LogicalName>embedded.brotli.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\ndstool.exe">
 			<LogicalName>embedded.ndstool.exe</LogicalName>
@@ -89,9 +83,6 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\ooz.exe">
 			<LogicalName>embedded.ooz.exe</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\huffman.exe">
-			<LogicalName>embedded.huffman.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\psarc.exe">
 			<LogicalName>embedded.psarc.exe</LogicalName>
@@ -117,9 +108,6 @@
 		<EmbeddedResource Include="plugins\minlz.exe">
 			<LogicalName>embedded.minlz.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\lz4c.exe">
-			<LogicalName>embedded.lz4c.exe</LogicalName>
-		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\SRPG_Unpacker.exe">
 			<LogicalName>embedded.SRPG_Unpacker.exe</LogicalName>
 		</EmbeddedResource>
@@ -128,9 +116,6 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\example1_x64.exe">
 			<LogicalName>embedded.example1_x64.exe</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\lzhamtest_x64.exe">
-			<LogicalName>embedded.lzhamtest_x64.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\lzham_x64.dll">
 			<LogicalName>embedded.lzham_x64.dll</LogicalName>
@@ -143,9 +128,6 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\wfLZ.exe">
 			<LogicalName>embedded.wfLZ.exe</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\LZOStream.exe">
-			<LogicalName>embedded.LZOStream.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\ahx2wav.exe">
 			<LogicalName>embedded.ahx2wav.exe</LogicalName>
@@ -187,6 +169,7 @@
 		<PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
 		<PackageReference Include="K4os.Compression.LZ4.Streams" Version="1.3.8" />
 		<PackageReference Include="lz4net" Version="1.0.15.93" />
+		<PackageReference Include="LZMA-SDK" Version="22.1.1" />
 		<PackageReference Include="SharpZipLib" Version="1.4.2" />
 		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
 		<PackageReference Include="Syroot.IO.BinaryData" Version="4.0.4" />
@@ -211,6 +194,9 @@
 		</Reference>
 		<Reference Include="GXTConvert">
 			<HintPath>plugins\GXTConvert.dll</HintPath>
+		</Reference>
+		<Reference Include="LzhamWrapper">
+		  <HintPath>plugins\LzhamWrapper.dll</HintPath>
 		</Reference>
 		<Reference Include="MiscUtil">
 			<HintPath>plugins\MiscUtil.dll</HintPath>
