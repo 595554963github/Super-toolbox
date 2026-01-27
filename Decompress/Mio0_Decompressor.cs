@@ -1,20 +1,12 @@
-﻿using System.Text;
-
 namespace super_toolbox
 {
-    public enum Endianness
-    {
-        Little,
-        Big
-    }
-
-    public class Mio0_Decompressor : BaseExtractor
+    public class Mio0Custom_Decompressor : BaseExtractor
     {
         public new event EventHandler<string>? DecompressionStarted;
         public new event EventHandler<string>? DecompressionProgress;
         public new event EventHandler<string>? DecompressionError;
 
-        private const int HEADER_SIZE = 0x10;
+        private enum Endianness { Little, Big }
         private Endianness _endianness = Endianness.Big;
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
@@ -92,7 +84,7 @@ namespace super_toolbox
                     }
 
                     OnDecompressionCompleted();
-                    DecompressionProgress?.Invoke(this, $"解压完成，共处理{TotalFilesToDecompress}个文件");
+                    DecompressionProgress?.Invoke(this, $"解压完成,共处理{TotalFilesToDecompress}个文件");
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -124,17 +116,13 @@ namespace super_toolbox
         private List<int> FindMio0Indices(byte[] data)
         {
             List<int> indices = new List<int>();
-
-            int startIndex = Math.Min(0x0D0000, data.Length);
-
-            for (int i = startIndex; i < data.Length - 4; i += 16)
+            for (int i = 0; i <= data.Length - 4; i++)
             {
                 if (data[i] == 'M' && data[i + 1] == 'I' && data[i + 2] == 'O' && data[i + 3] == '0')
                 {
                     indices.Add(i);
                 }
             }
-
             return indices;
         }
 
@@ -155,9 +143,10 @@ namespace super_toolbox
                 int offset = mio0Indices[i];
                 try
                 {
-                    byte[] decompressedData = DecompressMio0(fileData, offset, _endianness);
+                    byte[] decompressedData = DecompressMio0(fileData, offset);
 
-                    string outputFileName = GetOriginalFileName(filePath, mio0Indices.Count, i);
+                    string baseFileName = Path.GetFileNameWithoutExtension(filePath);
+                    string outputFileName = mio0Indices.Count > 1 ? $"{baseFileName}_{i}" : baseFileName;
                     string outputPath = Path.Combine(outputDir, outputFileName);
 
                     File.WriteAllBytes(outputPath, decompressedData);
@@ -166,35 +155,22 @@ namespace super_toolbox
                 }
                 catch (Exception ex)
                 {
-                    results.Add((false, "", $"偏移量0x{offset:X8}处解压失败: {ex.Message}"));
+                    results.Add((false, "", $"偏移量0x{offset:X8}处解压失败:{ex.Message}"));
                 }
             }
 
             return results;
         }
 
-        private string GetOriginalFileName(string compressedFilePath, int totalMio0Blocks, int currentIndex)
-        {
-            string fileName = Path.GetFileName(compressedFilePath);
-
-            if (fileName.EndsWith(".mio0", StringComparison.OrdinalIgnoreCase))
-            {
-                return fileName.Substring(0, fileName.Length - 5);
-            }
-            return fileName;
-        }
-
         private bool IsMio0File(string filePath)
         {
             try
             {
-                using (var file = File.OpenRead(filePath))
-                {
-                    if (file.Length < 4) return false;
-                    byte[] header = new byte[4];
-                    file.Read(header, 0, 4);
-                    return Encoding.ASCII.GetString(header) == "MIO0";
-                }
+                using var file = File.OpenRead(filePath);
+                if (file.Length < 4) return false;
+                byte[] header = new byte[4];
+                file.Read(header, 0, 4);
+                return System.Text.Encoding.ASCII.GetString(header) == "MIO0";
             }
             catch
             {
@@ -202,106 +178,81 @@ namespace super_toolbox
             }
         }
 
-        private byte[] DecompressMio0(byte[] data, int offset, Endianness endianness)
+        private byte[] DecompressMio0(byte[] data, int offset)
         {
-            if (offset + HEADER_SIZE > data.Length)
-            {
-                throw new ArgumentException("数据长度不足，无法读取MIO0头");
-            }
+            if (offset + 0x10 > data.Length)
+                throw new ArgumentException("数据长度不足");
 
-            string header = Encoding.ASCII.GetString(data, offset, 4);
+            string header = System.Text.Encoding.ASCII.GetString(data, offset, 4);
             if (header != "MIO0")
-            {
                 throw new ArgumentException("无效的MIO0头");
-            }
 
-            int decompressedLength = ReadInt32(data, offset + 4, endianness);
-
-            int compressedOffset = ReadInt32(data, offset + 8, endianness) + offset;
-
-            int uncompressedOffset = ReadInt32(data, offset + 12, endianness) + offset;
+            int decompressedLength = ReadInt32(data, offset + 4);
+            int compressedOffset = ReadInt32(data, offset + 8) + offset;
+            int uncompressedOffset = ReadInt32(data, offset + 12) + offset;
 
             byte[] output = new byte[decompressedLength];
             int outputIndex = 0;
-            int layoutBitIndex = 0;
-
-            int compressedIndex = 0;
-            int uncompressedIndex = 0;
+            int layoutByteIndex = offset + 0x10;
+            int currentMask = 0;
+            int bitsRemaining = 0;
 
             while (outputIndex < decompressedLength)
             {
-                bool isUncompressed = ReadLayoutBit(data, offset, layoutBitIndex);
-                layoutBitIndex++;
-
-                if (outputIndex >= decompressedLength)
-                    break;
-
-                if (isUncompressed)
+                if (bitsRemaining == 0)
                 {
-                    if (uncompressedOffset + uncompressedIndex >= data.Length)
-                        throw new IndexOutOfRangeException("未压缩数据索引越界");
+                    if (layoutByteIndex >= data.Length)
+                        break;
+                    currentMask = data[layoutByteIndex++];
+                    bitsRemaining = 8;
+                }
 
-                    output[outputIndex] = data[uncompressedOffset + uncompressedIndex];
-                    uncompressedIndex++;
-                    outputIndex++;
+                if ((currentMask & 0x80) != 0)
+                {
+                    if (uncompressedOffset >= data.Length)
+                        break;
+                    output[outputIndex++] = data[uncompressedOffset++];
                 }
                 else
                 {
-                    if (compressedOffset + compressedIndex + 2 > data.Length)
-                        throw new IndexOutOfRangeException("压缩数据索引越界");
+                    if (compressedOffset + 1 >= data.Length)
+                        break;
 
-                    byte byte1 = data[compressedOffset + compressedIndex];
-                    byte byte2 = data[compressedOffset + compressedIndex + 1];
-                    compressedIndex += 2;
+                    byte byte1 = data[compressedOffset++];
+                    byte byte2 = data[compressedOffset++];
 
-                    int length = ((byte1 & 0xF0) >> 4) + 3;
-                    int lookbackIndex = ((byte1 & 0x0F) << 8) | byte2;
-                    lookbackIndex += 1;
+                    int length = ((byte1 >> 4) & 0x0F) + 3;
+                    int lookback = (((byte1 & 0x0F) << 8) | byte2) + 1;
 
-                    if (length < 3 || length > 18)
-                        throw new Exception($"不合理的长度值: {length}");
-
-                    if (lookbackIndex < 1 || lookbackIndex > 4096)
-                        throw new Exception($"不合理的索引值: {lookbackIndex}");
-
-                    if (outputIndex - lookbackIndex < 0)
-                        throw new Exception("回看索引超出当前输出缓冲区");
+                    if (outputIndex - lookback < 0)
+                        throw new Exception("回看索引超出缓冲区");
 
                     for (int i = 0; i < length && outputIndex < decompressedLength; i++)
                     {
-                        output[outputIndex] = output[outputIndex - lookbackIndex];
+                        output[outputIndex] = output[outputIndex - lookback];
                         outputIndex++;
                     }
                 }
+
+                currentMask <<= 1;
+                bitsRemaining--;
             }
+
+            if (outputIndex != decompressedLength)
+                throw new Exception($"解压大小不匹配:预期{decompressedLength},实际{outputIndex}");
 
             return output;
         }
 
-        private bool ReadLayoutBit(byte[] data, int baseOffset, int bitIndex)
-        {
-            int byteIndex = baseOffset + HEADER_SIZE + (bitIndex / 8);
-            int bitOffset = 7 - (bitIndex % 8);
-
-            if (byteIndex >= data.Length)
-                throw new IndexOutOfRangeException("布局位索引越界");
-
-            return (data[byteIndex] & (1 << bitOffset)) != 0;
-        }
-
-        private int ReadInt32(byte[] data, int offset, Endianness endianness)
+        private int ReadInt32(byte[] data, int offset)
         {
             if (offset + 4 > data.Length)
                 throw new IndexOutOfRangeException("读取32位整数时索引越界");
 
-            if (endianness == Endianness.Big)
-            {
+            if (_endianness == Endianness.Big)
                 return (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3];
-            }
             else
-            {
                 return data[offset] | (data[offset + 1] << 8) | (data[offset + 2] << 16) | (data[offset + 3] << 24);
-            }
         }
 
         public override void Extract(string directoryPath)
