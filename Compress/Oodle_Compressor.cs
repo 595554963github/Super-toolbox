@@ -55,7 +55,7 @@ namespace super_toolbox
             {
                 await Task.Run(() =>
                 {
-                    foreach (var file in Directory.GetFiles(compressedDir, "*.ozip", SearchOption.AllDirectories))
+                    foreach (var file in Directory.GetFiles(compressedDir, "*.*", SearchOption.AllDirectories))
                     {
                         File.Delete(file);
                     }
@@ -69,7 +69,7 @@ namespace super_toolbox
                         string relativePath = GetRelativePath(directoryPath, filePath);
                         string outputPath = Path.Combine(compressedDir, relativePath + ".ozip");
                         string outputDir = Path.GetDirectoryName(outputPath) ??
-                            throw new InvalidOperationException($"无法确定输出目录路径:{outputPath}");
+                            throw new InvalidOperationException("无法确定输出目录路径");
                         if (!Directory.Exists(outputDir))
                         {
                             Directory.CreateDirectory(outputDir);
@@ -79,7 +79,7 @@ namespace super_toolbox
                             StartInfo = new ProcessStartInfo
                             {
                                 FileName = _tempExePath,
-                                Arguments = $"-z \"{filePath}\" \"{outputPath}\"",
+                                Arguments = $"-c \"{filePath}\"",
                                 UseShellExecute = false,
                                 CreateNoWindow = true,
                                 RedirectStandardOutput = true,
@@ -94,15 +94,26 @@ namespace super_toolbox
                         process.WaitForExit();
                         if (process.ExitCode == 0)
                         {
-                            if (File.Exists(outputPath) && new FileInfo(outputPath).Length > 0)
+                            string? fileDir = Path.GetDirectoryName(filePath);
+                            if (string.IsNullOrEmpty(fileDir))
                             {
-                                CompressionProgress?.Invoke(this, $"已压缩:{Path.GetFileName(outputPath)}");
-                                OnFileCompressed(outputPath);
+                                CompressionError?.Invoke(this, $"无法确定文件目录:{filePath}");
+                                OnCompressionFailed($"无法确定文件目录:{filePath}");
+                                continue;
+                            }
+
+                            string originalOutputPath = Path.Combine(fileDir, Path.GetFileName(filePath) + ".ozip");
+                            if (File.Exists(originalOutputPath))
+                            {
+                                string finalOutputPath = Path.Combine(outputDir, Path.GetFileName(originalOutputPath));
+                                File.Move(originalOutputPath, finalOutputPath, true);
+                                CompressionProgress?.Invoke(this, $"已压缩:{Path.GetFileName(finalOutputPath)}");
+                                OnFileCompressed(finalOutputPath);
                             }
                             else
                             {
-                                CompressionError?.Invoke(this, $"压缩成功但输出文件异常:{outputPath}");
-                                OnCompressionFailed($"压缩成功但输出文件异常:{outputPath}");
+                                CompressionError?.Invoke(this, $"压缩成功但找不到输出文件");
+                                OnCompressionFailed($"压缩成功但找不到输出文件");
                             }
                         }
                         else
@@ -112,7 +123,7 @@ namespace super_toolbox
                         }
                     }
                     OnCompressionCompleted();
-                    CompressionProgress?.Invoke(this, $"压缩完成，共压缩{TotalFilesToCompress}个文件");
+                    CompressionProgress?.Invoke(this, $"压缩完成,共压缩{TotalFilesToCompress}个文件");
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
