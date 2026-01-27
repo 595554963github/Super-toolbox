@@ -1,32 +1,54 @@
-using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace super_toolbox
 {
     public class Lzo_Compressor : BaseExtractor
     {
-        private static string _tempExePath;
         public new event EventHandler<string>? CompressionStarted;
         public new event EventHandler<string>? CompressionProgress;
         public new event EventHandler<string>? CompressionError;
 
         static Lzo_Compressor()
         {
+            LoadLzoDll();
+        }
+
+        private static void LoadLzoDll()
+        {
             string tempDir = Path.Combine(Path.GetTempPath(), "supertoolbox_temp");
             Directory.CreateDirectory(tempDir);
-            _tempExePath = Path.Combine(tempDir, "LZOStream.exe");
-            if (!File.Exists(_tempExePath))
+            string dllPath = Path.Combine(tempDir, "lzo2.dll");
+
+            if (!File.Exists(dllPath))
             {
-                using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("embedded.LZOStream.exe"))
-                {
-                    if (stream == null)
-                        throw new FileNotFoundException("嵌入的LZO压缩工具资源未找到");
-                    byte[] buffer = new byte[stream.Length];
-                    stream.Read(buffer, 0, buffer.Length);
-                    File.WriteAllBytes(_tempExePath, buffer);
-                }
+                ExtractEmbeddedResource("embedded.lzo2.dll", dllPath);
+            }
+
+            NativeLibrary.Load(dllPath);
+        }
+
+        private static void ExtractEmbeddedResource(string resourceName, string outputPath)
+        {
+            using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName))
+            {
+                if (stream == null)
+                    throw new FileNotFoundException($"嵌入的LZO资源未找到:{resourceName}");
+
+                byte[] buffer = new byte[stream.Length];
+                stream.Read(buffer, 0, buffer.Length);
+                File.WriteAllBytes(outputPath, buffer);
             }
         }
+
+        private const int LZO_E_OK = 0;
+        private const int LZO1X_999_MEM_COMPRESS = 131072 * 8;
+
+        [DllImport("lzo2.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int __lzo_init_v2(uint v, int s1, int s2, int s3, int s4, int s5, int s6, int s7, int s8, int s9);
+
+        [DllImport("lzo2.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int lzo1x_999_compress(byte[] src, int src_len, byte[] dst, ref uint dst_len, byte[] wrkmem);
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -37,7 +59,9 @@ namespace super_toolbox
                 return;
             }
 
-            var filesToCompress = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
+            var allFiles = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
+            var filesToCompress = allFiles.Where(IsNotLzoFile).ToArray();
+
             if (filesToCompress.Length == 0)
             {
                 CompressionError?.Invoke(this, "未找到需要压缩的文件");
@@ -47,6 +71,7 @@ namespace super_toolbox
 
             string compressedDir = Path.Combine(directoryPath, "Compressed");
             Directory.CreateDirectory(compressedDir);
+            TotalFilesToCompress = filesToCompress.Length;
             CompressionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
             try
@@ -58,7 +83,14 @@ namespace super_toolbox
                         File.Delete(file);
                     }
 
-                    TotalFilesToCompress = filesToCompress.Length;
+                    int result = __lzo_init_v2(2, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+                    if (result != LZO_E_OK)
+                    {
+                        CompressionError?.Invoke(this, $"LZO初始化失败:{result}");
+                        OnCompressionFailed($"LZO初始化失败:{result}");
+                        return;
+                    }
+
                     int processedFiles = 0;
 
                     foreach (var filePath in filesToCompress)
@@ -79,48 +111,20 @@ namespace super_toolbox
 
                         try
                         {
-                            var process = new Process
-                            {
-                                StartInfo = new ProcessStartInfo
-                                {
-                                    FileName = _tempExePath,
-                                    Arguments = $"c \"{filePath}\"",
-                                    UseShellExecute = false,
-                                    CreateNoWindow = true,
-                                    RedirectStandardOutput = true,
-                                    RedirectStandardError = true
-                                }
-                            };
-                            process.Start();
-                            string output = process.StandardOutput.ReadToEnd();
-                            string error = process.StandardError.ReadToEnd();
-                            process.WaitForExit();
+                            var inputData = File.ReadAllBytes(filePath);
 
-                            if (process.ExitCode == 0)
-                            {
-                                string expectedOutputPath = filePath + ".lzo";
-                                if (File.Exists(expectedOutputPath) && new FileInfo(expectedOutputPath).Length > 0)
-                                {
-                                    if (expectedOutputPath != outputPath)
-                                    {
-                                        if (File.Exists(outputPath))
-                                            File.Delete(outputPath);
-                                        File.Move(expectedOutputPath, outputPath);
-                                    }
+                            var compressedData = LZOCompress(inputData);
 
-                                    CompressionProgress?.Invoke(this, $"已压缩:{Path.GetFileName(outputPath)}");
-                                    OnFileCompressed(outputPath);
-                                }
-                                else
-                                {
-                                    CompressionError?.Invoke(this, $"压缩成功但输出文件不存在或为空:{expectedOutputPath}");
-                                    OnCompressionFailed($"压缩成功但输出文件不存在或为空:{expectedOutputPath}");
-                                }
+                            if (compressedData != null && compressedData.Length > 0)
+                            {
+                                File.WriteAllBytes(outputPath, compressedData);
+                                CompressionProgress?.Invoke(this, $"已压缩:{Path.GetFileName(outputPath)}");
+                                OnFileCompressed(outputPath);
                             }
                             else
                             {
-                                CompressionError?.Invoke(this, $"压缩失败({filePath}): {error}");
-                                OnCompressionFailed($"压缩失败({filePath}): {error}");
+                                CompressionError?.Invoke(this, $"压缩失败:{filePath}");
+                                OnCompressionFailed($"压缩失败:{filePath}");
                             }
                         }
                         catch (Exception ex)
@@ -131,7 +135,7 @@ namespace super_toolbox
                     }
 
                     OnCompressionCompleted();
-                    CompressionProgress?.Invoke(this, $"压缩完成，共压缩{TotalFilesToCompress}个文件");
+                    CompressionProgress?.Invoke(this, $"压缩完成,共压缩{TotalFilesToCompress}个文件");
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -147,6 +151,44 @@ namespace super_toolbox
             }
         }
 
+        public override void Extract(string directoryPath)
+        {
+            ExtractAsync(directoryPath).Wait();
+        }
+
+        private bool IsNotLzoFile(string filePath)
+        {
+            string extension = Path.GetExtension(filePath).ToLower();
+            return extension != ".lzo";
+        }
+
+        private byte[]? LZOCompress(byte[] inputData)
+        {
+            try
+            {
+                if (inputData == null || inputData.Length == 0)
+                    return null;
+
+                uint compressedSize = (uint)(inputData.Length + inputData.Length / 16 + 64 + 3);
+                byte[] compressedData = new byte[compressedSize];
+                byte[] workMem = new byte[LZO1X_999_MEM_COMPRESS];
+
+                int result = lzo1x_999_compress(inputData, inputData.Length, compressedData, ref compressedSize, workMem);
+
+                if (result != LZO_E_OK)
+                    return null;
+
+                byte[] finalData = new byte[compressedSize];
+                Array.Copy(compressedData, 0, finalData, 0, (int)compressedSize);
+
+                return finalData;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         private string GetRelativePath(string rootPath, string fullPath)
         {
             Uri rootUri = new Uri(rootPath.EndsWith(Path.DirectorySeparatorChar.ToString())
@@ -155,11 +197,6 @@ namespace super_toolbox
             Uri fullUri = new Uri(fullPath);
             return Uri.UnescapeDataString(rootUri.MakeRelativeUri(fullUri).ToString()
                 .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
-        }
-
-        public override void Extract(string directoryPath)
-        {
-            ExtractAsync(directoryPath).Wait();
         }
     }
 }
