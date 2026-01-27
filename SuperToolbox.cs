@@ -74,7 +74,8 @@ namespace super_toolbox
             { "任天堂 - 3DS/WII/WIIU sound", ("音频", "任天堂wii、wiiu和3ds平台的音频提取器,能从brsar、bfsar和bcsar文件中提取出br/bf/bc前缀的wav波形音频文件") },
             { "Binary Audio Archive - baa", ("其他档案", "一种未知的音频档案格式提取工具。aw文件因不包含头部信息、文件大小等标识数据而依赖baa索引文件,代表作有wiiu平台的塞尔达传说黄昏公主HD") },
             { "Audio Archive - aw", ("音频", "baa文件配套提取器,用于从baa文件中提取wsys文件。无wsys文件则无法解包aw文件,且需将wsys文件放入aw文件夹才能提取wav,目前vgmstream已支持解码aw/baa") },
-            { "反恐精英OL - pak", ("其他档案", "反恐精英ol的pak提取器,csol的打包格式分nar和pak两种,本工具专门用于解pak文件") },
+            { "反恐精英OL - pak", ("其他档案", "反恐精英ol的pak提取器") },
+            { "反恐精英OL - nar", ("其他档案", "反恐精英ol的nar提取器") },
             { "IdeaFactory - pac提取器", ("其他档案", "地雷社游戏的pac提取器,此pac格式常用于海王星系列游戏") },
             { "IdeaFactory - pac打包器", ("其他档案", "地雷社游戏的pac打包器,能将文件夹重新打包成pac文件") },
             { "光荣特库摩 - gz/exlilr", ("其他档案", "光荣特库摩的gz和elixir文件提取器,适用于蓝色反射_帝、幻舞少女之剑、无夜之国等游戏") },
@@ -88,46 +89,60 @@ namespace super_toolbox
             { "IdeaFactory - cl3", ("其他档案", "地雷社游戏的CL3提取器,可从CL3文件中提取dat、tid等文件,代表作为妖精剑士F,解决了stcm-editor.exe工具使用不便的问题") },
             { "5pb - LNK4 archives - dat", ("其他档案", "5pb的LNK4文件头的dat解包工具,可解xbox360游戏11只眼_交错的视线等采用该格式的文件") },
             { "万代南梦宫 - 情热传说 - dat", ("其他档案", "万代南梦宫的情热传说TLDAT解包工具,也可解狂战传说的相关文件,但仅支持PS3平台,不支持加密的steam平台版本") },
-            { "Brotli - brotli_compress", ("压缩", "使用Brotli算法批量压缩文件,注意压缩速度较慢,若无法删除文件夹可在任务管理器中退出brotli.exe进程") },
-            { "Brotli - brotli_decompress", ("解压", "使用Brotli算法批量解压文件,解压速度较快,能高效处理采用该算法压缩的文件") },
-            { "Gzip - gzip_compress", ("压缩", "使用Gzip算法批量压缩文件,适用于需要采用该经典压缩算法处理文件的场景") },
-            { "Gzip - gzip_decompress", ("解压", "使用Gzip算法批量解压文件,可快速解压缩采用该算法压缩的文件") },
-            { "Huffman - huffman_compress", ("压缩", "使用Huffman算法批量压缩文件,利用该算法的特性对文件进行压缩处理") },
-            { "Huffman - huffman_decompress", ("解压", "使用Huffman算法批量解压文件,专门用于解压缩采用Huffman算法压缩的文件") },
-            { "Lz4 - lz4_compress", ("压缩", "使用Lz4算法批量压缩文件,基于C#第三方库实现,满足对文件进行Lz4压缩的需求") },
-            { "Lz4 - lz4_decompress", ("解压", "使用Lz4算法批量解压文件,基于C#第三方库实现,可解压缩采用Lz4算法压缩的文件") },
-            { "Lz4c - lz4c_compress", ("压缩", "使用Lz4c算法批量压缩文件,通过调用外部可执行程序实现,适用于需要Lz4c压缩的场景") },
-            { "Lz4c - lz4c_decompress", ("解压", "使用Lz4c算法批量解压文件,通过调用外部可执行程序实现,用于解压缩Lz4c算法处理的文件") },
-            { "LZ77 - lz77_compress", ("压缩", "使用Lz77算法批量压缩文件,利用该经典压缩算法对文件进行压缩处理") },
-            { "LZ77 - lz77_decompress", ("解压", "使用Lz77算法批量解压文件,专门解压缩采用Lz77算法压缩的文件") },
-            { "LZMA - 7-zip_lzma_compress", ("压缩", "使用Lzma算法批量压缩文件,基于7-zip的相关实现,适用于需要高压缩率的场景") },
-            { "LZMA - 7-zip_lzma_decompress", ("解压", "使用Lzma算法批量解压文件,可解压缩采用Lzma算法压缩的文件,包括7-zip生成的相关文件") },
-            { "LZO - lzo_compress", ("压缩", "使用Lzo算法批量压缩文件,利用该算法的特点对文件进行压缩处理") },
-            { "LZO - lzo_decompress", ("解压", "使用Lzo算法批量解压文件,用于解压缩采用Lzo算法压缩的文件") },
-            { "LZSS - lzss自定义压缩", ("压缩", "使用自定义Lzss算法批量压缩文件,针对特定场景优化的Lzss压缩实现,满足特殊压缩需求") },
-            { "LZSS - lzss自定义解压", ("解压", "使用自定义Lzss算法批量解压文件,专门用于解压缩采用自定义Lzss算法压缩的文件") },
-            { "Lzham - lzham自定义压缩", ("压缩", "使用自定义Lzham算法批量压缩文件,基于Lzham算法的定制实现,适用于特定压缩场景") },
-            { "Lzham - lzham自定义解压", ("解压", "使用自定义Lzham算法批量解压文件,用于解压缩采用自定义Lzham算法压缩的文件") },
-            { "Lzham - Lzham标准压缩", ("压缩", "使用标准Lzham算法批量压缩文件,遵循标准Lzham算法实现,保证兼容性") },
-            { "Lzham - Lzham标准解压", ("解压", "使用标准Lzham算法批量解压文件,可解压缩采用标准Lzham算法压缩的文件") },
-            { "Minlz - minlz_compress", ("压缩", "使用Minlz算法批量压缩文件,利用该算法对文件进行压缩处理") },
-            { "Minlz - minlz_decompress", ("解压", "使用Minlz算法批量解压文件,专门解压缩采用Minlz算法压缩的文件") },
-            { "Mio0 - mio0_compress", ("压缩", "使用Mio0算法批量压缩文件,适用于需要采用该算法进行压缩的场景") },
-            { "Mio0 - mio0_decompress", ("解压", "使用Mio0算法批量解压文件,用于解压缩采用Mio0算法压缩的文件") },
-            { "Oodle - oodle_compress", ("压缩", "使用Oodle算法批量压缩文件,利用该高效压缩算法对文件进行压缩处理") },
-            { "Oodle - oodle_decompress", ("解压", "使用Oodle算法批量解压文件,可解压缩采用Oodle算法压缩的文件") },
-            { "Snappy - snappy_compress", ("压缩", "使用Snappy算法批量压缩文件,该算法注重压缩速度,适用于对速度要求较高的场景") },
-            { "Snappy - snappy_decompress", ("解压", "使用Snappy算法批量解压文件,解压速度快,用于处理采用Snappy算法压缩的文件") },
-            { "Wflz - wflz_compress", ("压缩", "使用Wflz算法批量压缩文件,适用于需要采用该算法进行压缩的场景") },
-            { "Wflz - wflz_decompress", ("解压", "使用Wflz算法批量解压文件,用于解压缩采用Wflz算法压缩的文件") },
-            { "Yay0 - yay0_compress", ("压缩", "使用Yay0算法批量压缩文件,适用于相关平台或场景下的文件压缩需求") },
-            { "Yay0 - yay0_decompress", ("解压", "使用Yay0算法批量解压文件,专门解压缩采用Yay0算法压缩的文件") },
-            { "Yaz0 - yaz0_compress", ("压缩", "使用Yaz0算法批量压缩文件,适用于需要采用该算法进行压缩的场景") },
-            { "Yaz0 - yaz0_decompress", ("解压", "使用Yaz0算法批量解压文件,用于解压缩采用Yaz0算法压缩的文件") },
-            { "Zlib - zlib_compress", ("压缩", "使用Zlib算法批量压缩文件,经典的压缩算法,应用广泛,适用于多种场景") },
-            { "Zlib - zlib_decompress", ("解压", "使用Zlib算法批量解压文件,可解压缩采用Zlib算法压缩的文件") },
-            { "ZSTD - zstd_compress", ("压缩", "使用Zstd算法批量压缩文件,该算法在压缩率和速度上有较好平衡,适用于多种场景") },
-            { "ZSTD - zstd_decompress", ("解压", "使用Zstd算法批量解压文件,用于解压缩采用Zstd算法压缩的文件") },
+            { "Allz - allz_compress", ("压缩", "使用Allz算法批量压缩文件") },
+            { "Allz - allz_decompress", ("解压", "使用Allz算法批量解压文件") },
+            { "Brotli - brotli_compress", ("压缩", "使用Brotli算法批量压缩文件") },
+            { "Brotli - brotli_decompress", ("解压", "使用Brotli算法批量解压文件") },
+            { "Gzip - gzip_compress", ("压缩", "使用Gzip算法批量压缩文件") },
+            { "Gzip - gzip_decompress", ("解压", "使用Gzip算法批量解压文件") },
+            { "Huffman - huffman_compress", ("压缩", "使用Huffman算法批量压缩文件") },
+            { "Huffman - huffman_decompress", ("解压", "使用Huffman算法批量解压文件") },
+            { "HUF20 - huf20_compress", ("压缩", "使用huf20算法批量压缩文件") },
+            { "HUF20 - huf20_decompress", ("解压", "使用huf20算法批量解压文件") },
+            { "Lz4 - lz4_compress", ("压缩", "使用Lz4算法批量压缩文件") },
+            { "Lz4 - lz4_decompress", ("解压", "使用Lz4算法批量解压文件") },
+            { "LZ10 - lz10_compress", ("压缩", "使用Lz10算法批量压缩文件") },
+            { "LZ10 - lz10_decompress", ("解压", "使用Lz10算法批量解压文件") },
+            { "LZ11 - lz11_compress", ("压缩", "使用Lz11算法批量压缩文件") },
+            { "LZ11 - lz11_decompress", ("解压", "使用Lz11算法批量解压文件") },
+            { "LZ77 - lz77_compress", ("压缩", "使用Lz77算法批量压缩文件") },
+            { "LZ77 - lz77_decompress", ("解压", "使用Lz77算法批量解压文件") },           
+            { "LZMA - 7-zip_lzma_compress", ("压缩", "使用Lzma算法批量压缩文件") },
+            { "LZMA - 7-zip_lzma_decompress", ("解压", "使用Lzma算法批量解压文件") },
+            { "LZO - lzo_compress", ("压缩", "使用Lzo算法批量压缩文件") },
+            { "LZO - lzo_decompress", ("解压", "使用Lzon算法批量解压文件") },
+            { "LZOn - lzon_compress", ("压缩", "使用Lzon算法批量压缩文件") },
+            { "LZOn - lzon_decompress", ("解压", "使用Lzo算法批量解压文件") },
+            { "LZSS - lzss自定义压缩", ("压缩", "使用自定义Lzss算法批量压缩文件,基于c++代码修改而来") },
+            { "LZSS - lzss自定义解压", ("解压", "使用自定义Lzss算法批量解压文件,基于c++代码修改而来") },
+            { "LZSS - lzss标准压缩", ("压缩", "使用标准Lzss算法批量压缩文件") },
+            { "LZSS - lzss标准解压", ("解压", "使用标准Lzss算法批量解压文件") },
+            { "Lzham - lzham自定义压缩", ("压缩", "使用自定义Lzham算法批量压缩文件") },
+            { "Lzham - lzham自定义解压", ("解压", "使用自定义Lzham算法批量解压文件") },
+            { "Lzham - Lzham标准压缩", ("压缩", "使用标准Lzham算法批量压缩文件") },
+            { "Lzham - Lzham标准解压", ("解压", "使用标准Lzham算法批量解压文件") },
+            { "Minlz - minlz_compress", ("压缩", "使用Minlz算法批量压缩文件") },
+            { "Minlz - minlz_decompress", ("解压", "使用Minlz算法批量解压文件") },
+            { "Mio0 - mio0自定义压缩", ("压缩", "使用Mio0自定义算法批量压缩文件") },
+            { "Mio0 - mio0自定义解压", ("解压", "使用Mio0自定义算法批量解压文件") },
+            { "Mio0 - mio0标准压缩", ("压缩", "使用Mio0标准算法批量压缩文件") },
+            { "Mio0 - mio0标准解压", ("解压", "使用Mio0标准算法批量解压文件") },
+            { "Oodle - oodle_compress", ("压缩", "使用Oodle算法批量压缩文件") },
+            { "Oodle - oodle_decompress", ("解压", "使用Oodle算法批量解压文件") },
+            { "Prs - prs_compress", ("压缩", "使用Prs算法批量压缩文件") },
+            { "Prs - prs_decompress", ("解压", "使用Prs算法批量解压文件") },
+            { "Snappy - snappy_compress", ("压缩", "使用Snappy算法批量压缩文件") },
+            { "Snappy - snappy_decompress", ("解压", "使用Snappy算法批量解压文件") },
+            { "Wflz - wflz_compress", ("压缩", "使用Wflz算法批量压缩文件") },
+            { "Wflz - wflz_decompress", ("解压", "使用Wflz算法批量解压文件") },
+            { "Yay0 - yay0_compress", ("压缩", "使用Yay0算法批量压缩文件") },
+            { "Yay0 - yay0_decompress", ("解压", "使用Yay0算法批量解压文件") },
+            { "Yaz0 - yaz0_compress", ("压缩", "使用Yaz0算法批量压缩文件") },
+            { "Yaz0 - yaz0_decompress", ("解压", "使用Yaz0算法批量解压文件") },
+            { "Zlib - zlib_compress", ("压缩", "使用Zlib算法批量压缩文件") },
+            { "Zlib - zlib_decompress", ("解压", "使用Zlib算法批量解压文件") },
+            { "ZSTD - zstd_compress", ("压缩", "使用Zstd算法批量压缩文件") },
+            { "ZSTD - zstd_decompress", ("解压", "使用Zstd算法批量解压文件") },
             { "Wiiu - gtx转换器", ("图片", "任天堂wiiu平台的gtx转换器,可将gtx格式转换为png图片") },
             { "Wiiu - h3/app", ("其他档案", "任天堂wiiu平台的rom解包器,能将wiiu平台的h3、app文件转换成loadiine格式,方便用户解包") },
             { "Nds - nds提取器", ("其他档案", "任天堂nds平台的rom解包工具,可解包nds rom文件,提取其中的各类资源") },
@@ -594,6 +609,7 @@ namespace super_toolbox
                 case "Binary Audio Archive - baa": return new BaaExtractor();
                 case "Audio Archive - aw": return new AwExtractor();
                 case "反恐精英OL - pak": return new CSO_PakExtractor();
+                case "反恐精英OL - nar": return new NarExtractor();
                 case "IdeaFactory - pac提取器": return new IdeaFactory_PacExtractor();
                 case "IdeaFactory - pac打包器": return new IdeaFactory_PacRepacker();
                 case "光荣特库摩 - gz/exlilr": return new GustElixir_Extractor();
@@ -607,34 +623,48 @@ namespace super_toolbox
                 case "IdeaFactory - cl3": return new IdeaFactory_CL3Extractor();
                 case "5pb - LNK4 archives - dat": return new LNK4Extractor();
                 case "万代南梦宫 - 情热传说 - dat": return new TalesDat_Extractor();
+                case "Allz - allz_compress": return new Allz_Compressor();
+                case "Allz - allz_decompress": return new Allz_Decompressor();
                 case "Brotli - brotli_compress": return new Brotli_Compressor();
                 case "Brotli - brotli_decompress": return new Brotli_Decompressor();
                 case "Gzip - gzip_compress": return new Gzip_Compressor();
                 case "Gzip - gzip_decompress": return new Gzip_Decompressor();
                 case "Huffman - huffman_compress": return new Huffman_Compressor();
                 case "Huffman - huffman_decompress": return new Huffman_Decompressor();
+                case "HUF20 - huf20_compress": return new Huf20_Compressor();
+                case "HUF20 - huf20_decompress": return new Huf20_Decompressor();
                 case "Lz4 - lz4_compress": return new Lz4_Compressor();
                 case "Lz4 - lz4_decompress": return new Lz4_Decompressor();
-                case "Lz4c - lz4c_compress": return new Lz4c_Compressor();
-                case "Lz4c - lz4c_decompress": return new Lz4c_Decompressor();
+                case "LZ10 - lz10_compress": return new Lz10_Compressor();
+                case "LZ10 - lz10_decompress": return new Lz10_Decompressor();
+                case "LZ11 - lz11_compress": return new Lz11_Compressor();
+                case "LZ11 - lz11_decompress": return new Lz11_Decompressor();
                 case "LZ77 - lz77_compress": return new Lz77_Compressor();
                 case "LZ77 - lz77_decompress": return new Lz77_Decompressor();
                 case "LZMA - 7-zip_lzma_compress": return new Lzma_Compressor();
                 case "LZMA - 7-zip_lzma_decompress": return new Lzma_Decompressor();
                 case "LZO - lzo_compress": return new Lzo_Compressor();
                 case "LZO - lzo_decompress": return new Lzo_Decompressor();
+                case "LZOn - lzon_compress" : return new Lzon_Compressor();
+                case "LZOn - lzon_decompress": return new Lzon_Decompressor();
                 case "LZSS - lzss自定义压缩": return new LzssCustom_Compressor();
                 case "LZSS - lzss自定义解压": return new LzssCustom_Decompressor();
+                case "LZSS - lzss标准压缩": return new LzssStandard_Compressor();
+                case "LZSS - lzss标准解压": return new LzssStandard_Decompressor();
                 case "Lzham - lzham自定义压缩": return new LzhamCustom_Compressor();
                 case "Lzham - lzham自定义解压": return new LzhamCustom_Decompressor();
                 case "Lzham - Lzham标准压缩": return new LzhamStandard_Compressor();
                 case "Lzham - Lzham标准解压": return new LzhamStandard_Decompressor();
                 case "Minlz - minlz_compress": return new Minlz_Compressor();
                 case "Minlz - minlz_decompress": return new Minlz_Decompressor();
-                case "Mio0 - mio0_compress": return new Mio0_Compressor();
-                case "Mio0 - mio0_decompress": return new Mio0_Decompressor();
+                case "Mio0 - mio0自定义压缩": return new Mio0Custom_Compressor();
+                case "Mio0 - mio0自定义解压": return new Mio0Custom_Decompressor();
+                case "Mio0 - mio0标准压缩": return new Mio0Standard_Compressor();
+                case "Mio0 - mio0标准解压": return new Mio0Standard_Decompressor();
                 case "Oodle - oodle_compress": return new Oodle_Compressor();
                 case "Oodle - oodle_decompress": return new Oodle_Decompressor();
+                case "Prs - prs_compress": return new Prs_Compressor();
+                case "Prs - prs_decompress": return new Prs_Decompressor();
                 case "Snappy - snappy_compress": return new Snappy_Compressor();
                 case "Snappy - snappy_decompress": return new Snappy_Decompressor();
                 case "Wflz - wflz_compress": return new Wflz_Compressor();
