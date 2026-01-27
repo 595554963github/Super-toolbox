@@ -1,44 +1,17 @@
-using System.Diagnostics;
-using System.Reflection;
-using System.Text;
-
 namespace super_toolbox
 {
     public class LzssCustom_Decompressor : BaseExtractor
     {
-        private static string _tempExePath;
         public new event EventHandler<string>? DecompressionStarted;
         public new event EventHandler<string>? DecompressionProgress;
         public new event EventHandler<string>? DecompressionError;
-        static LzssCustom_Decompressor()
-        {
-            _tempExePath = ExtractLzssToTemp();
-        }
-        private static string ExtractLzssToTemp()
-        {
-            string tempPath = Path.Combine(Path.GetTempPath(), "super_toolbox_lzss.exe");
-            if (File.Exists(tempPath))
-            {
-                return tempPath;
-            }
-            var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = assembly.GetManifestResourceNames()
-                .FirstOrDefault(name => name.EndsWith("sample.exe"));
-            if (string.IsNullOrEmpty(resourceName))
-            {
-                throw new FileNotFoundException("找不到嵌入的LZSS解压工具资源");
-            }
-            using (var resourceStream = assembly.GetManifestResourceStream(resourceName))
-            {
-                if (resourceStream == null)
-                    throw new FileNotFoundException("无法读取嵌入的LZSS解压工具资源");
-                using (var fileStream = File.Create(tempPath))
-                {
-                    resourceStream.CopyTo(fileStream);
-                }
-            }
-            return tempPath;
-        }
+
+        private const int LOOKAHEAD_BUFFER_SIZE = 264;
+        private const int MIN_LENGTH = 4;
+        private const int HISTORY_SIZE = 65536;
+        private const int NUM_BITS_LOOKAHEAD = 8;
+        private const int NUM_BITS_HISTORY = 16;
+
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
@@ -47,6 +20,7 @@ namespace super_toolbox
                 OnDecompressionFailed($"源文件夹{directoryPath}不存在");
                 return;
             }
+
             try
             {
                 await Task.Run(() =>
@@ -55,27 +29,29 @@ namespace super_toolbox
                     var filesToProcess = allFiles.Where(IsLzssFile).ToArray();
                     if (filesToProcess.Length == 0)
                     {
-                        DecompressionError?.Invoke(this, "未找到需要解压的LZSS文件");
-                        OnDecompressionFailed("未找到需要解压的LZSS文件");
+                        DecompressionError?.Invoke(this, "未找到有效的LZSS压缩文件");
+                        OnDecompressionFailed("未找到有效的LZSS压缩文件");
                         return;
                     }
+
                     string decompressedDir = Path.Combine(directoryPath, "Decompressed");
                     Directory.CreateDirectory(decompressedDir);
                     TotalFilesToDecompress = filesToProcess.Length;
-                    DecompressionStarted?.Invoke(this, $"开始解压，共{TotalFilesToDecompress}个文件");
+                    DecompressionStarted?.Invoke(this, $"开始解压,共{TotalFilesToDecompress}个文件");
+
                     foreach (var filePath in filesToProcess)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         if (DecompressLzssFile(filePath, decompressedDir))
                         {
                             string fileName = Path.GetFileNameWithoutExtension(filePath);
-                            string originalExtension = ExtractOriginalExtension(filePath);
-                            string outputPath = Path.Combine(decompressedDir, fileName + originalExtension);
+                            string outputPath = Path.Combine(decompressedDir, fileName);
                             OnFileDecompressed(outputPath);
                         }
                     }
+
                     OnDecompressionCompleted();
-                    DecompressionProgress?.Invoke(this, $"解压完成，共解压{TotalFilesToDecompress}个文件");
+                    DecompressionProgress?.Invoke(this, $"解压完成,共解压{TotalFilesToDecompress}个文件");
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -90,54 +66,35 @@ namespace super_toolbox
                 OnDecompressionFailed($"解压失败:{ex.Message}");
             }
         }
+
         private bool IsLzssFile(string filePath)
         {
             string extension = Path.GetExtension(filePath).ToLower();
             return extension == ".lzss";
         }
+
         private bool DecompressLzssFile(string inputPath, string outputDir)
         {
             try
             {
                 string fileName = Path.GetFileNameWithoutExtension(inputPath);
-                string originalExtension = ExtractOriginalExtension(inputPath);
-                string tempLzssPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".lzss");
-                string tempOutputPath = Path.Combine(outputDir, fileName + ".temp");
-                string finalOutputPath = Path.Combine(outputDir, fileName + originalExtension);
+                string outputPath = Path.Combine(outputDir, fileName);
+
                 DecompressionProgress?.Invoke(this, $"正在解压:{Path.GetFileName(inputPath)}");
-                ExtractCompressedData(inputPath, tempLzssPath);
-                var process = new Process
+
+                byte[] compressedData = File.ReadAllBytes(inputPath);
+                byte[] decompressedData = Decompress(compressedData);
+
+                File.WriteAllBytes(outputPath, decompressedData);
+
+                if (File.Exists(outputPath))
                 {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = _tempExePath,
-                        Arguments = $"-d -i \"{tempLzssPath}\" -o \"{tempOutputPath}\"",
-                        WorkingDirectory = Path.GetDirectoryName(inputPath) ?? string.Empty,
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    }
-                };
-                process.Start();
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-                process.WaitForExit();
-                if (File.Exists(tempLzssPath)) File.Delete(tempLzssPath);
-                if (process.ExitCode != 0)
-                {
-                    DecompressionError?.Invoke(this, $"LZSS解压错误:{error}");
-                    return false;
-                }
-                if (File.Exists(tempOutputPath))
-                {
-                    File.Move(tempOutputPath, finalOutputPath);
-                    DecompressionProgress?.Invoke(this, $"已解压:{Path.GetFileName(finalOutputPath)}");
+                    DecompressionProgress?.Invoke(this, $"已解压:{Path.GetFileName(outputPath)}");
                     return true;
                 }
                 else
                 {
-                    DecompressionError?.Invoke(this, $"解压成功但输出文件不存在:{tempOutputPath}");
+                    DecompressionError?.Invoke(this, $"解压成功但输出文件不存在:{outputPath}");
                     return false;
                 }
             }
@@ -147,49 +104,157 @@ namespace super_toolbox
                 return false;
             }
         }
-        private string ExtractOriginalExtension(string lzssFilePath)
+
+        private byte[] Decompress(byte[] compressedData)
         {
-            try
+            using (MemoryStream inputStream = new MemoryStream(compressedData))
             {
-                using (var fileStream = new FileStream(lzssFilePath, FileMode.Open))
-                using (var reader = new BinaryReader(fileStream))
-                {
-                    byte[] magic = reader.ReadBytes(4);
-                    if (Encoding.ASCII.GetString(magic) != "LZSS")
-                    {
-                        return "";
-                    }
-                    byte extensionLength = reader.ReadByte();
-                    byte[] extensionBytes = reader.ReadBytes(extensionLength);
-                    return Encoding.UTF8.GetString(extensionBytes);
-                }
-            }
-            catch
-            {
-                return "";
+                LZSSDecoder decoder = new LZSSDecoder();
+                return decoder.Decode(inputStream);
             }
         }
-        private void ExtractCompressedData(string inputPath, string outputPath)
-        {
-            using (var inputStream = new FileStream(inputPath, FileMode.Open))
-            using (var reader = new BinaryReader(inputStream))
-            using (var outputStream = new FileStream(outputPath, FileMode.Create))
-            using (var writer = new BinaryWriter(outputStream))
-            {
-                reader.BaseStream.Seek(4, SeekOrigin.Current); 
-                byte extensionLength = reader.ReadByte();
-                reader.BaseStream.Seek(extensionLength, SeekOrigin.Current);
-                byte[] buffer = new byte[4096];
-                int bytesRead;
-                while ((bytesRead = reader.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    writer.Write(buffer, 0, bytesRead);
-                }
-            }
-        }
+
         public override void Extract(string directoryPath)
         {
             ExtractAsync(directoryPath).Wait();
+        }
+
+        private class LookAheadBuffer
+        {
+            private byte[] data = new byte[LOOKAHEAD_BUFFER_SIZE];
+            private int pos = 0;
+            private int size = 0;
+
+            public void Add(int c)
+            {
+                if (c != -1)
+                {
+                    data[pos] = (byte)c;
+                    if (size < LOOKAHEAD_BUFFER_SIZE)
+                        size++;
+                }
+                else
+                {
+                    size--;
+                }
+                pos = (pos + 1) % LOOKAHEAD_BUFFER_SIZE;
+            }
+
+            public byte At(int i) => data[i];
+            public int Size => size;
+            public int Pos => pos;
+            public byte First() => data[pos];
+            public void ResetPos() => pos = 0;
+        }
+
+        private class HistoryBuffer
+        {
+            private byte[] data = new byte[HISTORY_SIZE];
+            private int pos = 0;
+
+            public void Add(int c)
+            {
+                data[pos] = (byte)c;
+                pos = (pos + 1) & (HISTORY_SIZE - 1);
+            }
+
+            public byte At(int i) => data[i & (HISTORY_SIZE - 1)];
+            public int Pos => pos;
+        }
+
+        private class LZSSDecoder
+        {
+            private LookAheadBuffer lookAhead = new LookAheadBuffer();
+            private HistoryBuffer history = new HistoryBuffer();
+
+            public byte[] Decode(Stream inputStream)
+            {
+                BitInputStream bitStream = new BitInputStream(inputStream);
+                try
+                {
+                    // 读取原始文件大小（32位，小端序）
+                    ulong fileSizeBits = bitStream.GetBits(32);
+                    long fsize = (long)fileSizeBits;
+
+                    using (MemoryStream outputStream = new MemoryStream((int)fsize))
+                    {
+                        while (fsize > 0)
+                        {
+                            if (bitStream.GetBits(1) == 0)
+                            {
+                                int c = (int)bitStream.GetBits(8);
+                                outputStream.WriteByte((byte)c);
+                                history.Add(c);
+                                fsize--;
+                            }
+                            else
+                            {
+                                long position = (long)bitStream.GetBits(NUM_BITS_HISTORY);
+                                long length = (long)bitStream.GetBits(NUM_BITS_LOOKAHEAD) + MIN_LENGTH;
+
+                                for (long i = 0; i < length; i++)
+                                {
+                                    int c = history.At((int)((position + i) & (HISTORY_SIZE - 1)));
+                                    lookAhead.Add(c);
+                                    outputStream.WriteByte((byte)c);
+                                    fsize--;
+                                }
+
+                                lookAhead.ResetPos();
+                                for (long i = 0; i < length; i++)
+                                {
+                                    history.Add(lookAhead.At((int)i));
+                                }
+                            }
+                        }
+
+                        return outputStream.ToArray();
+                    }
+                }
+                finally
+                {
+                    ((IDisposable)bitStream).Dispose();
+                }
+            }
+        }
+
+        private class BitInputStream : IDisposable
+        {
+            private Stream inStream;
+            private int bitCount = 0;
+            private int buffer = 0;
+
+            public BitInputStream(Stream inStream)
+            {
+                this.inStream = inStream;
+            }
+
+            public int GetBit()
+            {
+                if (bitCount == 0)
+                {
+                    int b = inStream.ReadByte();
+                    if (b == -1)
+                        return 0;
+                    buffer = b;
+                    bitCount = 8;
+                }
+                return (buffer >> --bitCount) & 1;
+            }
+
+            public ulong GetBits(int size)
+            {
+                ulong value = 0;
+                for (int i = 0; i < size; i++)
+                {
+                    value = (value << 1) | (byte)(GetBit() & 1);
+                }
+                return value;
+            }
+
+            public void Dispose()
+            {
+            }
         }
     }
 }
