@@ -54,21 +54,19 @@ namespace super_toolbox
                     string decompressedDir = Path.Combine(directoryPath, "Decompressed");
                     Directory.CreateDirectory(decompressedDir);
                     TotalFilesToDecompress = filesToProcess.Length;
-                    DecompressionStarted?.Invoke(this, $"开始解压，共{TotalFilesToDecompress}个文件");
+                    DecompressionStarted?.Invoke(this, $"开始解压,共{TotalFilesToDecompress}个文件");
                     foreach (var filePath in filesToProcess)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         if (DecompressOodleFile(filePath, decompressedDir))
                         {
                             string fileName = Path.GetFileNameWithoutExtension(filePath);
-                            string originalExtension = GetOriginalExtension(filePath);
-                            string outputPath = Path.Combine(decompressedDir, fileName + originalExtension);
-                            string displayName = Path.GetFileName(outputPath);
+                            string outputPath = Path.Combine(decompressedDir, fileName);
                             OnFileDecompressed(outputPath);
                         }
                     }
                     OnDecompressionCompleted();
-                    DecompressionProgress?.Invoke(this, $"解压完成，共解压{TotalFilesToDecompress}个文件");
+                    DecompressionProgress?.Invoke(this, $"解压完成,共解压{TotalFilesToDecompress}个文件");
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -88,29 +86,20 @@ namespace super_toolbox
             string extension = Path.GetExtension(filePath).ToLower();
             return extension == ".ozip";
         }
-        private string GetOriginalExtension(string compressedFilePath)
-        {
-            return "";
-        }
         private bool DecompressOodleFile(string inputPath, string outputDir)
         {
             try
             {
-                string workingDirectory = Path.GetDirectoryName(inputPath) ?? string.Empty;
                 string fileName = Path.GetFileName(inputPath);
-
-                if (string.IsNullOrEmpty(workingDirectory))
-                {
-                    DecompressionError?.Invoke(this, "无法确定工作目录");
-                    return false;
-                }
                 string decompressedFileName = Path.GetFileNameWithoutExtension(fileName);
                 string outputPath = Path.Combine(outputDir, decompressedFileName);
+                string inputDir = Path.GetDirectoryName(inputPath) ?? string.Empty;
+
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
                     FileName = _tempExePath,
-                    Arguments = $"-d \"{inputPath}\" \"{outputPath}\"",
-                    WorkingDirectory = workingDirectory,
+                    Arguments = $"-x \"{inputPath}\"",
+                    WorkingDirectory = inputDir,
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
@@ -128,8 +117,10 @@ namespace super_toolbox
                         DecompressionError?.Invoke(this, $"Oodle解压错误:{error}");
                         return false;
                     }
-                    if (File.Exists(outputPath))
+                    string originalOutputPath = Path.Combine(inputDir, decompressedFileName);
+                    if (File.Exists(originalOutputPath))
                     {
+                        File.Move(originalOutputPath, outputPath, true);
                         return true;
                     }
                     DecompressionError?.Invoke(this, $"找不到解压后的文件:{decompressedFileName}");
