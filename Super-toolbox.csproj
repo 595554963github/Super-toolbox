@@ -7,7 +7,7 @@
 		<UseWindowsForms>true</UseWindowsForms>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<EnableDefaultCompileItems>true</EnableDefaultCompileItems>
-		<NoWarn>MSB3277;MSB3026</NoWarn>
+		<NoWarn>MSB3270;MSB3277;MSB3026</NoWarn>
 		<GenerateDependencyFile>false</GenerateDependencyFile>
 		<Configurations>Release</Configurations>
 	</PropertyGroup>
@@ -72,9 +72,6 @@
 		<EmbeddedResource Include="plugins\cdecrypt.exe">
 			<LogicalName>embedded.cdecrypt.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\sample.exe">
-			<LogicalName>embedded.sample.exe</LogicalName>
-		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\ndstool.exe">
 			<LogicalName>embedded.ndstool.exe</LogicalName>
 		</EmbeddedResource>
@@ -104,6 +101,9 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\CMVDecode.exe">
 			<LogicalName>embedded.CMVDecode.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\lzo2.dll">
+			<LogicalName>embedded.lzo2.dll</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\minlz.exe">
 			<LogicalName>embedded.minlz.exe</LogicalName>
@@ -158,6 +158,7 @@
 		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
+		<PackageReference Include="AuroraLib.Compression" Version="1.5.4" />
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
