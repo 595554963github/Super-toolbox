@@ -1,6 +1,6 @@
-﻿namespace super_toolbox
+namespace super_toolbox
 {
-    public class Mio0_Compressor : BaseExtractor
+    public class Mio0Custom_Compressor : BaseExtractor
     {
         public new event EventHandler<string>? CompressionStarted;
         public new event EventHandler<string>? CompressionProgress;
@@ -26,7 +26,7 @@
             string compressedDir = Path.Combine(directoryPath, "Compressed");
             Directory.CreateDirectory(compressedDir);
 
-            CompressionStarted?.Invoke(this, $"开始处理目录: {directoryPath}");
+            CompressionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
             try
             {
@@ -83,7 +83,7 @@
                     }
 
                     OnCompressionCompleted();
-                    CompressionProgress?.Invoke(this, $"压缩完成，共压缩{TotalFilesToCompress}个文件");
+                    CompressionProgress?.Invoke(this, $"压缩完成,共压缩{TotalFilesToCompress}个文件");
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -102,143 +102,107 @@
         private byte[] CompressWithMIO0(byte[] inputData)
         {
             List<byte> layoutBits = new List<byte>();
-            List<byte> dictionary = new List<byte>();
             List<byte> uncompressedData = new List<byte>();
-            List<int[]> compressedData = new List<int[]>();
+            List<(int offset, int length)> compressedData = new List<(int, int)>();
+            byte[] slidingWindow = new byte[4096];
+            int windowStart = 0;
+            int windowSize = 0;
+            int totalProcessed = 0;
 
-            int maxDictionarySize = 4096;
-            int maxMatchLength = 18;
-            int minimumMatchSize = 2;
-            int decompressedSize = 0;
-
-            for (int i = 0; i < inputData.Length; i++)
+            int i = 0;
+            while (i < inputData.Length)
             {
-                if (dictionary.Contains(inputData[i]))
+                int bestOffset = 0;
+                int bestLength = 0;
+
+                if (windowSize > 0)
                 {
-                    int[] matches = FindAllMatches(ref dictionary, inputData[i]);
-                    int[] bestMatch = FindLargestMatch(ref dictionary, matches, ref inputData, i, maxMatchLength);
+                    int searchStart = Math.Max(0, windowStart);
+                    int searchEnd = windowStart + windowSize;
 
-                    if (bestMatch[1] > minimumMatchSize)
+                    for (int j = searchStart; j < searchEnd; j++)
                     {
-                        layoutBits.Add(0);
-                        bestMatch[0] = dictionary.Count - bestMatch[0];
-
-                        for (int j = 0; j < bestMatch[1]; j++)
+                        int windowPos = j % 4096;
+                        if (slidingWindow[windowPos] == inputData[i])
                         {
-                            dictionary.Add(inputData[i + j]);
-                        }
+                            int matchLength = 1;
+                            while (matchLength < 18 &&
+                                   i + matchLength < inputData.Length &&
+                                   (j + matchLength) < searchEnd &&
+                                   slidingWindow[(j + matchLength) % 4096] == inputData[i + matchLength])
+                            {
+                                matchLength++;
+                            }
 
-                        i = i + bestMatch[1] - 1;
-                        compressedData.Add(bestMatch);
-                        decompressedSize += bestMatch[1];
+                            if (matchLength >= 3 && matchLength > bestLength)
+                            {
+                                bestLength = matchLength;
+                                bestOffset = (searchEnd - j);
+                            }
+                        }
                     }
-                    else
+                }
+
+                if (bestLength >= 3)
+                {
+                    layoutBits.Add(0);
+                    compressedData.Add((bestOffset, bestLength));
+
+                    for (int j = 0; j < bestLength; j++)
                     {
-                        layoutBits.Add(1);
-                        uncompressedData.Add(inputData[i]);
-                        dictionary.Add(inputData[i]);
-                        decompressedSize++;
+                        slidingWindow[(windowStart + windowSize) % 4096] = inputData[i + j];
+                        if (windowSize < 4096) windowSize++;
+                        else windowStart = (windowStart + 1) % 4096;
                     }
+
+                    i += bestLength;
+                    totalProcessed += bestLength;
                 }
                 else
                 {
                     layoutBits.Add(1);
                     uncompressedData.Add(inputData[i]);
-                    dictionary.Add(inputData[i]);
-                    decompressedSize++;
+                    slidingWindow[(windowStart + windowSize) % 4096] = inputData[i];
+                    if (windowSize < 4096) windowSize++;
+                    else windowStart = (windowStart + 1) % 4096;
+
+                    i++;
+                    totalProcessed++;
                 }
 
-                if (dictionary.Count > maxDictionarySize)
+                if (windowStart + windowSize > 4096)
                 {
-                    int overflow = dictionary.Count - maxDictionarySize;
-                    dictionary.RemoveRange(0, overflow);
+                    int overflow = (windowStart + windowSize) - 4096;
+                    windowStart = overflow;
+                    windowSize = 4096;
                 }
             }
 
-            return BuildMIO0CompressedBlock(ref layoutBits, ref uncompressedData, ref compressedData, decompressedSize);
+            return BuildMIO0CompressedBlock(layoutBits, uncompressedData, compressedData, inputData.Length);
         }
 
-        private int[] FindAllMatches(ref List<byte> dictionary, byte targetByte)
+        private byte[] BuildMIO0CompressedBlock(List<byte> layoutBits, List<byte> uncompressedData, List<(int offset, int length)> compressedData, int decompressedSize)
         {
-            List<int> matches = new List<int>();
-            for (int i = 0; i < dictionary.Count; i++)
-            {
-                if (dictionary[i] == targetByte)
-                {
-                    matches.Add(i);
-                }
-            }
-            return matches.ToArray();
-        }
+            List<byte> output = new List<byte>();
 
-        private int[] FindLargestMatch(ref List<byte> dictionary, int[] matches, ref byte[] file, int fileIndex, int maxMatchLength)
-        {
-            int bestMatchIndex = -1;
-            int bestMatchLength = 0;
+            output.AddRange(System.Text.Encoding.ASCII.GetBytes("MIO0"));
 
-            foreach (int matchIndex in matches)
-            {
-                int matchLength = 1;
-                while (matchLength < maxMatchLength &&
-                       matchIndex + matchLength < dictionary.Count &&
-                       fileIndex + matchLength < file.Length &&
-                       dictionary[matchIndex + matchLength] == file[fileIndex + matchLength])
-                {
-                    matchLength++;
-                }
+            byte[] sizeBytes = BitConverter.GetBytes(decompressedSize);
+            Array.Reverse(sizeBytes);
+            output.AddRange(sizeBytes);
 
-                if (matchLength > bestMatchLength)
-                {
-                    bestMatchLength = matchLength;
-                    bestMatchIndex = matchIndex;
-                }
-            }
-
-            return new int[] { bestMatchIndex, bestMatchLength };
-        }
-
-        private byte[] BuildMIO0CompressedBlock(ref List<byte> layoutBits, ref List<byte> uncompressedData, ref List<int[]> offsetLengthPairs, int decompressedSize)
-        {
-            List<byte> finalMIO0Block = new List<byte>();
             List<byte> layoutBytes = new List<byte>();
-            List<byte> compressedDataBytes = new List<byte>();
-
-            finalMIO0Block.AddRange(System.Text.Encoding.ASCII.GetBytes("MIO0"));
-
-            byte[] decompressedSizeArray = BitConverter.GetBytes(decompressedSize);
-            Array.Reverse(decompressedSizeArray);
-            finalMIO0Block.AddRange(decompressedSizeArray);
-
-            while (layoutBits.Count > 0)
+            for (int i = 0; i < layoutBits.Count; i += 8)
             {
-                while (layoutBits.Count < 8)
+                byte layoutByte = 0;
+                for (int j = 0; j < 8 && i + j < layoutBits.Count; j++)
                 {
-                    layoutBits.Add(0);
+                    if (layoutBits[i + j] == 1)
+                    {
+                        layoutByte |= (byte)(1 << (7 - j));
+                    }
                 }
-
-                string layoutBitsString = string.Empty;
-                for (int i = 0; i < 8; i++)
-                {
-                    layoutBitsString += layoutBits[i].ToString();
-                }
-
-                byte layoutByte = Convert.ToByte(layoutBitsString, 2);
                 layoutBytes.Add(layoutByte);
-                layoutBits.RemoveRange(0, 8);
-            }
-
-            foreach (int[] offsetLengthPair in offsetLengthPairs)
-            {
-                int offset = offsetLengthPair[0] - 1;
-                int length = offsetLengthPair[1] - 3;
-
-                int compressedInt = (length << 12) | offset;
-                byte[] compressed2Byte = new byte[2];
-                compressed2Byte[0] = (byte)(compressedInt & 0xFF);
-                compressed2Byte[1] = (byte)((compressedInt >> 8) & 0xFF);
-
-                compressedDataBytes.Add(compressed2Byte[1]);
-                compressedDataBytes.Add(compressed2Byte[0]);
             }
 
             while (layoutBytes.Count % 4 != 0)
@@ -246,24 +210,35 @@
                 layoutBytes.Add(0);
             }
 
+            List<byte> compressedBytes = new List<byte>();
+            foreach (var (offset, length) in compressedData)
+            {
+                int encodedOffset = offset - 1;
+                int encodedLength = length - 3;
+
+                byte byte1 = (byte)((encodedLength << 4) | ((encodedOffset >> 8) & 0x0F));
+                byte byte2 = (byte)(encodedOffset & 0xFF);
+
+                compressedBytes.Add(byte1);
+                compressedBytes.Add(byte2);
+            }
+
             int compressedOffset = 16 + layoutBytes.Count;
-            int uncompressedOffset = compressedOffset + compressedDataBytes.Count;
+            int uncompressedOffset = compressedOffset + compressedBytes.Count;
 
-            byte[] compressedOffsetArray = BitConverter.GetBytes(compressedOffset);
-            Array.Reverse(compressedOffsetArray);
-            finalMIO0Block.AddRange(compressedOffsetArray);
+            byte[] compOffsetBytes = BitConverter.GetBytes(compressedOffset);
+            Array.Reverse(compOffsetBytes);
+            output.AddRange(compOffsetBytes);
 
-            byte[] uncompressedOffsetArray = BitConverter.GetBytes(uncompressedOffset);
-            Array.Reverse(uncompressedOffsetArray);
-            finalMIO0Block.AddRange(uncompressedOffsetArray);
+            byte[] uncompOffsetBytes = BitConverter.GetBytes(uncompressedOffset);
+            Array.Reverse(uncompOffsetBytes);
+            output.AddRange(uncompOffsetBytes);
 
-            finalMIO0Block.AddRange(layoutBytes);
+            output.AddRange(layoutBytes);
+            output.AddRange(compressedBytes);
+            output.AddRange(uncompressedData);
 
-            finalMIO0Block.AddRange(compressedDataBytes);
-
-            finalMIO0Block.AddRange(uncompressedData);
-
-            return finalMIO0Block.ToArray();
+            return output.ToArray();
         }
 
         private string GetRelativePath(string rootPath, string fullPath)
