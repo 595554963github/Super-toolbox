@@ -1,19 +1,12 @@
-﻿using System.Diagnostics;
-using System.Reflection;
+using System.Text;
 
 namespace super_toolbox
 {
     public class Wflz_Decompressor : BaseExtractor
     {
-        private static string _tempExePath;
         public new event EventHandler<string>? DecompressionStarted;
         public new event EventHandler<string>? DecompressionProgress;
         public new event EventHandler<string>? DecompressionError;
-
-        static Wflz_Decompressor()
-        {
-            _tempExePath = ExtractWflzToTemp();
-        }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -42,7 +35,7 @@ namespace super_toolbox
                     Directory.CreateDirectory(decompressedDir);
 
                     TotalFilesToDecompress = filesToProcess.Length;
-                    DecompressionStarted?.Invoke(this, $"开始解压，共{TotalFilesToDecompress}个文件");
+                    DecompressionStarted?.Invoke(this, $"开始解压,共{TotalFilesToDecompress}个文件");
 
                     int processedFiles = 0;
                     foreach (var filePath in filesToProcess)
@@ -68,7 +61,7 @@ namespace super_toolbox
                     }
 
                     OnDecompressionCompleted();
-                    DecompressionProgress?.Invoke(this, $"解压完成，共解压{TotalFilesToDecompress}个文件");
+                    DecompressionProgress?.Invoke(this, $"解压完成,共解压{TotalFilesToDecompress}个文件");
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -94,67 +87,42 @@ namespace super_toolbox
         {
             try
             {
-                string workingDirectory = Path.GetDirectoryName(inputPath) ?? string.Empty;
-                string fileName = Path.GetFileName(inputPath);
+                byte[] compressedData = File.ReadAllBytes(inputPath);
 
-                if (string.IsNullOrEmpty(workingDirectory))
+                if (compressedData.Length < 16)
                 {
-                    DecompressionError?.Invoke(this, "无法确定工作目录");
+                    DecompressionError?.Invoke(this, "文件大小不足");
                     return false;
                 }
 
-                ProcessStartInfo startInfo = new ProcessStartInfo
+                string signature = Encoding.ASCII.GetString(compressedData, 0, 4);
+                if (signature != "WFLZ" && signature != "ZLF")
                 {
-                    FileName = _tempExePath,
-                    Arguments = $"d \"{fileName}\"",
-                    WorkingDirectory = workingDirectory,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
-
-                using (Process process = new Process())
-                {
-                    process.StartInfo = startInfo;
-                    process.Start();
-                    string output = process.StandardOutput.ReadToEnd();
-                    string error = process.StandardError.ReadToEnd();
-                    process.WaitForExit();
-
-                    if (process.ExitCode != 0)
-                    {
-                        DecompressionError?.Invoke(this, $"WFLZ解压错误:{error}");
-                        return false;
-                    }
-
-                    string decompressedFileName = Path.GetFileNameWithoutExtension(fileName);
-                    string decompressedFile = Path.Combine(workingDirectory, decompressedFileName);
-
-                    if (File.Exists(decompressedFile))
-                    {
-                        string finalOutputPath = Path.Combine(outputDir, Path.GetFileName(decompressedFile));
-
-                        string? finalOutputDir = Path.GetDirectoryName(finalOutputPath);
-                        if (!string.IsNullOrEmpty(finalOutputDir) && !Directory.Exists(finalOutputDir))
-                        {
-                            Directory.CreateDirectory(finalOutputDir);
-                        }
-
-                        if (File.Exists(finalOutputPath))
-                        {
-                            File.Delete(finalOutputPath);
-                        }
-
-                        File.Move(decompressedFile, finalOutputPath);
-                        return true;
-                    }
-                    else
-                    {
-                        DecompressionError?.Invoke(this, $"找不到解压后的文件:{decompressedFileName}");
-                        return false;
-                    }
+                    DecompressionError?.Invoke(this, "无效的WFLZ文件签名");
+                    return false;
                 }
+
+                uint decompressedSize = BitConverter.ToUInt32(compressedData, 8);
+                byte[] decompressedData = new byte[decompressedSize];
+
+                wfLZ_Decompress(compressedData, decompressedData);
+
+                string originalFileName = Path.GetFileNameWithoutExtension(inputPath);
+                string outputPath = Path.Combine(outputDir, originalFileName);
+
+                string? outputDirectory = Path.GetDirectoryName(outputPath);
+                if (!string.IsNullOrEmpty(outputDirectory) && !Directory.Exists(outputDirectory))
+                {
+                    Directory.CreateDirectory(outputDirectory);
+                }
+
+                if (File.Exists(outputPath))
+                {
+                    File.Delete(outputPath);
+                }
+
+                File.WriteAllBytes(outputPath, decompressedData);
+                return true;
             }
             catch (Exception ex)
             {
@@ -163,42 +131,61 @@ namespace super_toolbox
             }
         }
 
-        private static string ExtractWflzToTemp()
+        private const int WFLZ_BLOCK_SIZE = 4;
+        private const int WFLZ_MIN_MATCH_LEN = WFLZ_BLOCK_SIZE + 1;
+
+        private struct wfLZ_Block
         {
-            string tempPath = Path.Combine(Path.GetTempPath(), "supertoolbox_temp", "wfLZ.exe");
-            string tempDir = Path.GetDirectoryName(tempPath) ?? throw new InvalidOperationException("无法确定临时目录路径");
+            public ushort dist;
+            public byte length;
+            public byte numLiterals;
+        }
 
-            if (!Directory.Exists(tempDir))
+        private void wfLZ_Decompress(byte[] input, byte[] output)
+        {
+            int srcIndex = 16;
+            int dstIndex = 0;
+            byte numLiterals = input[15];
+            wfLZ_Block block;
+
+        WF_LZ_LITERALS:
+            output[dstIndex++] = input[srcIndex++];
+            numLiterals--;
+            if (numLiterals > 0) goto WF_LZ_LITERALS;
+
+            WF_LZ_BLOCK:
+            block.dist = BitConverter.ToUInt16(input, srcIndex);
+            block.length = input[srcIndex + 2];
+            block.numLiterals = input[srcIndex + 3];
+            numLiterals = block.numLiterals;
+
+            ushort dist = block.dist;
+            ushort len = block.length;
+
+            if (len != 0)
             {
-                Directory.CreateDirectory(tempDir);
-            }
-
-            if (File.Exists(tempPath))
-            {
-                return tempPath;
-            }
-
-            var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = assembly.GetManifestResourceNames()
-                .FirstOrDefault(name => name.EndsWith("wfLZ.exe"));
-
-            if (string.IsNullOrEmpty(resourceName))
-            {
-                throw new FileNotFoundException("找不到嵌入的wfLZ.exe资源");
-            }
-
-            using (var resourceStream = assembly.GetManifestResourceStream(resourceName))
-            {
-                if (resourceStream == null)
-                    throw new FileNotFoundException("无法读取嵌入的wfLZ.exe资源");
-
-                using (var fileStream = File.Create(tempPath))
+                len += (ushort)(WFLZ_MIN_MATCH_LEN - 1);
+                int copySrc = dstIndex - dist;
+                for (int i = 0; i < len; i++)
                 {
-                    resourceStream.CopyTo(fileStream);
+                    output[dstIndex + i] = output[copySrc + i];
                 }
+                dstIndex += len;
             }
+            srcIndex += WFLZ_BLOCK_SIZE;
 
-            return tempPath;
+            if (numLiterals == 0)
+            {
+                if (dist == 0 && len == 0)
+                {
+                    return;
+                }
+                goto WF_LZ_BLOCK;
+            }
+            else
+            {
+                goto WF_LZ_LITERALS;
+            }
         }
 
         public override void Extract(string directoryPath)
