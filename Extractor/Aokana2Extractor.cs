@@ -19,7 +19,7 @@ namespace super_toolbox
                 return;
             }
 
-            ExtractionStarted?.Invoke(this, $"开始从目录 {directoryPath} 提取Aokana2 DAT文件");
+            ExtractionStarted?.Invoke(this, $"开始从目录{directoryPath}提取Aokana2 DAT文件");
 
             try
             {
@@ -49,12 +49,12 @@ namespace super_toolbox
                     }
                     catch (Exception ex)
                     {
-                        ExtractionError?.Invoke(this, $"处理文件{datFile} 时出错:{ex.Message}");
+                        ExtractionError?.Invoke(this, $"处理文件{datFile}时出错:{ex.Message}");
                         OnExtractionFailed($"处理文件{datFile} 时出错:{ex.Message}");
                     }
                 }
 
-                ExtractionProgress?.Invoke(this, $"提取完成，共提取{allExtractedFileNames.Count}个文件");
+                ExtractionProgress?.Invoke(this, $"提取完成,共提取{allExtractedFileNames.Count}个文件");
                 OnExtractionCompleted();
             }
             catch (OperationCanceledException)
