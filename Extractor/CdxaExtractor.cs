@@ -50,7 +50,7 @@ namespace super_toolbox
         {
             if (!Directory.Exists(directoryPath))
             {
-                OnExtractionFailed($"目录不存在: {directoryPath}");
+                OnExtractionFailed($"目录不存在:{directoryPath}");
                 return;
             }
 
@@ -107,11 +107,11 @@ namespace super_toolbox
                         OnFileExtracted(fileName);
                         extractedCount++;
 
-                        OnExtractionProgress($"已提取: {Path.GetFileName(fileName)}");
+                        OnExtractionProgress($"已提取:{Path.GetFileName(fileName)}");
                     }
                 }), cancellationToken);
 
-            OnExtractionProgress($"处理完成: {Path.GetFileName(filePath)} -> 提取出{extractedCount}个文件");
+            OnExtractionProgress($"处理完成:{Path.GetFileName(filePath)}->提取出{extractedCount}个文件");
         }
 
         public override void Extract(string directoryPath)
