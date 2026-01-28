@@ -2,135 +2,87 @@ namespace super_toolbox
 {
     public class BaaExtractor : BaseExtractor
     {
-        private const int DumpBufferSize = 512;
+        public new event EventHandler<string>? ExtractionStarted;
+        public new event EventHandler<string>? ExtractionProgress;
+        public new event EventHandler<string>? ExtractionError;
+
+        public override void Extract(string directoryPath)
+        {
+            ExtractAsync(directoryPath).Wait();
+        }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
+            List<string> extractedFiles = new List<string>();
+
             if (!Directory.Exists(directoryPath))
             {
-                OnExtractionFailed($"错误:{directoryPath}不是有效的目录");
+                ExtractionError?.Invoke(this, $"源文件夹{directoryPath}不存在");
+                OnExtractionFailed($"源文件夹{directoryPath}不存在");
                 return;
             }
 
-            var baaFiles = Directory.GetFiles(directoryPath, "*.baa", SearchOption.AllDirectories)
-                .Where(file => !Directory.Exists(Path.ChangeExtension(file, null))) 
+            ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
+
+            var baaFiles = Directory.EnumerateFiles(directoryPath, "*.baa", SearchOption.AllDirectories)
+                .Where(file => !Directory.Exists(Path.ChangeExtension(file, null)))
                 .ToList();
 
-            TotalFilesToExtract = CountTotalFilesToExtract(baaFiles);
-            if (TotalFilesToExtract == 0)
-            {
-                OnExtractionCompleted();
-                return;
-            }
+            TotalFilesToExtract = baaFiles.Count;
+            int processedFiles = 0;
 
-            try
+            foreach (var baaFile in baaFiles)
             {
-                await Task.Run(() =>
-                {
-                    Parallel.ForEach(baaFiles, new ParallelOptions
-                    {
-                        MaxDegreeOfParallelism = Environment.ProcessorCount,
-                        CancellationToken = cancellationToken
-                    }, baaFilePath =>
-                    {
-                        try
-                        {
-                            ThrowIfCancellationRequested(cancellationToken);
-                            ProcessBaaFile(baaFilePath, cancellationToken);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            throw;
-                        }
-                        catch (Exception ex)
-                        {
-                            OnExtractionFailed($"处理{Path.GetFileName(baaFilePath)}时出错: {ex.Message}");
-                        }
-                    });
-                }, cancellationToken);
+                ThrowIfCancellationRequested(cancellationToken);
+                ExtractionProgress?.Invoke(this, $"正在处理文件:{Path.GetFileName(baaFile)}");
 
-                if (ExtractedFileCount == TotalFilesToExtract)
-                {
-                    OnExtractionCompleted();
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                OnExtractionFailed("操作已取消");
-            }
-            catch (Exception ex)
-            {
-                OnExtractionFailed($"提取失败: {ex.Message}");
-            }
-        }
-
-        private int CountTotalFilesToExtract(List<string> baaFiles)
-        {
-            int count = 0;
-            foreach (var baaFilePath in baaFiles)
-            {
                 try
                 {
-                    using (var stream = new FileStream(baaFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    using (var reader = new BinaryReader(stream))
+                    string outputDir = Path.Combine(Path.GetDirectoryName(baaFile) ?? directoryPath,
+                                                   $"{Path.GetFileNameWithoutExtension(baaFile)}");
+                    Directory.CreateDirectory(outputDir);
+
+                    using (var fileStream = new FileStream(baaFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        byte[] header = reader.ReadBytes(4);
-                        if (!CompareBytes(header, new byte[] { (byte)'A', (byte)'A', (byte)'_', (byte)'<' }))
-                            continue;
-
-                        int fileCount = 0;
-                        bool continueProcessing = true;
-
-                        while (continueProcessing)
-                        {
-                            if (stream.Position + 4 > stream.Length)
-                                break;
-
-                            byte[] chunkId = reader.ReadBytes(4);
-                            string chunkName = System.Text.Encoding.ASCII.GetString(chunkId);
-
-                            switch (chunkName)
-                            {
-                                case "bst ":
-                                case "bstn":
-                                case "ws  ":
-                                case "bsc ":
-                                    fileCount++;
-                                    break;
-                                case "bnk ":
-                                    fileCount++; 
-                                    break;
-                                case "bfca":
-                                    break;
-                                case ">_AA":
-                                    continueProcessing = false;
-                                    break;
-                            }
-                        }
-                        count += fileCount;
+                        await ProcessBaaFile(fileStream, outputDir, extractedFiles, cancellationToken);
                     }
                 }
-                catch
+                catch (OperationCanceledException)
                 {
+                    ExtractionError?.Invoke(this, "提取操作已取消");
+                    OnExtractionFailed("提取操作已取消");
+                    throw;
                 }
+                catch (Exception e)
+                {
+                    ExtractionError?.Invoke(this, $"处理文件{baaFile}时出错:{e.Message}");
+                    OnExtractionFailed($"处理文件{baaFile}时出错:{e.Message}");
+                }
+
+                processedFiles++;
             }
-            return count;
+
+            if (extractedFiles.Count > 0)
+            {
+                ExtractionProgress?.Invoke(this, $"处理完成,共提取出{extractedFiles.Count}个文件");
+            }
+            else
+            {
+                ExtractionProgress?.Invoke(this, "处理完成,未找到有效文件");
+            }
+            OnExtractionCompleted();
         }
 
-        private void ProcessBaaFile(string baaFilePath, CancellationToken cancellationToken)
+        private async Task ProcessBaaFile(FileStream fileStream, string outputDir, List<string> extractedFiles, CancellationToken cancellationToken)
         {
-            string fileName = Path.GetFileNameWithoutExtension(baaFilePath);
-            string fileDirectory = Path.GetDirectoryName(baaFilePath)!;
-            string extractDir = Path.Combine(fileDirectory, fileName);
-            Directory.CreateDirectory(extractDir);
+            string fileName = Path.GetFileNameWithoutExtension(fileStream.Name);
 
-            using (var stream = new FileStream(baaFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (var reader = new BinaryReader(stream))
+            using (var reader = new BinaryReader(fileStream, System.Text.Encoding.ASCII, true))
             {
                 byte[] header = reader.ReadBytes(4);
                 if (!CompareBytes(header, new byte[] { (byte)'A', (byte)'A', (byte)'_', (byte)'<' }))
                 {
-                    OnExtractionFailed($"{baaFilePath} 不是有效的BAA文件");
+                    ExtractionError?.Invoke(this, $"{fileStream.Name} 不是有效的BAA文件");
                     return;
                 }
 
@@ -140,7 +92,7 @@ namespace super_toolbox
                 while (continueProcessing)
                 {
                     ThrowIfCancellationRequested(cancellationToken);
-                    if (stream.Position + 4 > stream.Length)
+                    if (fileStream.Position + 4 > fileStream.Length)
                         break;
 
                     byte[] chunkId = reader.ReadBytes(4);
@@ -149,78 +101,95 @@ namespace super_toolbox
                     switch (chunkName)
                     {
                         case "bst ":
-                            string bstPath = ProcessBstChunk(reader, stream, extractDir, fileName);
-                            OnFileExtracted(bstPath); 
+                            await ProcessBstChunk(reader, fileStream, outputDir, fileName, extractedFiles, cancellationToken);
                             break;
                         case "bstn":
-                            string bstnPath = ProcessBstnChunk(reader, stream, extractDir, fileName);
-                            OnFileExtracted(bstnPath);
+                            await ProcessBstnChunk(reader, fileStream, outputDir, fileName, extractedFiles, cancellationToken);
                             break;
                         case "ws  ":
-                            string wsPath = ProcessWsChunk(reader, stream, extractDir, fileName);
-                            OnFileExtracted(wsPath);
+                            await ProcessWsChunk(reader, fileStream, outputDir, fileName, extractedFiles, cancellationToken);
                             break;
                         case "bnk ":
-                            string bnkPath = ProcessBnkChunk(reader, stream, extractDir, fileName, ref ibnkCount);
-                            OnFileExtracted(bnkPath);
+                            await ProcessBnkChunk(reader, fileStream, outputDir, fileName, ibnkCount, extractedFiles, cancellationToken);
+                            ibnkCount++;
                             break;
                         case "bsc ":
-                            string bscPath = ProcessBscChunk(reader, stream, extractDir, fileName);
-                            OnFileExtracted(bscPath);
+                            await ProcessBscChunk(reader, fileStream, outputDir, fileName, extractedFiles, cancellationToken);
                             break;
                         case "bfca":
-                            ProcessBfcaChunk(reader);
+                            reader.ReadUInt32();
                             break;
                         case ">_AA":
                             continueProcessing = false;
                             break;
                         default:
-                            OnExtractionFailed($"未识别的块: {chunkName}");
+                            ExtractionError?.Invoke(this, $"未识别的块: {chunkName}");
                             return;
                     }
                 }
             }
         }
 
-        private string ProcessBstChunk(BinaryReader reader, FileStream stream, string extractDir, string fileName)
+        private async Task ProcessBstChunk(BinaryReader reader, FileStream stream, string outputDir, string fileName, List<string> extractedFiles, CancellationToken cancellationToken)
         {
             int bstOffset = Read32(reader);
             int bstnOffset = Read32(reader);
             int size = bstnOffset - bstOffset;
 
-            string outputPath = Path.Combine(extractDir, $"{fileName}.bst");
-            DumpToFile(stream, outputPath, bstOffset, size);
-            return outputPath; 
+            if (size <= 0) return;
+
+            string outputPath = Path.Combine(outputDir, $"{fileName}.bst");
+            outputPath = GetUniqueFilePath(outputPath, extractedFiles);
+
+            await DumpToFile(stream, outputPath, bstOffset, size, cancellationToken);
+
+            extractedFiles.Add(outputPath);
+            OnFileExtracted(outputPath);
+            ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(outputPath)}");
         }
 
-        private string ProcessBstnChunk(BinaryReader reader, FileStream stream, string extractDir, string fileName)
+        private async Task ProcessBstnChunk(BinaryReader reader, FileStream stream, string outputDir, string fileName, List<string> extractedFiles, CancellationToken cancellationToken)
         {
             int bstnOffset = Read32(reader);
             int bstnEndOffset = Read32(reader);
             int size = bstnEndOffset - bstnOffset;
 
-            string outputPath = Path.Combine(extractDir, $"{fileName}.bstn");
-            DumpToFile(stream, outputPath, bstnOffset, size);
-            return outputPath;
+            if (size <= 0) return;
+
+            string outputPath = Path.Combine(outputDir, $"{fileName}.bstn");
+            outputPath = GetUniqueFilePath(outputPath, extractedFiles);
+
+            await DumpToFile(stream, outputPath, bstnOffset, size, cancellationToken);
+
+            extractedFiles.Add(outputPath);
+            OnFileExtracted(outputPath);
+            ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(outputPath)}");
         }
 
-        private string ProcessWsChunk(BinaryReader reader, FileStream stream, string extractDir, string fileName)
+        private async Task ProcessWsChunk(BinaryReader reader, FileStream stream, string outputDir, string fileName, List<string> extractedFiles, CancellationToken cancellationToken)
         {
             int wsType = Read32(reader);
             int wsOffset = Read32(reader);
-            _ = Read32(reader); 
+            _ = Read32(reader);
 
             long currentPos = stream.Position;
             stream.Position = wsOffset + 4;
             int wsSize = Read32(reader);
             stream.Position = currentPos;
 
-            string outputPath = Path.Combine(extractDir, $"{fileName}.{wsType}.wsys");
-            DumpToFile(stream, outputPath, wsOffset, wsSize);
-            return outputPath;
+            if (wsSize <= 0) return;
+
+            string outputPath = Path.Combine(outputDir, $"{fileName}.{wsType}.wsys");
+            outputPath = GetUniqueFilePath(outputPath, extractedFiles);
+
+            await DumpToFile(stream, outputPath, wsOffset, wsSize, cancellationToken);
+
+            extractedFiles.Add(outputPath);
+            OnFileExtracted(outputPath);
+            ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(outputPath)}");
         }
 
-        private string ProcessBnkChunk(BinaryReader reader, FileStream stream, string extractDir, string fileName, ref int ibnkCount)
+        private async Task ProcessBnkChunk(BinaryReader reader, FileStream stream, string outputDir, string fileName, int ibnkCount, List<string> extractedFiles, CancellationToken cancellationToken)
         {
             int bnkType = Read32(reader);
             int bnkOffset = Read32(reader);
@@ -230,48 +199,58 @@ namespace super_toolbox
             int bnkLen = Read32(reader);
             stream.Position = currentPos;
 
-            string outputPath = Path.Combine(extractDir, $"{fileName}.{bnkType}_{ibnkCount++}.bnk");
-            DumpToFile(stream, outputPath, bnkOffset, bnkLen);
-            return outputPath;
+            if (bnkLen <= 0) return;
+
+            string outputPath = Path.Combine(outputDir, $"{fileName}.{bnkType}_{ibnkCount}.bnk");
+            outputPath = GetUniqueFilePath(outputPath, extractedFiles);
+
+            await DumpToFile(stream, outputPath, bnkOffset, bnkLen, cancellationToken);
+
+            extractedFiles.Add(outputPath);
+            OnFileExtracted(outputPath);
+            ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(outputPath)}");
         }
 
-        private string ProcessBscChunk(BinaryReader reader, FileStream stream, string extractDir, string fileName)
+        private async Task ProcessBscChunk(BinaryReader reader, FileStream stream, string outputDir, string fileName, List<string> extractedFiles, CancellationToken cancellationToken)
         {
             int bscOffset = Read32(reader);
             int bscEnd = Read32(reader);
             int size = bscEnd - bscOffset;
 
-            string outputPath = Path.Combine(extractDir, $"{fileName}.bsc");
-            DumpToFile(stream, outputPath, bscOffset, size);
-            return outputPath;
-        }
-
-        private void ProcessBfcaChunk(BinaryReader reader)
-        {
-            _ = Read32(reader);
-        }
-
-        private void DumpToFile(FileStream inStream, string outputPath, int offset, int size)
-        {
             if (size <= 0) return;
 
-            var buffer = new byte[DumpBufferSize];
-            int bytesRead;
+            string outputPath = Path.Combine(outputDir, $"{fileName}.bsc");
+            outputPath = GetUniqueFilePath(outputPath, extractedFiles);
+
+            await DumpToFile(stream, outputPath, bscOffset, size, cancellationToken);
+
+            extractedFiles.Add(outputPath);
+            OnFileExtracted(outputPath);
+            ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(outputPath)}");
+        }
+
+        private async Task DumpToFile(FileStream inStream, string outputPath, int offset, int size, CancellationToken cancellationToken)
+        {
+            const int bufferSize = 4096;
+            var buffer = new byte[bufferSize];
             long originalPosition = inStream.Position;
 
             try
             {
                 inStream.Position = offset;
 
-                using (var outStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+                using (var outStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, true))
                 {
-                    while (size > 0)
+                    int bytesRemaining = size;
+                    while (bytesRemaining > 0)
                     {
-                        bytesRead = inStream.Read(buffer, 0, Math.Min(size, DumpBufferSize));
+                        int bytesToRead = Math.Min(bufferSize, bytesRemaining);
+                        int bytesRead = await inStream.ReadAsync(buffer, 0, bytesToRead, cancellationToken);
+
                         if (bytesRead == 0) break;
 
-                        outStream.Write(buffer, 0, bytesRead);
-                        size -= bytesRead;
+                        await outStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+                        bytesRemaining -= bytesRead;
                     }
                 }
             }
@@ -297,9 +276,26 @@ namespace super_toolbox
             return true;
         }
 
-        public override void Extract(string directoryPath)
+        private string GetUniqueFilePath(string filePath, List<string> extractedFiles)
         {
-            ExtractAsync(directoryPath).Wait();
+            if (!File.Exists(filePath) && !extractedFiles.Contains(filePath))
+            {
+                return filePath;
+            }
+
+            string directory = Path.GetDirectoryName(filePath) ?? string.Empty;
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
+            string fileExtension = Path.GetExtension(filePath);
+
+            int duplicateCount = 1;
+            string newFilePath;
+            do
+            {
+                newFilePath = Path.Combine(directory, $"{fileNameWithoutExtension}_{duplicateCount}{fileExtension}");
+                duplicateCount++;
+            } while (File.Exists(newFilePath) || extractedFiles.Contains(newFilePath));
+
+            return newFilePath;
         }
     }
 }
