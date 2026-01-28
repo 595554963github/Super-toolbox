@@ -1,20 +1,52 @@
-﻿using System.Diagnostics;
 using System.Reflection;
-using System.Text;
+using System.Runtime.InteropServices;
 
 namespace super_toolbox
 {
     public class Wflz_Compressor : BaseExtractor
     {
-        private static string _tempExePath;
         public new event EventHandler<string>? CompressionStarted;
         public new event EventHandler<string>? CompressionProgress;
         public new event EventHandler<string>? CompressionError;
 
         static Wflz_Compressor()
         {
-            _tempExePath = ExtractWflzToTemp();
+            LoadWflzDll();
         }
+
+        private static void LoadWflzDll()
+        {
+            string dllPath = Path.Combine(TempDllDirectory, "wfLZ.dll");
+
+            if (!File.Exists(dllPath))
+            {
+                using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("embedded.wfLZ.dll"))
+                {
+                    if (stream == null)
+                        throw new FileNotFoundException("嵌入的wflz资源未找到");
+
+                    byte[] buffer = new byte[stream.Length];
+                    stream.Read(buffer, 0, buffer.Length);
+                    File.WriteAllBytes(dllPath, buffer);
+                }
+            }
+
+            NativeLibrary.Load(dllPath);
+        }
+
+        [DllImport("wfLZ.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern uint wfLZ_GetMaxCompressedSize(uint inSize);
+
+        [DllImport("wfLZ.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern uint wfLZ_GetWorkMemSize();
+
+        [DllImport("wfLZ.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern uint wfLZ_CompressFast(
+            [In] byte[] inData,
+            uint inSize,
+            [Out] byte[] outData,
+            [In] byte[] workMem,
+            uint swapEndian);
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -83,7 +115,7 @@ namespace super_toolbox
                     }
 
                     OnCompressionCompleted();
-                    CompressionProgress?.Invoke(this, $"压缩完成，共压缩{TotalFilesToCompress}个文件");
+                    CompressionProgress?.Invoke(this, $"压缩完成,共压缩{TotalFilesToCompress}个文件");
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -103,50 +135,28 @@ namespace super_toolbox
         {
             try
             {
-                var process = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = _tempExePath,
-                        Arguments = $"c \"{inputPath}\"",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        StandardOutputEncoding = Encoding.UTF8,
-                        StandardErrorEncoding = Encoding.UTF8
-                    }
-                };
+                byte[] inputData = File.ReadAllBytes(inputPath);
+                uint maxCompressedSize = wfLZ_GetMaxCompressedSize((uint)inputData.Length);
+                byte[] workMem = new byte[wfLZ_GetWorkMemSize()];
+                byte[] outputData = new byte[maxCompressedSize];
 
-                process.Start();
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-                process.WaitForExit();
+                uint compressedSize = wfLZ_CompressFast(
+                    inputData,
+                    (uint)inputData.Length,
+                    outputData,
+                    workMem,
+                    0);
 
-                if (process.ExitCode == 0)
+                if (compressedSize > 0 && compressedSize <= maxCompressedSize)
                 {
-                    string expectedOutput = inputPath + ".wflz";
-                    if (File.Exists(expectedOutput))
-                    {
-                        if (!expectedOutput.Equals(outputPath, StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (File.Exists(outputPath))
-                            {
-                                File.Delete(outputPath);
-                            }
-                            File.Move(expectedOutput, outputPath);
-                        }
-                        return true;
-                    }
-                    else
-                    {
-                        CompressionError?.Invoke(this, $"压缩成功但未找到输出文件: {expectedOutput}");
-                        return false;
-                    }
+                    byte[] finalData = new byte[compressedSize];
+                    Array.Copy(outputData, 0, finalData, 0, (int)compressedSize);
+                    File.WriteAllBytes(outputPath, finalData);
+                    return true;
                 }
                 else
                 {
-                    CompressionError?.Invoke(this, $"压缩失败({Path.GetFileName(inputPath)}): {error}");
+                    CompressionError?.Invoke(this, $"压缩失败({Path.GetFileName(inputPath)}): 压缩大小为0或超出最大值");
                     return false;
                 }
             }
@@ -165,44 +175,6 @@ namespace super_toolbox
             Uri fullUri = new Uri(fullPath);
             return Uri.UnescapeDataString(rootUri.MakeRelativeUri(fullUri).ToString()
                 .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
-        }
-
-        private static string ExtractWflzToTemp()
-        {
-            string tempPath = Path.Combine(Path.GetTempPath(), "supertoolbox_temp", "wfLZ.exe");
-            string tempDir = Path.GetDirectoryName(tempPath) ?? throw new InvalidOperationException("无法确定临时目录路径");
-
-            if (!Directory.Exists(tempDir))
-            {
-                Directory.CreateDirectory(tempDir);
-            }
-
-            if (File.Exists(tempPath))
-            {
-                return tempPath;
-            }
-
-            var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = assembly.GetManifestResourceNames()
-                .FirstOrDefault(name => name.EndsWith("wfLZ.exe"));
-
-            if (string.IsNullOrEmpty(resourceName))
-            {
-                throw new FileNotFoundException("找不到嵌入的wfLZ.exe资源");
-            }
-
-            using (var resourceStream = assembly.GetManifestResourceStream(resourceName))
-            {
-                if (resourceStream == null)
-                    throw new FileNotFoundException("无法读取嵌入的wfLZ.exe资源");
-
-                using (var fileStream = File.Create(tempPath))
-                {
-                    resourceStream.CopyTo(fileStream);
-                }
-            }
-
-            return tempPath;
         }
 
         public override void Extract(string directoryPath)
