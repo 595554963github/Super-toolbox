@@ -1,3 +1,4 @@
+using super_toolbox.Compress;
 using System.ComponentModel;
 using System.Text;
 
@@ -117,12 +118,12 @@ namespace super_toolbox
             { "LZSS - lzss自定义解压", ("解压", "使用自定义Lzss算法批量解压文件,基于c++代码修改而来") },
             { "LZSS - lzss标准压缩", ("压缩", "使用标准Lzss算法批量压缩文件") },
             { "LZSS - lzss标准解压", ("解压", "使用标准Lzss算法批量解压文件") },
+            { "LZX - lzx_compress", ("压缩", "使用Lzx算法批量压缩文件") },
+            { "LZX - lzx_decompress", ("解压", "使用Lzx算法批量解压文件") },
             { "Lzham - lzham自定义压缩", ("压缩", "使用自定义Lzham算法批量压缩文件") },
             { "Lzham - lzham自定义解压", ("解压", "使用自定义Lzham算法批量解压文件") },
             { "Lzham - Lzham标准压缩", ("压缩", "使用标准Lzham算法批量压缩文件") },
             { "Lzham - Lzham标准解压", ("解压", "使用标准Lzham算法批量解压文件") },
-            { "Minlz - minlz_compress", ("压缩", "使用Minlz算法批量压缩文件") },
-            { "Minlz - minlz_decompress", ("解压", "使用Minlz算法批量解压文件") },
             { "Mio0 - mio0自定义压缩", ("压缩", "使用Mio0自定义算法批量压缩文件") },
             { "Mio0 - mio0自定义解压", ("解压", "使用Mio0自定义算法批量解压文件") },
             { "Mio0 - mio0标准压缩", ("压缩", "使用Mio0标准算法批量压缩文件") },
@@ -158,7 +159,6 @@ namespace super_toolbox
             { "Mages - mpk打包器", ("其他档案", "Mages的mpk打包器,能将一个文件夹及子文件夹里的所有文件重新打包成mpk文件") },
             { "Gnf2Png", ("图片", "PS4平台的gnf到png的转换器,支持批量转换,解决了GFDstudio手动转换的繁琐问题") },
             { "wav2qoa - 转换qoa", ("音频", "wav到qoa的音频转换器,转换后的qoa格式可被ffmpeg识别,也可用foobar2000播放") },
-            { "CMVS_Engine - cmv", ("其他档案", "CMVS引擎的cmv视频解码器,代表作为天津罪,可解码该引擎的cmv视频文件") },
             { "SRPG_Studio - dts", ("其他档案", "SRPG Studio的dts提取器,代表作为刻印战记2_七圣英雄,可提取dts文件中的资源") },
             { "XACT Wave Bank - xwb打包器", ("其他档案", "XWB打包器,能将一个文件夹里的所有wav打包成xwb文件,为了打包成功建议使用pcm_s16le的wav文件,有些编码不支持") },
             { "PNG2ASTC", ("图片", "png到astc图像的转换器,支持批量转换,满足将png图片转换为astc格式的需求") },
@@ -217,6 +217,10 @@ namespace super_toolbox
             { "东方project系列 - cv2", ("图片", "东方project系列的cv2纹理转换器") },
             { "东方project系列 - cv3", ("音频", "东方project系列的cv3音频转换器") },
             { "东方project系列 - pal", ("图片", "东方project系列的pal调色板转换器") },
+            { "yuris引擎 - ymv", ("其他档案", "yuris引擎的ymv解码器") },
+            { "CMVS引擎 - CPZ6", ("其他档案", "紫社cmvs引擎的cpz解包器,已测试天津罪") },
+             { "CMVS引擎 - CPZ7", ("其他档案", "紫社cmvs引擎的cpz解包器,已测试青鸟") },
+            { "CMVS引擎 - pb3", ("图片", "紫社cmvs引擎的pb3转换器,已测试青鸟、天津罪") },
         };
         public SuperToolbox()
         {
@@ -326,7 +330,7 @@ namespace super_toolbox
         {
          "PNG编码ASTC", "ASTC解码PNG", "Gnf2Png", "PowerVR转换png","异度之刃 - tpl2bclim","异度之刃 - bclim2png","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal",
          "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS专用纹理 - tex","DXBC2HLSL","rad game tools - rada转换器","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3",
-         "wav2qoa - 转换qoa", "Wiiu - gtx转换器", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin/Cue转换GDI"
+         "wav2qoa - 转换qoa", "Wiiu - gtx转换器", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin/Cue转换GDI","CMVS引擎 - pb3"
         };
         private bool IsConverter(string formatName) => _converters.Contains(formatName);
         private async void btnExtract_Click(object sender, EventArgs e)
@@ -651,12 +655,12 @@ namespace super_toolbox
                 case "LZSS - lzss自定义解压": return new LzssCustom_Decompressor();
                 case "LZSS - lzss标准压缩": return new LzssStandard_Compressor();
                 case "LZSS - lzss标准解压": return new LzssStandard_Decompressor();
+                case "LZX - lzx_compress": return new Lzx_Compressor();
+                case "LZX - lzx_decompress": return new Lzx_Decompressor();
                 case "Lzham - lzham自定义压缩": return new LzhamCustom_Compressor();
                 case "Lzham - lzham自定义解压": return new LzhamCustom_Decompressor();
                 case "Lzham - Lzham标准压缩": return new LzhamStandard_Compressor();
                 case "Lzham - Lzham标准解压": return new LzhamStandard_Decompressor();
-                case "Minlz - minlz_compress": return new Minlz_Compressor();
-                case "Minlz - minlz_decompress": return new Minlz_Decompressor();
                 case "Mio0 - mio0自定义压缩": return new Mio0Custom_Compressor();
                 case "Mio0 - mio0自定义解压": return new Mio0Custom_Decompressor();
                 case "Mio0 - mio0标准压缩": return new Mio0Standard_Compressor();
@@ -692,7 +696,6 @@ namespace super_toolbox
                 case "Mages - mpk打包器": return new MagesMpkRepacker();
                 case "Gnf2Png": return new GNF2PNG_Converter();
                 case "wav2qoa - 转换qoa": return new Wav2Qoa_Converter();
-                case "CMVS_Engine - cmv": return new CmvDecoder();
                 case "SRPG_Studio - dts": return new DtsExtractor();
                 case "XACT Wave Bank - xwb打包器": return new XWBPacker();
                 case "PNG2ASTC": return new Png2Astc_Converter();
@@ -751,6 +754,10 @@ namespace super_toolbox
                 case "东方project系列 - cv2": return new Cv2_Converter();
                 case "东方project系列 - cv3": return new Cv3_Converter();
                 case "东方project系列 - pal": return new Pal_Converter();
+                case "yuris引擎 - ymv": return new YmvDecoder();
+                case "CMVS引擎 - CPZ6": return new CPZ6_Extractor();
+                case "CMVS引擎 - CPZ7": return new CPZ7_Extractor();
+                case "CMVS引擎 - pb3": return new PB3_Converter();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
