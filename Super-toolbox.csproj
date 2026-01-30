@@ -18,20 +18,8 @@
 		<EmbeddedResource Include="plugins\dds-phyre-tool.exe">
 			<LogicalName>embedded.dds_phyre_tool.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\wsyster.exe">
-			<LogicalName>embedded.wsyster.exe</LogicalName>
-		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\csopak.exe">
 			<LogicalName>embedded.csopak.exe</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\libpac.dll">
-			<LogicalName>embedded.libpac.dll</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\pac_unpack.exe">
-			<LogicalName>embedded.pac_unpack.exe</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\pac_repack.exe">
-			<LogicalName>embedded.pac_repack.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\gust_elixir.exe">
 			<LogicalName>embedded.gust_elixir.exe</LogicalName>
@@ -53,12 +41,6 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\AFUpkExtractor.exe">
 			<LogicalName>embedded.AFUpkExtractor.exe</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\Multi-Extractor.exe">
-			<LogicalName>embedded.Multi-Extractor.exe</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\File Formats.dll">
-			<LogicalName>embedded.File Formats.dll</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\exlnk4.exe">
 			<LogicalName>embedded.exlnk4.exe</LogicalName>
@@ -99,14 +81,14 @@
 		<EmbeddedResource Include="plugins\wav2qoa.exe">
 			<LogicalName>embedded.wav2qoa.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\CMVDecode.exe">
-			<LogicalName>embedded.CMVDecode.exe</LogicalName>
-		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\lzo2.dll">
 			<LogicalName>embedded.lzo2.dll</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\minlz.exe">
-			<LogicalName>embedded.minlz.exe</LogicalName>
+		<EmbeddedResource Include="plugins\pb3.dll">
+			<LogicalName>embedded.pb3.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\cpz7.exe">
+			<LogicalName>embedded.cpz7.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\SRPG_Unpacker.exe">
 			<LogicalName>embedded.SRPG_Unpacker.exe</LogicalName>
@@ -126,8 +108,8 @@
 		<EmbeddedResource Include="plugins\exah3pac.exe">
 			<LogicalName>embedded.exah3pac.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\wfLZ.exe">
-			<LogicalName>embedded.wfLZ.exe</LogicalName>
+		<EmbeddedResource Include="plugins\wfLZ.dll">
+			<LogicalName>embedded.wfLZ.dll</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\ahx2wav.exe">
 			<LogicalName>embedded.ahx2wav.exe</LogicalName>
@@ -155,6 +137,12 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\thdat.exe">
 			<LogicalName>embedded.thdat.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\pactool.dll">
+			<LogicalName>embedded.pactool.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\libLZX.dll">
+			<LogicalName>embedded.libLZX.dll</LogicalName>
 		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
