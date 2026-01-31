@@ -48,9 +48,6 @@
 		<EmbeddedResource Include="plugins\ToBTools.exe">
 			<LogicalName>embedded.ToBTools.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\yaz0.exe">
-			<LogicalName>embedded.yaz0.exe</LogicalName>
-		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\cdecrypt.exe">
 			<LogicalName>embedded.cdecrypt.exe</LogicalName>
 		</EmbeddedResource>
@@ -68,9 +65,6 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\make_npdata.exe">
 			<LogicalName>embedded.make_npdata.exe</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\afs_util.exe">
-			<LogicalName>embedded.afs_util.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\mpk.exe">
 			<LogicalName>embedded.mpk.exe</LogicalName>
