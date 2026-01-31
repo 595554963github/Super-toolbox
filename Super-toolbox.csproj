@@ -18,8 +18,8 @@
 		<EmbeddedResource Include="plugins\dds-phyre-tool.exe">
 			<LogicalName>embedded.dds_phyre_tool.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\csopak.exe">
-			<LogicalName>embedded.csopak.exe</LogicalName>
+		<EmbeddedResource Include="plugins\csopak.dll">
+			<LogicalName>embedded.csopak.dll</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\gust_elixir.exe">
 			<LogicalName>embedded.gust_elixir.exe</LogicalName>
@@ -54,9 +54,6 @@
 		<EmbeddedResource Include="plugins\ndstool.exe">
 			<LogicalName>embedded.ndstool.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\darctool.exe">
-			<LogicalName>embedded.darctool.exe</LogicalName>
-		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\ooz.exe">
 			<LogicalName>embedded.ooz.exe</LogicalName>
 		</EmbeddedResource>
@@ -65,9 +62,6 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\make_npdata.exe">
 			<LogicalName>embedded.make_npdata.exe</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\mpk.exe">
-			<LogicalName>embedded.mpk.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\GNF2PNG.exe">
 			<LogicalName>embedded.GNF2PNG.exe</LogicalName>
@@ -105,8 +99,8 @@
 		<EmbeddedResource Include="plugins\wfLZ.dll">
 			<LogicalName>embedded.wfLZ.dll</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\ahx2wav.exe">
-			<LogicalName>embedded.ahx2wav.exe</LogicalName>
+		<EmbeddedResource Include="plugins\ahx2wav.dll">
+			<LogicalName>embedded.ahx2wav.dll</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\ETC1Lib.dll">
 			<LogicalName>embedded.ETC1Lib.dll</LogicalName>
