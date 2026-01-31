@@ -1,26 +1,15 @@
-using System.Diagnostics;
 using System.Text;
 
 namespace super_toolbox
 {
     public class AfsRepacker : BaseExtractor
-    {
-        private static string _tempExePath;
+    {      
         public new event EventHandler<string>? PackingStarted;
         public new event EventHandler<string>? PackingProgress;
         public new event EventHandler<string>? PackingError;
-
-        static AfsRepacker()
-        {
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            _tempExePath = LoadEmbeddedExe("embedded.afs_util.exe", "afs_util.exe");
-
-            if (string.IsNullOrEmpty(_tempExePath) || !File.Exists(_tempExePath))
-            {
-                throw new InvalidOperationException("无法加载afs_util.exe，请检查嵌入资源");
-            }
-        }
-
+        private static readonly byte[] AFS_MAGIC = { 0x41, 0x46, 0x53, 0x00 };
+        private const uint AFS_DATA_START = 0x80000;
+        private const uint ALIGNMENT = 0x800;
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             await RepackAsync(directoryPath, cancellationToken);
@@ -46,12 +35,12 @@ namespace super_toolbox
             TotalFilesToPack = allFiles.Length;
 
             PackingStarted?.Invoke(this, $"开始打包目录:{directoryPath}");
-            PackingProgress?.Invoke(this, $"找到 {allFiles.Length} 个文件:");
+            PackingProgress?.Invoke(this, $"找到{allFiles.Length}个文件:");
 
             foreach (var file in allFiles)
             {
                 string relativePath = GetRelativePath(directoryPath, file);
-                PackingProgress?.Invoke(this, $"  {relativePath}");
+                PackingProgress?.Invoke(this, $"{relativePath}");
             }
 
             try
@@ -59,59 +48,52 @@ namespace super_toolbox
                 await Task.Run(() =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-
-                    var processStartInfo = new ProcessStartInfo
-                    {
-                        FileName = _tempExePath,
-                        Arguments = $"-p \"{directoryPath}\"",
-                        WorkingDirectory = parentDir,
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        StandardOutputEncoding = Encoding.UTF8,
-                        StandardErrorEncoding = Encoding.UTF8
-                    };
-
                     PackingProgress?.Invoke(this, $"正在打包AFS文件:{Path.GetFileName(outputAfsPath)}");
 
-                    using (var process = Process.Start(processStartInfo))
+                    using (var fs = new FileStream(outputAfsPath, FileMode.Create, FileAccess.Write))
+                    using (var writer = new BinaryWriter(fs, Encoding.UTF8))
                     {
-                        if (process == null)
+                        fs.Seek(AFS_DATA_START, SeekOrigin.Begin);
+
+                        List<AfsFileHeader> headers = new List<AfsFileHeader>();
+                        uint currentOffset = AFS_DATA_START;
+
+                        foreach (var filePath in allFiles)
                         {
-                            throw new Exception("无法启动AFS打包进程");
+                            cancellationToken.ThrowIfCancellationRequested();
+
+                            using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                            {
+                                AfsFileHeader header = new AfsFileHeader
+                                {
+                                    Offset = currentOffset,
+                                    Size = (uint)fileStream.Length
+                                };
+
+                                fileStream.CopyTo(fs);
+                                currentOffset += header.Size;
+
+                                uint padding = ALIGNMENT - (currentOffset % ALIGNMENT);
+                                if (padding < ALIGNMENT)
+                                {
+                                    byte[] padBytes = new byte[padding];
+                                    fs.Write(padBytes, 0, padBytes.Length);
+                                    currentOffset += padding;
+                                }
+
+                                headers.Add(header);
+                                OnFilePacked(filePath);
+                            }
                         }
 
-                        process.OutputDataReceived += (sender, e) =>
+                        fs.Seek(0, SeekOrigin.Begin);
+                        writer.Write(AFS_MAGIC);
+                        writer.Write((uint)allFiles.Length);
+
+                        foreach (var header in headers)
                         {
-                            if (!string.IsNullOrEmpty(e.Data))
-                            {
-                                PackingProgress?.Invoke(this, e.Data);
-                            }
-                        };
-
-                        process.ErrorDataReceived += (sender, e) =>
-                        {
-                            if (!string.IsNullOrEmpty(e.Data))
-                            {
-                                PackingError?.Invoke(this, $"错误:{e.Data}");
-                            }
-                        };
-
-                        process.BeginOutputReadLine();
-                        process.BeginErrorReadLine();
-
-                        foreach (var file in allFiles)
-                        {
-                            ThrowIfCancellationRequested(cancellationToken);
-                            OnFilePacked(file);
-                        }
-
-                        process.WaitForExit();
-
-                        if (process.ExitCode != 0)
-                        {
-                            throw new Exception($"AFS打包失败(ExitCode:{process.ExitCode})");
+                            writer.Write(header.Offset);
+                            writer.Write(header.Size);
                         }
                     }
 
@@ -167,11 +149,6 @@ namespace super_toolbox
                 .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
         }
 
-        private new void ThrowIfCancellationRequested(CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-        }
-
         public void Repack(string directoryPath)
         {
             RepackAsync(directoryPath).Wait();
@@ -180,6 +157,12 @@ namespace super_toolbox
         public override void Extract(string directoryPath)
         {
             Repack(directoryPath);
+        }
+
+        private struct AfsFileHeader
+        {
+            public uint Offset;
+            public uint Size;
         }
     }
 }
