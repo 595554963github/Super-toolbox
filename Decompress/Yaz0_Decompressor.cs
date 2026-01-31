@@ -1,37 +1,14 @@
-using System.Diagnostics;
-using System.Reflection;
+using AuroraLib.Compression.Algorithms;
 
 namespace super_toolbox
 {
     public class Yaz0_Decompressor : BaseExtractor
     {
-        private static string _tempExePath;
         private static readonly byte[] Yaz0Magic = { 0x59, 0x61, 0x7A, 0x30 };
         public new event EventHandler<string>? DecompressionStarted;
         public new event EventHandler<string>? DecompressionProgress;
         public new event EventHandler<string>? DecompressionError;
-        static Yaz0_Decompressor()
-        {
-            string tempDir = Path.Combine(Path.GetTempPath(), "supertoolbox_temp");
-            Directory.CreateDirectory(tempDir);
-            _tempExePath = Path.Combine(tempDir, "yaz0.exe");
-            if (!File.Exists(_tempExePath))
-            {
-                var assembly = Assembly.GetExecutingAssembly();
-                var resourceName = assembly.GetManifestResourceNames()
-                    .FirstOrDefault(name => name.EndsWith("yaz0.exe"));
-                if (string.IsNullOrEmpty(resourceName))
-                    throw new FileNotFoundException("嵌入的Yaz0解压工具资源未找到");
-                using (var stream = assembly.GetManifestResourceStream(resourceName))
-                {
-                    if (stream == null)
-                        throw new FileNotFoundException("无法读取嵌入的Yaz0解压工具资源");
-                    byte[] buffer = new byte[stream.Length];
-                    stream.Read(buffer, 0, buffer.Length);
-                    File.WriteAllBytes(_tempExePath, buffer);
-                }
-            }
-        }
+
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
@@ -40,6 +17,7 @@ namespace super_toolbox
                 OnDecompressionFailed($"源文件夹{directoryPath}不存在");
                 return;
             }
+
             try
             {
                 await Task.Run(() =>
@@ -53,24 +31,28 @@ namespace super_toolbox
                         OnDecompressionFailed("未找到包含Yaz0数据的文件");
                         return;
                     }
+
                     string decompressedDir = Path.Combine(directoryPath, "Decompressed");
                     Directory.CreateDirectory(decompressedDir);
                     TotalFilesToDecompress = filesToProcess.Length;
-                    DecompressionStarted?.Invoke(this, $"开始解压，共{TotalFilesToDecompress}个文件");
+                    DecompressionStarted?.Invoke(this, $"开始解压,共{TotalFilesToDecompress}个文件");
+
                     foreach (var filePath in filesToProcess)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
+
                         if (DecompressYaz0File(filePath, decompressedDir))
                         {
                             string fileName = Path.GetFileNameWithoutExtension(filePath);
-                            string originalExtension = GetOriginalExtension(filePath);
-                            string outputPath = Path.Combine(decompressedDir, fileName + originalExtension);
+                            string outputPath = Path.Combine(decompressedDir, fileName);
                             string displayName = Path.GetFileName(outputPath);
+                            DecompressionProgress?.Invoke(this, $"已解压:{displayName}");
                             OnFileDecompressed(outputPath);
                         }
                     }
+
                     OnDecompressionCompleted();
-                    DecompressionProgress?.Invoke(this, $"解压完成，共解压{TotalFilesToDecompress}个文件");
+                    DecompressionProgress?.Invoke(this, $"解压完成,共解压{TotalFilesToDecompress}个文件");
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -85,6 +67,7 @@ namespace super_toolbox
                 OnDecompressionFailed($"解压失败:{ex.Message}");
             }
         }
+
         private bool IsYaz0File(string filePath)
         {
             try
@@ -105,14 +88,9 @@ namespace super_toolbox
             catch { }
             return false;
         }
-        private string GetOriginalExtension(string compressedFilePath)
-        {
-            return "";
-        }
+
         private bool DecompressYaz0File(string inputPath, string outputDir)
         {
-            string tempFilePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            bool useTempFile = false;
             try
             {
                 int yaz0Start = FindYaz0StartPosition(inputPath);
@@ -121,73 +99,31 @@ namespace super_toolbox
                     DecompressionError?.Invoke(this, $"未找到Yaz0数据:{Path.GetFileName(inputPath)}");
                     return false;
                 }
-                if (yaz0Start > 0)
+
+                string fileName = Path.GetFileNameWithoutExtension(inputPath);
+                string outputPath = Path.Combine(outputDir, fileName);
+
+                using (var inputStream = new FileStream(inputPath, FileMode.Open, FileAccess.Read))
+                using (var outputStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
                 {
-                    useTempFile = true;
-                    using (var inStream = new FileStream(inputPath, FileMode.Open, FileAccess.Read))
-                    using (var outStream = new FileStream(tempFilePath, FileMode.Create))
+                    if (yaz0Start > 0)
                     {
-                        inStream.Seek(yaz0Start, SeekOrigin.Begin);
-                        inStream.CopyTo(outStream);
+                        inputStream.Seek(yaz0Start, SeekOrigin.Begin);
                     }
+
+                    Yaz0 yaz0 = new Yaz0();
+                    yaz0.Decompress(inputStream, outputStream);
                 }
-                else
-                {
-                    tempFilePath = inputPath;
-                }
-                string workingDirectory = Path.GetDirectoryName(inputPath) ?? string.Empty;
-                string fileName = Path.GetFileName(inputPath);
-                string decompressedFileName = Path.GetFileNameWithoutExtension(fileName);
-                string outputPath = Path.Combine(outputDir, decompressedFileName);
-                ProcessStartInfo startInfo = new ProcessStartInfo
-                {
-                    FileName = _tempExePath,
-                    Arguments = $"-d \"{tempFilePath}\" -o \"{outputPath}\"",
-                    WorkingDirectory = workingDirectory,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
-                using (Process process = new Process())
-                {
-                    process.StartInfo = startInfo;
-                    process.Start();
-                    string output = process.StandardOutput.ReadToEnd();
-                    string error = process.StandardError.ReadToEnd();
-                    process.WaitForExit();
-                    if (process.ExitCode != 0)
-                    {
-                        DecompressionError?.Invoke(this, $"Yaz0解压错误:{error}");
-                        return false;
-                    }
-                    if (File.Exists(outputPath))
-                    {
-                        return true;
-                    }
-                    DecompressionError?.Invoke(this, $"找不到解压后的文件:{decompressedFileName}");
-                    return false;
-                }
+
+                return true;
             }
             catch (Exception ex)
             {
                 DecompressionError?.Invoke(this, $"Yaz0解压错误:{ex.Message}");
                 return false;
             }
-            finally
-            {
-                if (useTempFile && File.Exists(tempFilePath) && tempFilePath != inputPath)
-                {
-                    try
-                    {
-                        File.Delete(tempFilePath);
-                    }
-                    catch
-                    {
-                    }
-                }
-            }
         }
+
         private int FindYaz0StartPosition(string filePath)
         {
             using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
@@ -204,6 +140,7 @@ namespace super_toolbox
             }
             return -1;
         }
+
         public override void Extract(string directoryPath)
         {
             ExtractAsync(directoryPath).Wait();
