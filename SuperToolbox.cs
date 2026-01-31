@@ -148,9 +148,8 @@ namespace super_toolbox
             { "Wiiu - h3/app", ("其他档案", "任天堂wiiu平台的rom解包器,能将wiiu平台的h3、app文件转换成loadiine格式,方便用户解包") },
             { "Nds - nds提取器", ("其他档案", "任天堂nds平台的rom解包工具,可解包nds rom文件,提取其中的各类资源") },
             { "Nds - nds打包器", ("其他档案", "任天堂nds平台的rom打包器,能将解包的nds文件夹重新打包成nds rom文件") },
-            { "3ds - darc提取器", ("其他档案", "任天堂3ds平台的darc解包工具,代表作为美妙旋律七彩演唱会闪耀设计,可提取darc文件中的资源") },
-            { "3ds - darc打包器", ("其他档案", "任天堂3ds平台的darc打包器,能将文件夹里的文件打包成darc文件") },
-            { "Nds - narc提取器", ("其他档案", "任天堂nds平台的narc文件提取器,代表作为口袋妖怪(nds),可提取narc文件中的资源") },
+            { "3ds - darc", ("其他档案", "任天堂3ds平台的darc解包工具,代表作为美妙旋律七彩演唱会闪耀设计,可提取darc文件中的资源") },
+            { "Nds - narc", ("其他档案", "任天堂nds平台的narc文件提取器,代表作为口袋妖怪(nds),可提取narc文件中的资源") },
             { "PS3 - psarc提取器", ("其他档案", "索尼ps3平台的psarc解包工具,代表作为第二次超级机器人大战OG,也可解包无人深空的pak文件") },
             { "PS3 - psarc打包器", ("其他档案", "索尼ps3平台的psarc打包器,能将一个文件夹重新打包成psarc文件") },
             { "PS3 - NPDRM - sdat", ("其他档案", "索尼ps3平台的sdat解包工具,代表作为约会大作战或守安装、约会大作战凛弥理想乡等,可提取sdat文件中的资源") },
@@ -685,9 +684,8 @@ namespace super_toolbox
                 case "Wiiu - h3/app": return new Wiiu_h3appExtractor();
                 case "Nds - nds提取器": return new Nds_Extractor();
                 case "Nds - nds打包器": return new Nds_Repacker();
-                case "3ds - darc提取器": return new Darc_Extractor();
-                case "3ds - darc打包器": return new Darc_Repacker();
-                case "Nds - narc提取器": return new NarcExtractor();
+                case "3ds - darc": return new Darc_Extractor();
+                case "Nds - narc": return new NarcExtractor();
                 case "PS3 - psarc提取器": return new PsarcExtractor();
                 case "PS3 - psarc打包器": return new PsarcRepacker();
                 case "PS3 - NPDRM - sdat": return new NPD_Extractor();
