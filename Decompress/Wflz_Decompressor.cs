@@ -96,7 +96,7 @@ namespace super_toolbox
                 }
 
                 string signature = Encoding.ASCII.GetString(compressedData, 0, 4);
-                if (signature != "WFLZ" && signature != "ZLF")
+                if (signature != "WFLZ")
                 {
                     DecompressionError?.Invoke(this, "无效的WFLZ文件签名");
                     return false;
@@ -194,3 +194,4 @@ namespace super_toolbox
         }
     }
 }
+
