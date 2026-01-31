@@ -1,20 +1,21 @@
-﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace super_toolbox
 {
     public class Ahx2wav_Converter : BaseExtractor
     {
-        private static string _tempExePath;
-
         public new event EventHandler<string>? ConversionStarted;
         public new event EventHandler<string>? ConversionProgress;
         public new event EventHandler<string>? ConversionError;
+        private static string _tempDllPath;
+
+        [DllImport("ahx2wav.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int ConvertAhxToWav(string ahxPath, string wavPath, int verboseMode);
 
         static Ahx2wav_Converter()
         {
-            _tempExePath = LoadEmbeddedExe("embedded.ahx2wav.exe", "ahx2wav.exe");
+            _tempDllPath = LoadEmbeddedExe("embedded.ahx2wav.dll", "ahx2wav.dll");
         }
-
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
@@ -43,36 +44,19 @@ namespace super_toolbox
 
                     try
                     {
-                        string ahxWavFile = Path.Combine(fileDirectory, $"{fileName}.ahx.wav");
                         string wavFile = Path.Combine(fileDirectory, $"{fileName}.wav");
 
-                        if (File.Exists(ahxWavFile))
-                            File.Delete(ahxWavFile);
                         if (File.Exists(wavFile))
                             File.Delete(wavFile);
 
-                        bool conversionSuccess = await ConvertAhxToWav(ahxFilePath, fileDirectory, cancellationToken);
+                        bool conversionSuccess = await Task.Run(() =>
+                            ConvertAhxToWavDll(ahxFilePath, wavFile, cancellationToken));
 
-                        if (conversionSuccess)
+                        if (conversionSuccess && File.Exists(wavFile))
                         {
-                            if (File.Exists(ahxWavFile))
-                            {
-                                File.Move(ahxWavFile, wavFile);
-                                successCount++;
-                                ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(wavFile)}");
-                                OnFileConverted(wavFile);
-                            }
-                            else if (File.Exists(wavFile))
-                            {
-                                successCount++;
-                                ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(wavFile)}");
-                                OnFileConverted(wavFile);
-                            }
-                            else
-                            {
-                                ConversionError?.Invoke(this, $"{fileName}.ahx转换成功但未找到输出文件");
-                                OnConversionFailed($"{fileName}.ahx转换成功但未找到输出文件");
-                            }
+                            successCount++;
+                            ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(wavFile)}");
+                            OnFileConverted(wavFile);
                         }
                         else
                         {
@@ -89,11 +73,11 @@ namespace super_toolbox
 
                 if (successCount > 0)
                 {
-                    ConversionProgress?.Invoke(this, $"转换完成，成功转换{successCount}/{TotalFilesToConvert}个文件");
+                    ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件");
                 }
                 else
                 {
-                    ConversionProgress?.Invoke(this, "转换完成，但未成功转换任何文件");
+                    ConversionProgress?.Invoke(this, "转换完成,但未成功转换任何文件");
                 }
 
                 OnConversionCompleted();
@@ -110,52 +94,36 @@ namespace super_toolbox
             }
         }
 
-        private async Task<bool> ConvertAhxToWav(string ahxFilePath, string workingDirectory, CancellationToken cancellationToken)
+        private bool ConvertAhxToWavDll(string ahxFilePath, string wavFile, CancellationToken cancellationToken)
         {
             try
             {
-                var processStartInfo = new ProcessStartInfo
-                {
-                    FileName = _tempExePath,
-                    Arguments = $"\"{ahxFilePath}\"",
-                    WorkingDirectory = workingDirectory,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
+                int result = ConvertAhxToWav(ahxFilePath, wavFile, 0);
 
-                using (var process = Process.Start(processStartInfo))
+                if (result == 0)
                 {
-                    if (process == null)
+                    return true;
+                }
+                else
+                {
+                    string errorMsg = result switch
                     {
-                        ConversionError?.Invoke(this, $"无法启动转换进程:{Path.GetFileName(ahxFilePath)}");
-                        return false;
-                    }
-
-                    process.OutputDataReceived += (sender, e) =>
-                    {
-                        if (!string.IsNullOrEmpty(e.Data))
-                            ConversionProgress?.Invoke(this, $"[ahx2wav] {e.Data}");
+                        -1 => "无法打开AHX文件",
+                        -2 => "内存分配失败",
+                        -3 => "读取文件失败",
+                        -4 => "WAV缓冲区分配失败",
+                        -5 => "无法创建WAV文件",
+                        -6 => "写入WAV文件失败",
+                        _ => $"未知错误 (代码: {result})"
                     };
 
-                    process.ErrorDataReceived += (sender, e) =>
-                    {
-                        if (!string.IsNullOrEmpty(e.Data))
-                            ConversionError?.Invoke(this, $"[ahx2wav]错误:{e.Data}");
-                    };
-
-                    process.BeginOutputReadLine();
-                    process.BeginErrorReadLine();
-
-                    await process.WaitForExitAsync(cancellationToken);
-
-                    return process.ExitCode == 0;
+                    ConversionError?.Invoke(this, $"DLL转换错误:{errorMsg}");
+                    return false;
                 }
             }
             catch (Exception ex)
             {
-                ConversionError?.Invoke(this, $"转换过程异常:{ex.Message}");
+                ConversionError?.Invoke(this, $"DLL调用异常:{ex.Message}");
                 return false;
             }
         }
