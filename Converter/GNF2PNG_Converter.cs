@@ -1,19 +1,10 @@
-using System.Diagnostics;
-
 namespace super_toolbox
 {
     public class GNF2PNG_Converter : BaseExtractor
     {
-        private static string _tempExePath;
-
         public new event EventHandler<string>? ConversionStarted;
         public new event EventHandler<string>? ConversionProgress;
         public new event EventHandler<string>? ConversionError;
-
-        static GNF2PNG_Converter()
-        {
-            _tempExePath = LoadEmbeddedExe("embedded.GNF2PNG.exe", "GNF2PNG.exe");
-        }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -22,14 +13,14 @@ namespace super_toolbox
             if (!Directory.Exists(directoryPath))
             {
                 ConversionError?.Invoke(this, $"源文件夹{directoryPath}不存在");
-                OnConversionFailed($"源文件夹{directoryPath} 不存在");
+                OnConversionFailed($"源文件夹{directoryPath}不存在");
                 return;
             }
 
             ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
-            TotalFilesToConvert = Directory.GetFiles(directoryPath, "*.gnf", SearchOption.AllDirectories).Length;
+            var gnfFiles = Directory.EnumerateFiles(directoryPath, "*.gnf", SearchOption.AllDirectories).ToArray();
+            TotalFilesToConvert = gnfFiles.Length;
 
-            var gnfFiles = Directory.EnumerateFiles(directoryPath, "*.gnf", SearchOption.AllDirectories);
             int successCount = 0;
 
             try
@@ -48,7 +39,7 @@ namespace super_toolbox
 
                     try
                     {
-                        bool conversionSuccess = await ConvertGnfToPng(gnfFilePath, pngFilePath, fileDirectory, cancellationToken);
+                        bool conversionSuccess = await ConvertGnfToPng(gnfFilePath, pngFilePath, cancellationToken);
 
                         if (conversionSuccess && File.Exists(pngFilePath))
                         {
@@ -72,11 +63,11 @@ namespace super_toolbox
 
                 if (successCount > 0)
                 {
-                    ConversionProgress?.Invoke(this, $"转换完成，成功转换{successCount}/{TotalFilesToConvert}个文件");
+                    ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件");
                 }
                 else
                 {
-                    ConversionProgress?.Invoke(this, "转换完成，但未成功转换任何文件");
+                    ConversionProgress?.Invoke(this, "转换完成,但未成功转换任何文件");
                 }
 
                 OnConversionCompleted();
@@ -93,64 +84,46 @@ namespace super_toolbox
             }
         }
 
-        private async Task<bool> ConvertGnfToPng(string gnfFilePath, string pngFilePath, string workingDirectory, CancellationToken cancellationToken)
+        private async Task<bool> ConvertGnfToPng(string gnfFilePath, string pngFilePath, CancellationToken cancellationToken)
         {
             try
             {
-                var processStartInfo = new ProcessStartInfo
+                return await Task.Run(() =>
                 {
-                    FileName = _tempExePath,
-                    Arguments = $"\"{gnfFilePath}\"",
-                    WorkingDirectory = workingDirectory,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
-
-                using (var process = Process.Start(processStartInfo))
-                {
-                    if (process == null)
+                    try
                     {
-                        ConversionError?.Invoke(this, $"无法启动转换进程:{Path.GetFileName(gnfFilePath)}");
+                        string? outputDir = Path.GetDirectoryName(pngFilePath);
+                        if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+                            Directory.CreateDirectory(outputDir);
+
+                        var gnf = new Scarlet.IO.ImageFormats.GNF();
+                        gnf.Open(gnfFilePath, Scarlet.IO.Endian.LittleEndian);
+
+                        if (gnf.GetImageCount() > 0)
+                        {
+                            using (var bitmap = gnf.GetBitmap(0, 0))
+                            {
+                                bitmap.Save(pngFilePath, System.Drawing.Imaging.ImageFormat.Png);
+                                return true;
+                            }
+                        }
+
                         return false;
                     }
-
-                    process.OutputDataReceived += (sender, e) =>
+                    catch (Exception ex)
                     {
-                        if (!string.IsNullOrEmpty(e.Data))
-                            ConversionProgress?.Invoke(this, $"[GNF2PNG] {e.Data}");
-                    };
-
-                    process.ErrorDataReceived += (sender, e) =>
-                    {
-                        if (!string.IsNullOrEmpty(e.Data))
-                            ConversionError?.Invoke(this, $"[GNF2PNG]错误:{e.Data}");
-                    };
-
-                    process.BeginOutputReadLine();
-                    process.BeginErrorReadLine();
-
-                    await process.WaitForExitAsync(cancellationToken);
-
-                    if (process.ExitCode == 0)
-                    {
-                        return File.Exists(pngFilePath);
-                    }
-                    else
-                    {
-                        ConversionError?.Invoke(this, $"转换失败，错误代码:{process.ExitCode}");
+                        ConversionError?.Invoke(this, $"转换失败:{ex.Message}");
                         if (File.Exists(pngFilePath))
                         {
                             try { File.Delete(pngFilePath); } catch { }
                         }
                         return false;
                     }
-                }
+                }, cancellationToken);
             }
             catch (Exception ex)
             {
-                ConversionError?.Invoke(this, $"转换过程异常: {ex.Message}");
+                ConversionError?.Invoke(this, $"转换过程异常:{ex.Message}");
                 if (File.Exists(pngFilePath))
                 {
                     try { File.Delete(pngFilePath); } catch { }
