@@ -1,17 +1,34 @@
-using System.Diagnostics;
-
 namespace super_toolbox
 {
     public class Wav2Qoa_Converter : BaseExtractor
     {
-        private static string _tempExePath;
         public new event EventHandler<string>? ConversionStarted;
         public new event EventHandler<string>? ConversionProgress;
         public new event EventHandler<string>? ConversionError;
 
-        static Wav2Qoa_Converter()
+        private static bool ConvertWavToQoa(string inputWavFile, string outputQoaFile)
         {
-            _tempExePath = LoadEmbeddedExe("embedded.wav2qoa.exe", "wav2qoa.exe");
+            try
+            {
+                using (FileStream wavStream = File.OpenRead(inputWavFile))
+                using (MemoryStream wavMemoryStream = new MemoryStream())
+                {
+                    wavStream.CopyTo(wavMemoryStream);
+                    wavMemoryStream.Position = 0;
+
+                    using (FileStream qoaStream = File.Create(outputQoaFile))
+                    {
+                        QOALib.QOA qoaEncoder = new QOALib.QOA();
+                        qoaEncoder.EncodeWAVToQOA(wavMemoryStream, qoaStream);
+                        return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"转换错误:{ex.Message}");
+                return false;
+            }
         }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
@@ -44,7 +61,7 @@ namespace super_toolbox
 
                     try
                     {
-                        bool conversionSuccess = await ConvertWavToQoa(wavFilePath, qoaFilePath, fileDirectory, cancellationToken);
+                        bool conversionSuccess = await Task.Run(() => ConvertWavToQoa(wavFilePath, qoaFilePath), cancellationToken);
 
                         if (conversionSuccess && File.Exists(qoaFilePath))
                         {
@@ -68,11 +85,11 @@ namespace super_toolbox
 
                 if (successCount > 0)
                 {
-                    ConversionProgress?.Invoke(this, $"转换完成，成功转换{successCount}/{TotalFilesToConvert}个文件");
+                    ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件");
                 }
                 else
                 {
-                    ConversionProgress?.Invoke(this, "转换完成，但未成功转换任何文件");
+                    ConversionProgress?.Invoke(this, "转换完成,但未成功转换任何文件");
                 }
 
                 OnConversionCompleted();
@@ -86,72 +103,6 @@ namespace super_toolbox
             {
                 ConversionError?.Invoke(this, $"严重错误:{ex.Message}");
                 OnConversionFailed($"严重错误:{ex.Message}");
-            }
-        }
-
-        private async Task<bool> ConvertWavToQoa(string wavFilePath, string qoaFilePath, string workingDirectory, CancellationToken cancellationToken)
-        {
-            try
-            {
-                var processStartInfo = new ProcessStartInfo
-                {
-                    FileName = _tempExePath,
-                    Arguments = $"\"{wavFilePath}\"",
-                    WorkingDirectory = workingDirectory,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
-
-                using (var process = Process.Start(processStartInfo))
-                {
-                    if (process == null)
-                    {
-                        ConversionError?.Invoke(this, $"无法启动转换进程:{Path.GetFileName(wavFilePath)}");
-                        return false;
-                    }
-
-                    process.OutputDataReceived += (sender, e) =>
-                    {
-                        if (!string.IsNullOrEmpty(e.Data))
-                            ConversionProgress?.Invoke(this, e.Data);
-                    };
-
-                    process.ErrorDataReceived += (sender, e) =>
-                    {
-                        if (!string.IsNullOrEmpty(e.Data))
-                            ConversionError?.Invoke(this, $"错误:{e.Data}");
-                    };
-
-                    process.BeginOutputReadLine();
-                    process.BeginErrorReadLine();
-
-                    await process.WaitForExitAsync(cancellationToken);
-
-                    if (process.ExitCode == 0)
-                    {
-                        return File.Exists(qoaFilePath);
-                    }
-                    else
-                    {
-                        ConversionError?.Invoke(this, $"转换失败，错误代码:{process.ExitCode}");
-                        if (File.Exists(qoaFilePath))
-                        {
-                            try { File.Delete(qoaFilePath); } catch { }
-                        }
-                        return false;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                ConversionError?.Invoke(this, $"转换过程异常:{ex.Message}");
-                if (File.Exists(qoaFilePath))
-                {
-                    try { File.Delete(qoaFilePath); } catch { }
-                }
-                return false;
             }
         }
 
