@@ -54,7 +54,7 @@ namespace super_toolbox
             { "万代南梦宫 - bnsf", ("音频", "万代南梦宫的bnsf音频提取器,以二进制形式从TLFILE.TLDAT文件中提取。可解析情热传说和ps3平台的狂战传说中的音频,注意狂战传说steam版因加密无法提取") },
             { "索尼 - gxt提取器", ("其他档案", "从索尼的psv、psp等平台游戏中提取gxt文件。许多游戏喜欢将多个gxt文件打包存储,该工具可有效提取这些gxt文件") },
             { "直接绘制表面 - DDS", ("图片", "以二进制形式从游戏文件中提取dds图片,亲测适用于战场女武神4等游戏,支持一般的dds和DX10纹理的dds格式") },
-            { "Filename小端序 - pck", ("其他档案", "steam和switch平台的超女神信仰诺瓦露、steam和psv的约战凛绪轮回、steam白色相簿_编缀的冬日回忆和传颂之物二人的白皇的专用解包工具") },
+            { "Filename小端序 - pck", ("其他档案", "steam和switch平台的超女神信仰诺瓦露、steam和psv的约战凛绪轮回、steam白色相簿编缀的冬日回忆、\r\nsteam和psv传颂之物虚伪的假面、steam和psv和switch传颂之物致逝者的摇篮曲、steam和psv传颂之物二人的白皇的专用解包工具") },
             { "Filename大端序 - pck", ("其他档案", "ps3约会大作战凛祢理想乡和约会大作战或守安装、白色相簿的专用解包工具") },
             { "地雷社和AQUAPLUS专用纹理 - tex", ("图片", "超女神信仰诺瓦露、白色相簿_编缀的冬日回忆、约会大作战系列、传颂之物二人的白皇专用tex转换器") },
             { "ps3苍翼默示录_刻之幻影 - bin", ("其他档案", "ps3平台的苍翼默示录_刻之幻影专用bin文件解包工具,可提取其中包含的所有pac文件") },
@@ -157,7 +157,8 @@ namespace super_toolbox
             { "Mages - mpk提取器", ("其他档案", "Mages的mpk解包工具,代表作为命运石之门,可提取mpk文件中的各类资源") },
             { "Mages - mpk打包器", ("其他档案", "Mages的mpk打包器,能将一个文件夹及子文件夹里的所有文件重新打包成mpk文件") },
             { "Gnf2Png", ("图片", "PS4平台的gnf到png的转换器,支持批量转换,解决了GFDstudio手动转换的繁琐问题") },
-            { "wav2qoa - 转换qoa", ("音频", "wav到qoa的音频转换器,转换后的qoa格式可被ffmpeg识别,也可用foobar2000播放") },
+            { "wav转换qoa", ("音频", "wav到qoa的音频转换器") },
+            { "qoa转换wav", ("音频", "qoa到wav的音频转换器") },
             { "SRPG_Studio - dts", ("其他档案", "SRPG Studio的dts提取器,代表作为刻印战记2_七圣英雄,可提取dts文件中的资源") },
             { "XACT Wave Bank - xwb打包器", ("其他档案", "XWB打包器,能将一个文件夹里的所有wav打包成xwb文件,为了打包成功建议使用pcm_s16le的wav文件,有些编码不支持") },
             { "PNG2ASTC", ("图片", "png到astc图像的转换器,支持批量转换,满足将png图片转换为astc格式的需求") },
@@ -218,8 +219,10 @@ namespace super_toolbox
             { "东方project系列 - pal", ("图片", "东方project系列的pal调色板转换器") },
             { "yuris引擎 - ymv", ("其他档案", "yuris引擎的ymv解码器") },
             { "CMVS引擎 - CPZ6", ("其他档案", "紫社cmvs引擎的cpz解包器,已测试天津罪") },
-             { "CMVS引擎 - CPZ7", ("其他档案", "紫社cmvs引擎的cpz解包器,已测试青鸟") },
+            { "CMVS引擎 - CPZ7", ("其他档案", "紫社cmvs引擎的cpz解包器,已测试青鸟") },
             { "CMVS引擎 - pb3", ("图片", "紫社cmvs引擎的pb3转换器,已测试青鸟、天津罪") },
+            { "初音未来歌姬计划 - DIVAFILE", ("其他档案", "psv初音未来歌姬计划系列的DIVAFILE文件解包器") },
+            { "初音未来歌姬计划 - farc", ("其他档案", "psv初音未来歌姬计划系列的farc文件解包器,F2和X两个游戏都支持") },
         };
         public SuperToolbox()
         {
@@ -329,7 +332,7 @@ namespace super_toolbox
         {
          "PNG编码ASTC", "ASTC解码PNG", "Gnf2Png", "PowerVR转换png","异度之刃 - tpl2bclim","异度之刃 - bclim2png","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal",
          "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS专用纹理 - tex","DXBC2HLSL","rad game tools - rada转换器","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3",
-         "wav2qoa - 转换qoa", "Wiiu - gtx转换器", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin/Cue转换GDI","CMVS引擎 - pb3"
+         "wav转换qoa","qoa转换wav","Wiiu - gtx转换器", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin/Cue转换GDI","CMVS引擎 - pb3",
         };
         private bool IsConverter(string formatName) => _converters.Contains(formatName);
         private async void btnExtract_Click(object sender, EventArgs e)
@@ -693,7 +696,8 @@ namespace super_toolbox
                 case "Mages - mpk提取器": return new MagesMpkExtractor();
                 case "Mages - mpk打包器": return new MagesMpkRepacker();
                 case "Gnf2Png": return new GNF2PNG_Converter();
-                case "wav2qoa - 转换qoa": return new Wav2Qoa_Converter();
+                case "wav转换qoa": return new Wav2Qoa_Converter();
+                case "qoa转换wav": return new Qoa2Wav_Converter();
                 case "SRPG_Studio - dts": return new DtsExtractor();
                 case "XACT Wave Bank - xwb打包器": return new XWBPacker();
                 case "PNG2ASTC": return new Png2Astc_Converter();
@@ -756,6 +760,8 @@ namespace super_toolbox
                 case "CMVS引擎 - CPZ6": return new CPZ6_Extractor();
                 case "CMVS引擎 - CPZ7": return new CPZ7_Extractor();
                 case "CMVS引擎 - pb3": return new PB3_Converter();
+                case "初音未来歌姬计划 - DIVAFILE": return new DIVAFILE_Extractor();
+                case "初音未来歌姬计划 - farc": return new Farc_Extractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
