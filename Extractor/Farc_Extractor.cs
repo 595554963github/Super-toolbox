@@ -98,20 +98,69 @@ namespace super_toolbox
             byte[] magic = br.ReadBytes(4);
             uint limit = ReadBigEndian(br);
 
-            bool isCompressed = magic[3] != 'c';
-            bool isEncrypted = magic[2] == 'R' && magic[3] == 'C';
+            bool isCompressed;
+            bool isEncrypted;
+            uint dummy = 0;
+            uint xsize = 0;
 
-            br.ReadUInt32();
-            if (isEncrypted) br.ReadUInt32();
-            if (isEncrypted) ms.Seek(8, SeekOrigin.Current);
+            if (magic[0] == 'F' && magic[1] == 'A' && magic[2] == 'R' && magic[3] == 'C')
+            {
+                isCompressed = true;
+                isEncrypted = true;
+                dummy = ReadBigEndian(br);
+                xsize = ReadBigEndian(br);
+                br.ReadBytes(8);
+            }
+            else if (magic[0] == 'F' && magic[1] == 'A' && magic[2] == 'r' && magic[3] == 'C')
+            {
+                isCompressed = true;
+                isEncrypted = false;
+                dummy = ReadBigEndian(br);
+            }
+            else if (magic[0] == 'F' && magic[1] == 'A' && magic[2] == 'r' && magic[3] == 'c')
+            {
+                isCompressed = false;
+                isEncrypted = false;
+                dummy = ReadBigEndian(br);
+            }
+            else
+            {
+                return;
+            }
 
-            ms.Seek(isEncrypted ? 15 : 12, SeekOrigin.Begin);
+            long entriesStartPos;
+            if (isEncrypted)
+            {
+                entriesStartPos = 32;
+            }
+            else
+            {
+                entriesStartPos = 12;
+            }
+
+            ms.Seek(entriesStartPos, SeekOrigin.Begin);
 
             var entries = new List<FARCEntry>();
             while (ms.Position < limit)
             {
-                string name = ReadNullTerminatedString(br);
+                StringBuilder nameSb = new StringBuilder();
+                byte b;
+                try
+                {
+                    while ((b = br.ReadByte()) != 0)
+                    {
+                        nameSb.Append((char)b);
+                    }
+                }
+                catch
+                {
+                    break;
+                }
+
+                string name = nameSb.ToString();
                 if (string.IsNullOrEmpty(name)) break;
+
+                if (ms.Position + 12 > ms.Length) break;
 
                 uint offset = ReadBigEndian(br);
                 uint? zsize = isCompressed ? ReadBigEndian(br) : (uint?)null;
@@ -122,6 +171,10 @@ namespace super_toolbox
                     entries.Add(new FARCEntry { Name = name, Offset = offset, ZSize = zsize, Size = size });
                 }
             }
+
+            entries = entries.Where(entry => !string.IsNullOrEmpty(entry.Name) && (entry.Size > 0 || (entry.ZSize.HasValue && entry.ZSize.Value > 0))).ToList();
+
+            if (entries.Count == 0) return;
 
             string outputDir = Path.Combine(Path.GetDirectoryName(file) ?? baseDir, Path.GetFileNameWithoutExtension(file));
             Directory.CreateDirectory(outputDir);
@@ -136,34 +189,52 @@ namespace super_toolbox
 
             foreach (var entry in entries)
             {
-                if (entry.Offset + entry.Size > content.Length) continue;
+                if (entry.Offset >= content.Length) continue;
 
                 byte[] data;
                 if (!isCompressed || (entry.ZSize.HasValue && entry.Size == entry.ZSize.Value))
                 {
-                    data = new byte[entry.Size];
-                    Array.Copy(content, entry.Offset, data, 0, entry.Size);
+                    uint readSize = Math.Min(entry.Size, (uint)(content.Length - entry.Offset));
+                    data = new byte[readSize];
+                    Array.Copy(content, entry.Offset, data, 0, readSize);
                 }
                 else
                 {
                     uint alignedZSize = entry.ZSize ?? 0;
                     if (alignedZSize % 16 != 0) alignedZSize += 16 - (alignedZSize % 16);
 
+                    if (entry.Offset + alignedZSize > content.Length)
+                    {
+                        ExtractionProgress?.Invoke(this, $"跳过:{entry.Name} - 数据超出文件范围");
+                        continue;
+                    }
+
                     byte[] compressed = new byte[alignedZSize];
                     Array.Copy(content, entry.Offset, compressed, 0, alignedZSize);
 
                     if (isEncrypted)
                     {
-                        using var aes = Aes.Create();
-                        aes.Key = FARC_KEY;
-                        aes.Mode = CipherMode.ECB;
-                        aes.Padding = PaddingMode.None;
-                        using var decryptor = aes.CreateDecryptor();
-                        compressed = decryptor.TransformFinalBlock(compressed, 0, compressed.Length);
+                        try
+                        {
+                            using var aes = Aes.Create();
+                            aes.Key = FARC_KEY;
+                            aes.Mode = CipherMode.ECB;
+                            aes.Padding = PaddingMode.None;
+                            using var decryptor = aes.CreateDecryptor();
+                            compressed = decryptor.TransformFinalBlock(compressed, 0, compressed.Length);
+                        }
+                        catch
+                        {
+                            ExtractionProgress?.Invoke(this, $"解密失败:{entry.Name}");
+                            continue;
+                        }
                     }
 
-                    byte[] trimmed = new byte[entry.ZSize ?? 0];
-                    Array.Copy(compressed, trimmed, trimmed.Length);
+                    uint actualZSize = entry.ZSize ?? 0;
+                    if (actualZSize > compressed.Length) actualZSize = (uint)compressed.Length;
+
+                    byte[] trimmed = new byte[actualZSize];
+                    Array.Copy(compressed, trimmed, actualZSize);
 
                     try
                     {
@@ -177,6 +248,13 @@ namespace super_toolbox
                         {
                             byte[] final = new byte[entry.Size];
                             Array.Copy(data, final, final.Length);
+                            data = final;
+                        }
+                        else if (data.Length < entry.Size)
+                        {
+                            byte[] final = new byte[entry.Size];
+                            Array.Copy(data, final, data.Length);
+                            Array.Fill<byte>(final, 0, data.Length, (int)(entry.Size - data.Length));
                             data = final;
                         }
                     }
@@ -236,5 +314,20 @@ namespace super_toolbox
 
             return newPath;
         }
+
+        protected virtual void ThrowIfCancellationRequested(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+        }
+
+        protected virtual void OnExtractionFailed(string message) { }
+        protected virtual void OnExtractionCompleted() { }
+        protected virtual void OnFileExtracted(string path) { }
+    }
+
+    public abstract class BaseExtractor
+    {
+        public abstract void Extract(string directoryPath);
+        public abstract Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default);
     }
 }
