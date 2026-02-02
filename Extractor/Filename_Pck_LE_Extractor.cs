@@ -11,10 +11,10 @@ namespace super_toolbox
 
         private static readonly byte[] ZLIB_HEADER = { 0x5A, 0x4C, 0x49, 0x42 };
         private static readonly byte[] FILENAME_HEADER = { 0x46, 0x69, 0x6C, 0x65, 0x6E, 0x61, 0x6D, 0x65 };
-        private static readonly byte[] PACK_MARKER_4 = Encoding.ASCII.GetBytes("Pack    ");//超女神信仰诺瓦露(steam)、约会大作战凛绪轮回(psv)
-        private static readonly byte[] PACK_MARKER_8 = Encoding.ASCII.GetBytes("Pack        ");//超女神信仰诺瓦露(switch)、传颂之物二人的白皇(steam)
+        private static readonly byte[] PACK_MARKER_4 = Encoding.ASCII.GetBytes("Pack    ");//超女神信仰诺瓦露(steam)、约会大作战凛绪轮回(psv)、传颂之物二人的白皇(psv)、传颂之物虚伪的假面(psv)、传颂之物致逝者的摇篮曲(psv)
+        private static readonly byte[] PACK_MARKER_8 = Encoding.ASCII.GetBytes("Pack        ");//超女神信仰诺瓦露(switch),传颂之物二人的白皇(steam)、传颂之物虚伪的假面(steam)、传颂之物致逝者的摇篮曲(steam)
         private static readonly byte[] PACK_MARKER_12 = Encoding.ASCII.GetBytes("Pack            ");//暂未发现
-        private static readonly byte[] PACK_MARKER_16 = Encoding.ASCII.GetBytes("Pack                "); //约会大作战_凛绪轮回(steam)、白色相簿_编缀的冬日回忆(steam)
+        private static readonly byte[] PACK_MARKER_16 = Encoding.ASCII.GetBytes("Pack                "); //约会大作战凛绪轮回(steam)、白色相簿_编缀的冬日回忆(steam)
 
         private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
@@ -152,7 +152,7 @@ namespace super_toolbox
                                     }
                                 }
                                 pckHeaderData = decompressedStream.ToArray();
-                                ExtractionProgress?.Invoke(this, $"{pckFileName}:zlib解压完成，大小:{pckHeaderData.Length / 1024.0 / 1024.0:F2}MB");
+                                ExtractionProgress?.Invoke(this, $"{pckFileName}:zlib解压完成,大小:{pckHeaderData.Length / 1024.0 / 1024.0:F2}MB");
                             }
                         }
                         else
@@ -184,7 +184,7 @@ namespace super_toolbox
 
                     if (packMarkerPos == -1)
                     {
-                        ExtractionProgress?.Invoke(this, $"{pckFileName}:未找到Pack标记，跳过");
+                        ExtractionProgress?.Invoke(this, $"{pckFileName}:未找到Pack标记,跳过");
                         continue;
                     }
 
@@ -251,8 +251,8 @@ namespace super_toolbox
             TotalFilesToExtract = extractedFiles.Count;
             ExtractionProgress?.Invoke(this,
                 extractedFiles.Count > 0
-                    ? $"处理完成，共提取{extractedFiles.Count}个文件"
-                    : "处理完成，未提取到任何文件");
+                    ? $"处理完成,共提取{extractedFiles.Count}个文件"
+                    : "处理完成,未提取到任何文件");
             OnExtractionCompleted();
         }
 
@@ -262,7 +262,7 @@ namespace super_toolbox
             stream.Position = startOffset;
             int entryIndex = 0;
 
-            ExtractionProgress?.Invoke(this, $"{fileName}:开始解析索引区，起始位置:0x{startOffset:X}");
+            ExtractionProgress?.Invoke(this, $"{fileName}:开始解析索引区,起始位置:0x{startOffset:X}");
 
             try
             {
@@ -307,7 +307,7 @@ namespace super_toolbox
 
                         if (offset >= fileLength || size == 0 || offset + size > fileLength)
                         {
-                            ExtractionProgress?.Invoke(this, $"{fileName}:条目{entryIndex}无效，可能是64位格式或已到达数据区");
+                            ExtractionProgress?.Invoke(this, $"{fileName}:条目{entryIndex}无效,可能是64位格式或已到达数据区");
 
                             stream.Position -= 8;
                             break;
@@ -318,14 +318,14 @@ namespace super_toolbox
 
                         if (entryIndex % 500 == 0)
                         {
-                            ExtractionProgress?.Invoke(this, $"{fileName}:已解析{entryIndex}个32位条目，位置:0x{stream.Position:X}");
+                            ExtractionProgress?.Invoke(this, $"{fileName}:已解析{entryIndex}个32位条目,位置:0x{stream.Position:X}");
                         }
                     }
                 }
 
                 if (entries.Count == 0)
                 {
-                    ExtractionProgress?.Invoke(this, $"{fileName}:32位解析失败，尝试智能解析");
+                    ExtractionProgress?.Invoke(this, $"{fileName}:32位解析失败,尝试智能解析");
 
                     stream.Position = startOffset;
                     entryIndex = 0;
@@ -361,7 +361,7 @@ namespace super_toolbox
 
                             if (entryIndex % 500 == 0)
                             {
-                                ExtractionProgress?.Invoke(this, $"{fileName}:智能解析条目{entryIndex}，偏移:0x{offset32:X}");
+                                ExtractionProgress?.Invoke(this, $"{fileName}:智能解析条目{entryIndex},偏移:0x{offset32:X}");
                             }
                         }
                         else
@@ -390,7 +390,7 @@ namespace super_toolbox
                                             lastValidOffset = (long)offset64;
                                             entryIndex++;
                                             consecutiveInvalidCount = 0;
-                                            ExtractionProgress?.Invoke(this, $"{fileName}:发现64位条目，偏移:0x{offset64:X}");
+                                            ExtractionProgress?.Invoke(this, $"{fileName}:发现64位条目,偏移:0x{offset64:X}");
                                         }
                                         else
                                         {
@@ -402,7 +402,7 @@ namespace super_toolbox
 
                             if (consecutiveInvalidCount >= 3)
                             {
-                                ExtractionProgress?.Invoke(this, $"{fileName}:连续{consecutiveInvalidCount}个无效条目，停止解析");
+                                ExtractionProgress?.Invoke(this, $"{fileName}:连续{consecutiveInvalidCount}个无效条目,停止解析");
                                 break;
                             }
                         }
@@ -439,7 +439,7 @@ namespace super_toolbox
                     {
                         if (entries[i].size > 100 * 1024 * 1024)
                         {
-                            ExtractionError?.Invoke(this, $"{fileName}:文件{i}可能解析错误，大小: {entries[i].size / 1024.0 / 1024.0:F2}MB");
+                            ExtractionError?.Invoke(this, $"{fileName}:文件{i}可能解析错误,大小: {entries[i].size / 1024.0 / 1024.0:F2}MB");
                         }
                     }
                 }
@@ -449,7 +449,7 @@ namespace super_toolbox
                 ExtractionError?.Invoke(this, $"{fileName}:解析索引区失败: {ex.Message}");
             }
 
-            ExtractionProgress?.Invoke(this, $"{fileName}:解析完成，共找到{entries.Count}个有效文件条目");
+            ExtractionProgress?.Invoke(this, $"{fileName}:解析完成,共找到{entries.Count}个有效文件条目");
 
             int showCount = Math.Min(10, entries.Count);
             for (int i = 0; i < showCount; i++)
@@ -477,7 +477,7 @@ namespace super_toolbox
 
             if (isZlibPck)
             {
-                ExtractionProgress?.Invoke(this, $"{fileName}:开始提取Zlib压缩包内文件，共{entries.Count}个");
+                ExtractionProgress?.Invoke(this, $"{fileName}:开始提取Zlib压缩包内文件,共{entries.Count}个");
                 for (int i = 0; i < entries.Count; i++)
                 {
                     ThrowIfCancellationRequested(cancellationToken);
@@ -493,7 +493,7 @@ namespace super_toolbox
 
                         if (fileOffset < 0 || fileSize <= 0 || fileOffset + fileSize > (long)decompressedData.LongLength)
                         {
-                            ExtractionError?.Invoke(this, $"{fileName}: 文件{i + 1}偏移0x{fileOffset:X16}或大小{fileSize}超出解压后数据范围({decompressedData.LongLength}字节)，跳过");
+                            ExtractionError?.Invoke(this, $"{fileName}: 文件{i + 1}偏移0x{fileOffset:X16}或大小{fileSize}超出解压后数据范围({decompressedData.LongLength}字节),跳过");
                             failedCount++;
                             continue;
                         }
@@ -515,7 +515,7 @@ namespace super_toolbox
 
                                 if (bytesToReadNow <= 0)
                                 {
-                                    ExtractionError?.Invoke(this, $"{fileName}: 文件{i + 1}读取超出边界，终止读取");
+                                    ExtractionError?.Invoke(this, $"{fileName}: 文件{i + 1}读取超出边界,终止读取");
                                     break;
                                 }
 
@@ -538,7 +538,7 @@ namespace super_toolbox
                             if (actualSize != fileSize)
                             {
                                 ExtractionError?.Invoke(this,
-                                    $"{fileName}: 文件{i + 1}大小不匹配，预期{fileSize}字节，实际{actualSize}字节");
+                                    $"{fileName}: 文件{i + 1}大小不匹配,预期{fileSize}字节,实际{actualSize}字节");
                                 failedCount++;
                                 File.Delete(outputFilePath);
                                 continue;
@@ -565,7 +565,7 @@ namespace super_toolbox
             }
             else
             {
-                ExtractionProgress?.Invoke(this, $"{fileName}:开始提取普通包内文件，共{entries.Count}个");
+                ExtractionProgress?.Invoke(this, $"{fileName}:开始提取普通包内文件,共{entries.Count}个");
                 using (var fs = new FileStream(pckFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, FileOptions.RandomAccess))
                 {
                     for (int i = 0; i < entries.Count; i++)
@@ -584,7 +584,7 @@ namespace super_toolbox
                             if (fileOffset < 0 || fileSize <= 0 || fileOffset > fs.Length)
                             {
                                 ExtractionError?.Invoke(this,
-                                    $"{fileName}: 文件{i + 1}偏移0x{fileOffset:X16}或大小{fileSize}无效(文件总大小{fs.Length}字节)，跳过");
+                                    $"{fileName}: 文件{i + 1}偏移0x{fileOffset:X16}或大小{fileSize}无效(文件总大小{fs.Length}字节),跳过");
                                 failedCount++;
                                 continue;
                             }
@@ -620,7 +620,7 @@ namespace super_toolbox
                                 if (bytesReadTotal != fileSize)
                                 {
                                     ExtractionError?.Invoke(this,
-                                        $"{fileName}: 文件{i + 1}读取不完整，预期{fileSize}字节，实际{bytesReadTotal}字节");
+                                        $"{fileName}: 文件{i + 1}读取不完整,预期{fileSize}字节,实际{bytesReadTotal}字节");
                                     failedCount++;
                                     File.Delete(outputFilePath);
                                     continue;
