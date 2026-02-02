@@ -1,5 +1,3 @@
-﻿using System.Runtime.InteropServices;
-
 namespace super_toolbox
 {
     public class PlayStation_Trp_Extractor : BaseExtractor
@@ -24,8 +22,7 @@ namespace super_toolbox
 
             ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
-            var trpFiles = Directory.EnumerateFiles(directoryPath, "*.trp", SearchOption.AllDirectories)
-                .ToList();
+            var trpFiles = Directory.EnumerateFiles(directoryPath, "*.trp", SearchOption.AllDirectories).ToList();
 
             if (trpFiles.Count == 0)
             {
@@ -44,9 +41,9 @@ namespace super_toolbox
             {
                 foreach (var filePath in trpFiles)
                 {
-                    ThrowIfCancellationRequested(cancellationToken);
-
+                    cancellationToken.ThrowIfCancellationRequested();
                     processedCount++;
+
                     string fileName = Path.GetFileName(filePath);
                     ExtractionProgress?.Invoke(this, $"正在处理文件({processedCount}/{trpFiles.Count}): {fileName}");
 
@@ -54,13 +51,10 @@ namespace super_toolbox
                     {
                         int extractedCount = await ExtractTrpFile(filePath, cancellationToken);
                         totalExtractedFiles += extractedCount;
-
                         ExtractionProgress?.Invoke(this, $"{fileName}提取完成,共提取{extractedCount}个文件");
                     }
                     catch (OperationCanceledException)
                     {
-                        ExtractionError?.Invoke(this, "提取操作已取消");
-                        OnExtractionFailed("提取操作已取消");
                         throw;
                     }
                     catch (Exception ex)
@@ -104,7 +98,6 @@ namespace super_toolbox
             }
 
             Directory.CreateDirectory(outputDir);
-
             ExtractionProgress?.Invoke(this, $"正在解包:{Path.GetFileName(filePath)}");
             ExtractionProgress?.Invoke(this, $"输出到:{outputDir}");
 
@@ -113,59 +106,95 @@ namespace super_toolbox
             try
             {
                 using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                using (var reader = new BigEndianBinaryReader(fs))
+                using (var reader = new BinaryReader(fs))
                 {
-                    Header header = ReadHeader(reader);
+                    byte[] header = reader.ReadBytes(4);
+                    uint magic = BitConverter.ToUInt32(header, 0);
 
-                    if (header.magic != 0x01000000004DA2DC)
+                    if (magic != 0x004DA2DC)
                     {
                         ExtractionError?.Invoke(this, $"不是有效的TRP文件:{Path.GetFileName(filePath)}");
                         return 0;
                     }
 
-                    int fileCount = header.AllFileCount;
-                    ExtractionProgress?.Invoke(this, $"文件数量:{fileCount}");
+                    fs.Seek(0x40, SeekOrigin.Begin);
+                    long firstDataOffset = -1;
+                    var fileEntries = new List<FileEntry>();
 
-                    var fileInfos = new FileOffsetInfo[fileCount];
-                    for (int i = 0; i < fileCount; i++)
-                    {
-                        fileInfos[i] = ReadFileOffsetInfo(reader);
-                    }
-
-                    foreach (var fileInfo in fileInfos)
+                    while (true)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        if (fileInfo.FileSize == 0)
+                        if (fs.Position + 64 > fs.Length) break;
+
+                        long entryStart = fs.Position;
+                        byte[] entryData = reader.ReadBytes(64);
+                        if (entryData.Length < 64) break;
+
+                        string fileName = "";
+                        for (int i = 0; i < 32; i++)
                         {
-                            ExtractionProgress?.Invoke(this, $"跳过文件{fileInfo.fileName}:大小为0");
+                            if (entryData[i] == 0) break;
+                            fileName += (char)entryData[i];
+                        }
+
+                        if (string.IsNullOrEmpty(fileName)) break;
+
+                        uint offset = (uint)((entryData[0x24] << 24) | (entryData[0x25] << 16) | (entryData[0x26] << 8) | entryData[0x27]);
+                        uint size = (uint)((entryData[0x2C] << 24) | (entryData[0x2D] << 16) | (entryData[0x2E] << 8) | entryData[0x2F]);
+
+                        if (firstDataOffset == -1 && offset > 0)
+                        {
+                            firstDataOffset = offset;
+                        }
+
+                        if (offset == 0 || size == 0)
+                        {
+                            ExtractionProgress?.Invoke(this, $"跳过文件{fileName}:偏移或大小为0");
                             continue;
                         }
 
-                        if (fileInfo.Offset >= fs.Length)
+                        if (entryStart >= firstDataOffset && firstDataOffset > 0)
                         {
-                            ExtractionError?.Invoke(this, $"文件{fileInfo.fileName}偏移地址超出文件范围:{fileInfo.Offset}");
+                            break;
+                        }
+
+                        fileEntries.Add(new FileEntry
+                        {
+                            Name = fileName,
+                            Offset = offset,
+                            Size = size
+                        });
+                    }
+
+                    ExtractionProgress?.Invoke(this, $"找到{fileEntries.Count}个有效文件条目");
+
+                    foreach (var entry in fileEntries)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        if (entry.Offset >= fs.Length)
+                        {
+                            ExtractionError?.Invoke(this, $"文件{entry.Name}偏移地址超出文件范围:{entry.Offset:X8}");
                             continue;
                         }
 
-                        if (fileInfo.Offset + fileInfo.FileSize > fs.Length)
+                        if (entry.Offset + entry.Size > fs.Length)
                         {
-                            ExtractionError?.Invoke(this, $"文件{fileInfo.fileName}大小超出文件范围:偏移{fileInfo.Offset},大小{fileInfo.FileSize}");
+                            ExtractionError?.Invoke(this, $"文件{entry.Name}大小超出文件范围:偏移{entry.Offset:X8},大小{entry.Size}");
                             continue;
                         }
 
-                        fs.Seek(fileInfo.Offset, SeekOrigin.Begin);
-
-                        byte[] data = reader.ReadBytes((int)fileInfo.FileSize);
+                        fs.Seek(entry.Offset, SeekOrigin.Begin);
+                        byte[] data = reader.ReadBytes((int)entry.Size);
 
                         if (data.Length == 0)
                         {
-                            ExtractionProgress?.Invoke(this, $"文件{fileInfo.fileName}:数据长度为0");
+                            ExtractionProgress?.Invoke(this, $"文件{entry.Name}:数据长度为0");
                             continue;
                         }
 
-                        string safeFileName = SanitizeFileName(fileInfo.fileName);
-                        string outputFile = Path.Combine(outputDir, safeFileName);
+                        string outputFile = Path.Combine(outputDir, entry.Name);
 
                         string? outputFileDir = Path.GetDirectoryName(outputFile);
                         if (!string.IsNullOrEmpty(outputFileDir) && !Directory.Exists(outputFileDir))
@@ -176,9 +205,9 @@ namespace super_toolbox
                         await File.WriteAllBytesAsync(outputFile, data, cancellationToken);
 
                         extractedCount++;
-                        double sizeKB = fileInfo.FileSize / 1024.0;
+                        double sizeKB = entry.Size / 1024.0;
 
-                        ExtractionProgress?.Invoke(this, $"{safeFileName,-40}- {fileInfo.FileSize,9}字节({sizeKB,7:F1}KB)");
+                        ExtractionProgress?.Invoke(this, $"{entry.Name,-40}- {entry.Size,9}字节({sizeKB,7:F1}KB)");
                         OnFileExtracted(outputFile);
                     }
                 }
@@ -202,182 +231,11 @@ namespace super_toolbox
                 throw new Exception($"提取TRP文件时出错:{ex.Message}", ex);
             }
         }
-
-        private Header ReadHeader(BigEndianBinaryReader reader)
+        private class FileEntry
         {
-            int headerSize = Marshal.SizeOf(typeof(Header));
-            byte[] headerBytes = reader.ReadBytes(headerSize);
-            return Extensions.ToStruct<Header>(headerBytes);
-        }
-
-        private FileOffsetInfo ReadFileOffsetInfo(BigEndianBinaryReader reader)
-        {
-            int infoSize = Marshal.SizeOf(typeof(FileOffsetInfo));
-            byte[] infoBytes = reader.ReadBytes(infoSize);
-            return Extensions.ToStruct<FileOffsetInfo>(infoBytes);
-        }
-
-        private string SanitizeFileName(string fileName)
-        {
-            if (string.IsNullOrEmpty(fileName))
-                return "unnamed.bin";
-
-            fileName = fileName.TrimEnd('\0');
-
-            if (string.IsNullOrEmpty(fileName))
-                return "unnamed.bin";
-
-            string invalidChars = new string(Path.GetInvalidFileNameChars());
-            foreach (char c in invalidChars)
-            {
-                fileName = fileName.Replace(c, '_');
-            }
-
-            return fileName;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct Header
-        {
-            public ulong magic;
-            public ulong _fileSize;
-            private int u1;
-            public int AllFileCount
-            {
-                get
-                {
-                    return Extensions.ChangeEndian(u1);
-                }
-            }
-            public int u2;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 40, ArraySubType = UnmanagedType.I1)]
-            public byte[] padding;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-        public struct FileOffsetInfo
-        {
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
-            public string fileName;
-            private long _offset;
-            public long Offset
-            {
-                get
-                {
-                    return Extensions.ChangeEndian(_offset);
-                }
-            }
-            private long _fileSize;
-            public long FileSize
-            {
-                get
-                {
-                    return Extensions.ChangeEndian(_fileSize);
-                }
-            }
-            public int u1;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 12, ArraySubType = UnmanagedType.I1)]
-            public byte[] padding;
-        }
-    }
-
-    internal class BigEndianBinaryReader : BinaryReader
-    {
-        private byte[] a16 = new byte[2];
-        private byte[] a32 = new byte[4];
-        private byte[] a64 = new byte[8];
-
-        public BigEndianBinaryReader(Stream stream) : base(stream) { }
-
-        public override short ReadInt16()
-        {
-            a16 = base.ReadBytes(2);
-            Array.Reverse(a16);
-            return BitConverter.ToInt16(a16, 0);
-        }
-
-        public override ushort ReadUInt16()
-        {
-            a16 = base.ReadBytes(2);
-            Array.Reverse(a16);
-            return BitConverter.ToUInt16(a16, 0);
-        }
-
-        public override int ReadInt32()
-        {
-            a32 = base.ReadBytes(4);
-            Array.Reverse(a32);
-            return BitConverter.ToInt32(a32, 0);
-        }
-
-        public override uint ReadUInt32()
-        {
-            a32 = base.ReadBytes(4);
-            Array.Reverse(a32);
-            return BitConverter.ToUInt32(a32, 0);
-        }
-
-        public override long ReadInt64()
-        {
-            a64 = base.ReadBytes(8);
-            Array.Reverse(a64);
-            return BitConverter.ToInt64(a64, 0);
-        }
-
-        public override ulong ReadUInt64()
-        {
-            a64 = base.ReadBytes(8);
-            Array.Reverse(a64);
-            return BitConverter.ToUInt64(a64, 0);
-        }
-
-        public DateTime ReadPS3DateTime()
-        {
-            return new DateTime(ReadInt64() * 10);
-        }
-    }
-
-    internal static class Extensions
-    {
-        public static T ToStruct<T>(this byte[] ptr) where T : struct
-        {
-            if (ptr == null || ptr.Length == 0)
-                throw new ArgumentException("字节数组不能为null或空", nameof(ptr));
-
-            if (ptr.Length < Marshal.SizeOf<T>())
-                throw new ArgumentException($"字节数组长度不足，需要{Marshal.SizeOf<T>()}字节，实际{ptr.Length}字节", nameof(ptr));
-
-            GCHandle handle = GCHandle.Alloc(ptr, GCHandleType.Pinned);
-            try
-            {
-                T ret = Marshal.PtrToStructure<T>(handle.AddrOfPinnedObject());
-                return ret;
-            }
-            finally
-            {
-                handle.Free();
-            }
-        }
-
-        public static int ChangeEndian(this int val)
-        {
-            byte[] arr = BitConverter.GetBytes(val);
-            Array.Reverse(arr);
-            return BitConverter.ToInt32(arr, 0);
-        }
-
-        public static long ChangeEndian(this long val)
-        {
-            byte[] arr = BitConverter.GetBytes(val);
-            Array.Reverse(arr);
-            return BitConverter.ToInt64(arr, 0);
-        }
-
-        public static ulong ChangeEndian(this ulong val)
-        {
-            byte[] arr = BitConverter.GetBytes(val);
-            Array.Reverse(arr);
-            return BitConverter.ToUInt64(arr, 0);
+            public string Name = "";
+            public uint Offset;
+            public uint Size;
         }
     }
 }
