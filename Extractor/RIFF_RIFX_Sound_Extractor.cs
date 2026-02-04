@@ -9,17 +9,17 @@ namespace super_toolbox
         public new event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] XWMA_PATTERN = { 0x12, 0x00, 0x00, 0x00, 0x61, 0x01 };
+        private static readonly byte[] RIFX_VALID_PATTERN = { 0x00, 0x00, 0x00, 0x20, 0x01, 0x65, 0x00, 0x10 };
         private const long LARGE_FILE_THRESHOLD = 2L * 1024 * 1024 * 1024;
         private const long MEMORY_MAP_BUFFER_SIZE = 256 * 1024 * 1024;
 
         private int fileCounter = 0;
-        private int staticCount = 0;     
 
-        private async Task<int> ProcessLargeFileWithMemoryMapAsync(string filePath, string extractedDir,
-                                                                  List<string> extractedFiles, CancellationToken cancellationToken)
+        private async Task<int> ProcessLargeFileWithMemoryMapAsync(string filePath, string extractedDir, List<string> extractedFiles, CancellationToken cancellationToken)
         {
             int extractedCount = 0;
             long fileSize = new FileInfo(filePath).Length;
+            int audioIndex = 0;
 
             using (var mmf = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open, null, 0, MemoryMappedFileAccess.Read))
             {
@@ -37,8 +37,34 @@ namespace super_toolbox
                         byte[] buffer = new byte[bufferSize];
                         accessor.ReadArray(0, buffer, 0, (int)bufferSize);
 
-                        int localExtracted = ProcessBufferFast(buffer, position, filePath, extractedDir, extractedFiles);
-                        extractedCount += localExtracted;
+                        int localPos = 0;
+                        while (localPos < buffer.Length - 8)
+                        {
+                            if (buffer[localPos] == 0x52 && buffer[localPos + 1] == 0x49 && buffer[localPos + 2] == 0x46)
+                            {
+                                bool isRiff = buffer[localPos + 3] == 0x46;
+                                bool isRifx = buffer[localPos + 3] == 0x58;
+                                int step = 0;
+
+                                if (isRiff)
+                                {
+                                    step = ProcessRiffHeaderFast(buffer, localPos, position, filePath, extractedDir, extractedFiles, audioIndex);
+                                }
+                                else if (isRifx)
+                                {
+                                    step = ProcessRifxHeaderFast(buffer, localPos, position, filePath, extractedDir, extractedFiles, audioIndex);
+                                }
+
+                                if (step > 0)
+                                {
+                                    extractedCount++;
+                                    audioIndex++;
+                                    localPos += step;
+                                    continue;
+                                }
+                            }
+                            localPos++;
+                        }
                     }
 
                     position += bufferSize;
@@ -50,184 +76,164 @@ namespace super_toolbox
                     }
                 }
             }
-
             return extractedCount;
         }
 
-        private int ProcessBufferFast(byte[] buffer, long bufferOffset, string sourceFilePath,
-                                     string outputDir, List<string> extractedFiles)
+        private int ProcessBufferFast(byte[] buffer, long bufferOffset, string sourceFilePath, string outputDir, List<string> extractedFiles)
         {
             int extractedCount = 0;
             int position = 0;
-            int waveCount = 0;
+            int audioIndex = 0;
 
             while (position < buffer.Length - 8)
             {
-                if (buffer[position] == 0x52 && buffer[position + 1] == 0x49 &&
-                    buffer[position + 2] == 0x46)
+                if (buffer[position] == 0x52 && buffer[position + 1] == 0x49 && buffer[position + 2] == 0x46)
                 {
                     bool isRiff = buffer[position + 3] == 0x46;
                     bool isRifx = buffer[position + 3] == 0x58;
+                    int step = 0;
 
                     if (isRiff)
                     {
-                        int result = ProcessRiffHeaderFast(buffer, position, bufferOffset,
-                            sourceFilePath, outputDir, extractedFiles, ref waveCount);
-                        if (result > 0)
-                        {
-                            extractedCount++;
-                            position += result;
-                            continue;
-                        }
+                        step = ProcessRiffHeaderFast(buffer, position, bufferOffset, sourceFilePath, outputDir, extractedFiles, audioIndex);
                     }
                     else if (isRifx)
                     {
-                        int result = ProcessRifxHeaderFast(buffer, position, bufferOffset,
-                            sourceFilePath, outputDir, extractedFiles);
-                        if (result > 0)
-                        {
-                            extractedCount++;
-                            position += result;
-                            continue;
-                        }
+                        step = ProcessRifxHeaderFast(buffer, position, bufferOffset, sourceFilePath, outputDir, extractedFiles, audioIndex);
+                    }
+
+                    if (step > 0)
+                    {
+                        extractedCount++;
+                        audioIndex++;
+                        position += step;
+                        continue;
                     }
                 }
-
                 position++;
             }
-
             return extractedCount;
         }
 
-        private int ProcessRiffHeaderFast(byte[] buffer, int position, long bufferOffset,
-                                 string sourceFilePath, string outputDir,
-                                 List<string> extractedFiles, ref int waveCount)
+        private int ProcessRiffHeaderFast(byte[] buffer, int position, long bufferOffset, string sourceFilePath, string outputDir, List<string> extractedFiles, int audioIndex)
         {
             if (position + 12 >= buffer.Length)
                 return 0;
 
             string format = "";
 
-            if (buffer[position + 8] == 0x57 && buffer[position + 9] == 0x41 &&
-                buffer[position + 10] == 0x56 && buffer[position + 11] == 0x45)
+            if (buffer[position + 8] == 0x57 && buffer[position + 9] == 0x41 && buffer[position + 10] == 0x56 && buffer[position + 11] == 0x45)
             {
                 format = IdentifyFormatFast(buffer, position);
             }
-            else if (buffer[position + 8] == 0x58 && buffer[position + 9] == 0x57 &&
-                     buffer[position + 10] == 0x4D && buffer[position + 11] == 0x41)
+            else if (buffer[position + 8] == 0x58 && buffer[position + 9] == 0x57 && buffer[position + 10] == 0x4D && buffer[position + 11] == 0x41)
             {
-                if (position + 22 < buffer.Length)
-                {
-                    bool matchesXwmaPattern = true;
-                    for (int i = 0; i < 6; i++)
-                    {
-                        if (buffer[position + 16 + i] != XWMA_PATTERN[i])
-                        {
-                            matchesXwmaPattern = false;
-                            break;
-                        }
-                    }
-
-                    if (matchesXwmaPattern)
-                    {
-                        format = "xwma";
-                    }
-                    else
-                    {
-                        return 0;
-                    }
-                }
-                else
-                {
+                if (position + 22 >= buffer.Length)
                     return 0;
+
+                bool matchesXwmaPattern = true;
+                for (int i = 0; i < 6; i++)
+                {
+                    if (buffer[position + 16 + i] != XWMA_PATTERN[i])
+                    {
+                        matchesXwmaPattern = false;
+                        break;
+                    }
                 }
+                if (!matchesXwmaPattern)
+                    return 0;
+
+                format = "xwma";
             }
             else
             {
                 return 0;
             }
 
-            int fileSize = BitConverter.ToInt32(buffer, position + 4);
-            if (fileSize <= 0 || fileSize > buffer.Length - position - 8)
+            int chunkSize = BitConverter.ToInt32(buffer, position + 4);
+            if (chunkSize <= 0)
                 return 0;
 
-            int totalSize = fileSize + 8;
-            int endPosition = position + totalSize;
+            int totalSize = chunkSize + 8;
+            if (position + totalSize > buffer.Length)
+                return 0;
 
-            if (endPosition > buffer.Length)
-                endPosition = buffer.Length;
-            string fileName = $"{Path.GetFileNameWithoutExtension(sourceFilePath)}_{waveCount + 1}.{format}";
+            string baseName = Path.GetFileNameWithoutExtension(sourceFilePath);
+            string fileName;
+
+            if (audioIndex == 0)
+            {
+                fileName = $"{baseName}.{format}";
+            }
+            else
+            {
+                fileName = $"{baseName}_{audioIndex + 1}.{format}";
+            }
+
             string filePath = Path.Combine(outputDir, fileName);
 
-            SaveAudioFileFast(buffer, position, endPosition - position,
-                filePath, extractedFiles);
-
-            waveCount++;
-
+            SaveAudioFileFast(buffer, position, totalSize, filePath, extractedFiles);
             return totalSize;
         }
 
-        private int ProcessRifxHeaderFast(byte[] buffer, int position, long bufferOffset,
-                                         string sourceFilePath, string outputDir,
-                                         List<string> extractedFiles)
+        private int ProcessRifxHeaderFast(byte[] buffer, int position, long bufferOffset, string sourceFilePath, string outputDir, List<string> extractedFiles, int audioIndex)
         {
-            if (position + 8 >= buffer.Length)
+            if (position + 16 > buffer.Length)
                 return 0;
 
-            int fileSize = (buffer[position + 7] << 24) |
-                           (buffer[position + 6] << 16) |
-                           (buffer[position + 5] << 8) |
-                           buffer[position + 4];
+            int chunkSize =
+                (buffer[position + 7] << 24) |
+                (buffer[position + 6] << 16) |
+                (buffer[position + 5] << 8) |
+                buffer[position + 4];
 
-            if (fileSize <= 0 || fileSize > buffer.Length - position)
+            if (chunkSize <= 0)
                 return 0;
 
-            int endPosition = position + fileSize;
-            if (endPosition > buffer.Length)
-                endPosition = buffer.Length;
-
-            if (endPosition - position > 16)
+            bool isRifxValid = true;
+            for (int i = 0; i < RIFX_VALID_PATTERN.Length; i++)
             {
-                bool hasWaveFmt = true;
-                byte[] waveFmtPattern = { 0x57, 0x41, 0x56, 0x45, 0x66, 0x6D, 0x74 };
-                for (int i = 0; i < 7; i++)
+                if (buffer[position + 0x10 + i] != RIFX_VALID_PATTERN[i])
                 {
-                    if (buffer[position + 8 + i] != waveFmtPattern[i])
-                    {
-                        hasWaveFmt = false;
-                        break;
-                    }
+                    isRifxValid = false;
+                    break;
                 }
+            }
+            if (!isRifxValid)
+                return 0;
 
-                if (!hasWaveFmt)
-                    return 0;
+            int totalSize = chunkSize;
+            if (position + totalSize > buffer.Length)
+                return 0;
+
+            string baseName = Path.GetFileNameWithoutExtension(sourceFilePath);
+            string fileName;
+
+            if (audioIndex == 0)
+            {
+                fileName = $"{baseName}.wem";
+            }
+            else
+            {
+                fileName = $"{baseName}_{audioIndex + 1}.wem";
             }
 
-            staticCount++;
-            string fileName = $"{Path.GetFileNameWithoutExtension(sourceFilePath)}_{staticCount}.wem";
             string filePath = Path.Combine(outputDir, fileName);
 
-            SaveAudioFileFast(buffer, position, endPosition - position,
-                filePath, extractedFiles);
-
-            return fileSize;
+            SaveAudioFileFast(buffer, position, totalSize, filePath, extractedFiles);
+            return totalSize;
         }
 
-        private void SaveAudioFileFast(byte[] data, int offset, int length,
-                                      string filePath, List<string> extractedFiles)
+        private void SaveAudioFileFast(byte[] data, int offset, int length, string filePath, List<string> extractedFiles)
         {
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(filePath) ?? "");
-
-                string uniqueFilePath = GenerateUniqueFilePath(filePath);
-
-                using var fileStream = new FileStream(uniqueFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, false);
-                fileStream.Write(data, offset, length);
-
-                extractedFiles.Add(uniqueFilePath);
+                using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, false);
+                fs.Write(data, offset, length);
+                extractedFiles.Add(filePath);
                 fileCounter++;
-                OnFileExtracted(uniqueFilePath);
+                OnFileExtracted(filePath);
             }
             catch (Exception ex)
             {
@@ -240,42 +246,31 @@ namespace super_toolbox
             if (buffer.Length - position < 0x18)
                 return "wav";
 
-            byte formatByte = buffer[position + 0x10];
-            byte byte14 = buffer[position + 0x14];
-            byte byte15 = buffer[position + 0x15];
-
-            if (formatByte == 0x20 && byte14 == 0x70 && byte15 == 0x02)
-                return "at3";
-            if (formatByte == 0x34 && byte14 == 0xFE && byte15 == 0xFF)
-                return "at9";
-            if (formatByte == 0x34 && byte14 == 0x66 && byte15 == 0x01)
-                return "xma";
-            if (formatByte == 0x42 && byte14 == 0xFF && byte15 == 0xFF)
+            if (buffer[position + 0x10] == 0x18 && buffer[position + 0x11] == 0x00 &&
+                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
+                buffer[position + 0x14] == 0x02 && buffer[position + 0x15] == 0x00)
+            {
                 return "wem";
-            if (formatByte == 0x10 && byte14 == 0x01 && byte15 == 0x00)
+            }
+            else if (buffer[position + 0x10] == 0x10 && buffer[position + 0x11] == 0x00 &&
+                     buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
+                     buffer[position + 0x14] == 0x01 && buffer[position + 0x15] == 0x00 &&
+                     buffer[position + 0x16] == 0x02 && buffer[position + 0x17] == 0x00)
+            {
                 return "wav";
+            }
+
+            byte f = buffer[position + 0x10];
+            byte b14 = buffer[position + 0x14];
+            byte b15 = buffer[position + 0x15];
+
+            if (f == 0x20 && b14 == 0x70 && b15 == 0x02) return "at3";
+            if (f == 0x34 && b14 == 0xFE && b15 == 0xFF) return "at9";
+            if (f == 0x34 && b14 == 0x66 && b15 == 0x01) return "xma";
+            if (f == 0x42 && b14 == 0xFF && b15 == 0xFF) return "wem";
+            if (f == 0x10 && b14 == 0x01 && b15 == 0x00) return "wav";
 
             return "wav";
-        }
-
-        private string GenerateUniqueFilePath(string filePath)
-        {
-            if (!File.Exists(filePath))
-                return filePath;
-
-            string directory = Path.GetDirectoryName(filePath) ?? "";
-            string fileNameWithoutExt = Path.GetFileNameWithoutExtension(filePath);
-            string extension = Path.GetExtension(filePath);
-            int counter = 1;
-            string newPath;
-
-            do
-            {
-                newPath = Path.Combine(directory, $"{fileNameWithoutExt}_{counter}{extension}");
-                counter++;
-            } while (File.Exists(newPath));
-
-            return newPath;
         }
 
         public override void Extract(string directoryPath)
@@ -299,39 +294,36 @@ namespace super_toolbox
             ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
             var filePaths = Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories)
-                .Where(file => !file.StartsWith(extractedDir, StringComparison.OrdinalIgnoreCase))
+                .Where(f => !f.StartsWith(extractedDir, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             TotalFilesToExtract = filePaths.Count;
-            int processedSourceFiles = 0;
-            int totalExtractedFiles = 0;
+            int processed = 0;
+            int total = 0;
 
             fileCounter = 0;
-            staticCount = 0;
 
-            foreach (var filePath in filePaths)
+            foreach (var fp in filePaths)
             {
                 ThrowIfCancellationRequested(cancellationToken);
-                processedSourceFiles++;
-
-                ExtractionProgress?.Invoke(this, $"正在处理源文件({processedSourceFiles}/{TotalFilesToExtract}):{Path.GetFileName(filePath)}");
+                processed++;
+                ExtractionProgress?.Invoke(this, $"正在处理源文件({processed}/{TotalFilesToExtract}):{Path.GetFileName(fp)}");
 
                 try
                 {
-                    FileInfo fileInfo = new FileInfo(filePath);
-                    int extractedCount = 0;
+                    FileInfo fi = new FileInfo(fp);
+                    int cnt = 0;
 
-                    if (fileInfo.Length < LARGE_FILE_THRESHOLD)
+                    if (fi.Length < LARGE_FILE_THRESHOLD)
                     {
-                        byte[] content = await File.ReadAllBytesAsync(filePath, cancellationToken);
-                        extractedCount = ProcessSmallFileFast(content, filePath, extractedDir, extractedFiles);
+                        byte[] content = await File.ReadAllBytesAsync(fp, cancellationToken);
+                        cnt = ProcessBufferFast(content, 0, fp, extractedDir, extractedFiles);
                     }
                     else
                     {
-                        extractedCount = await ProcessLargeFileWithMemoryMapAsync(filePath, extractedDir, extractedFiles, cancellationToken);
+                        cnt = await ProcessLargeFileWithMemoryMapAsync(fp, extractedDir, extractedFiles, cancellationToken);
                     }
-
-                    totalExtractedFiles += extractedCount;
+                    total += cnt;
                 }
                 catch (OperationCanceledException)
                 {
@@ -341,13 +333,13 @@ namespace super_toolbox
                 }
                 catch (IOException e)
                 {
-                    ExtractionError?.Invoke(this, $"读取文件{filePath}时出错:{e.Message}");
-                    OnExtractionFailed($"读取文件{filePath}时出错:{e.Message}");
+                    ExtractionError?.Invoke(this, $"读取文件{fp}时出错:{e.Message}");
+                    OnExtractionFailed($"读取文件{fp}时出错:{e.Message}");
                 }
                 catch (Exception e)
                 {
-                    ExtractionError?.Invoke(this, $"处理文件{filePath}时发生错误:{e.Message}");
-                    OnExtractionFailed($"处理文件{filePath}时发生错误:{e.Message}");
+                    ExtractionError?.Invoke(this, $"处理文件{fp}时发生错误:{e.Message}");
+                    OnExtractionFailed($"处理文件{fp}时发生错误:{e.Message}");
                 }
             }
 
@@ -355,18 +347,10 @@ namespace super_toolbox
             OnExtractionCompleted();
         }
 
-        private int ProcessSmallFileFast(byte[] content, string filePath,
-                                        string extractedDir, List<string> extractedFiles)
-        {
-            return ProcessBufferFast(content, 0, filePath, extractedDir, extractedFiles);
-        }
-
         private new void ThrowIfCancellationRequested(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
-            {
                 cancellationToken.ThrowIfCancellationRequested();
-            }
         }
-    }  
+    }
 }
