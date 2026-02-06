@@ -246,6 +246,7 @@ namespace super_toolbox
                 "GXP " => "gxp",
                 "RIFF" => "at9",
                 "BKHD" => "bnk",
+                "AKPK" => "pck",
                 _ => "bin"
             };
         }
