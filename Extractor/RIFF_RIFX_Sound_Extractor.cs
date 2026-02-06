@@ -9,7 +9,8 @@ namespace super_toolbox
         public new event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] XWMA_PATTERN = { 0x12, 0x00, 0x00, 0x00, 0x61, 0x01 };
-        private static readonly byte[] RIFX_VALID_PATTERN = { 0x00, 0x00, 0x00, 0x20, 0x01, 0x65, 0x00, 0x10 };
+        private static readonly byte[] RIFX_VALID_PATTERN_1 = { 0x00, 0x00, 0x00, 0x20, 0x01, 0x65, 0x00, 0x10 };
+        private static readonly byte[] RIFX_VALID_PATTERN_2 = { 0x00, 0x00, 0x00, 0x40, 0x01, 0x66, 0x00, 0x01 };
         private const long LARGE_FILE_THRESHOLD = 2L * 1024 * 1024 * 1024;
         private const long MEMORY_MAP_BUFFER_SIZE = 256 * 1024 * 1024;
 
@@ -181,28 +182,61 @@ namespace super_toolbox
             if (position + 16 > buffer.Length)
                 return 0;
 
-            int chunkSize =
-                (buffer[position + 7] << 24) |
-                (buffer[position + 6] << 16) |
-                (buffer[position + 5] << 8) |
-                buffer[position + 4];
+            int totalSize = 0;
+            bool isPattern1 = true;
+            bool isPattern2 = true;
+            bool isPattern3 = true;
 
-            if (chunkSize <= 0)
-                return 0;
-
-            bool isRifxValid = true;
-            for (int i = 0; i < RIFX_VALID_PATTERN.Length; i++)
+            for (int i = 0; i < RIFX_VALID_PATTERN_1.Length; i++)
             {
-                if (buffer[position + 0x10 + i] != RIFX_VALID_PATTERN[i])
+                if (buffer[position + 0x10 + i] != RIFX_VALID_PATTERN_1[i])
                 {
-                    isRifxValid = false;
+                    isPattern1 = false;
                     break;
                 }
             }
-            if (!isRifxValid)
+
+            for (int i = 0; i < RIFX_VALID_PATTERN_2.Length; i++)
+            {
+                if (buffer[position + 0x10 + i] != RIFX_VALID_PATTERN_2[i])
+                {
+                    isPattern2 = false;
+                    break;
+                }
+            }
+
+            if (buffer[position + 0x10] != 0x00 || buffer[position + 0x11] != 0x00 ||
+                buffer[position + 0x12] != 0x00 || buffer[position + 0x13] != 0x28 ||
+                buffer[position + 0x14] != 0xFF || buffer[position + 0x15] != 0xFF ||
+                buffer[position + 0x16] != 0x00 || buffer[position + 0x17] != 0x01)
+            {
+                isPattern3 = false;
+            }
+
+            if (!isPattern1 && !isPattern2 && !isPattern3)
                 return 0;
 
-            int totalSize = chunkSize;
+            if (isPattern3)
+            {
+                totalSize =
+                    (buffer[position + 4] << 24) |
+                    (buffer[position + 5] << 16) |
+                    (buffer[position + 6] << 8) |
+                    buffer[position + 7];
+                totalSize += 8;
+            }
+            else
+            {
+                totalSize =
+                    (buffer[position + 7] << 24) |
+                    (buffer[position + 6] << 16) |
+                    (buffer[position + 5] << 8) |
+                    buffer[position + 4];
+            }
+
+            if (totalSize <= 0)
+                return 0;
+
             if (position + totalSize > buffer.Length)
                 return 0;
 
