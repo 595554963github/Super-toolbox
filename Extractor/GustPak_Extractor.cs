@@ -1,20 +1,49 @@
-using System.Diagnostics;
-using System.Text;
+using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace super_toolbox
 {
     public class GustPak_Extractor : BaseExtractor
     {
-        private static string _tempExePath;
-
         public new event EventHandler<string>? ExtractionStarted;
         public new event EventHandler<string>? ExtractionProgress;
         public new event EventHandler<string>? ExtractionError;
 
+        private static string _tempDllPath;
+        private static bool _dllLoaded = false;
+
         static GustPak_Extractor()
         {
-            _tempExePath = LoadEmbeddedExe("embedded.gust_pak.exe", "gust_pak.exe");
+            _tempDllPath = Path.Combine(Path.GetTempPath(), "supertoolbox_temp", "gust_pak.dll");
+            Directory.CreateDirectory(Path.GetDirectoryName(_tempDllPath)!);
         }
+
+        private static void LoadGustPakDll()
+        {
+            if (_dllLoaded) return;
+
+            if (!File.Exists(_tempDllPath))
+            {
+                ExtractEmbeddedResource("embedded.gust_pak.dll", _tempDllPath);
+            }
+
+            NativeLibrary.Load(_tempDllPath);
+            _dllLoaded = true;
+        }
+
+        private static void ExtractEmbeddedResource(string resourceName, string outputPath)
+        {
+            using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName);
+            if (stream == null)
+                throw new FileNotFoundException($"嵌入的GustPak资源未找到:{resourceName}");
+
+            byte[] buffer = new byte[stream.Length];
+            _ = stream.Read(buffer, 0, buffer.Length);
+            File.WriteAllBytes(outputPath, buffer);
+        }
+
+        [DllImport("gust_pak.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int extract_pak_file([MarshalAs(UnmanagedType.LPStr)] string filePath, int listOnly, [MarshalAs(UnmanagedType.LPStr)] string? masterKey);
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -38,6 +67,8 @@ namespace super_toolbox
 
             try
             {
+                LoadGustPakDll();
+
                 await Task.Run(() =>
                 {
                     int processedCount = 0;
@@ -58,70 +89,36 @@ namespace super_toolbox
                                 ExtractionError?.Invoke(this, $"无法获取文件目录:{pakFilePath}");
                                 continue;
                             }
+
                             var filesBefore = new HashSet<string>(
                                 Directory.GetFiles(parentDir, "*.*", SearchOption.AllDirectories)
                                     .Where(f => !f.EndsWith(".pak"))
                             );
 
-                            using (var process = new Process())
+                            int result = extract_pak_file(pakFilePath, 0, null);
+
+                            if (result == 0)
                             {
-                                process.StartInfo = new ProcessStartInfo
+                                var filesAfter = new HashSet<string>(
+                                    Directory.GetFiles(parentDir, "*.*", SearchOption.AllDirectories)
+                                        .Where(f => !f.EndsWith(".pak"))
+                                );
+
+                                var newFiles = filesAfter.Except(filesBefore).ToArray();
+
+                                foreach (var newFile in newFiles)
                                 {
-                                    FileName = _tempExePath,
-                                    Arguments = $"\"{pakFilePath}\"",
-                                    WorkingDirectory = parentDir,
-                                    UseShellExecute = false,
-                                    CreateNoWindow = true,
-                                    RedirectStandardOutput = true,
-                                    RedirectStandardError = true,
-                                    StandardOutputEncoding = Encoding.UTF8,
-                                    StandardErrorEncoding = Encoding.UTF8
-                                };
-
-                                process.OutputDataReceived += (sender, e) =>
-                                {
-                                    if (!string.IsNullOrEmpty(e.Data))
-                                    {
-                                        ExtractionProgress?.Invoke(this, e.Data);
-                                    }
-                                };
-
-                                process.ErrorDataReceived += (sender, e) =>
-                                {
-                                    if (!string.IsNullOrEmpty(e.Data))
-                                    {
-                                        ExtractionError?.Invoke(this, $"错误:{e.Data}");
-                                    }
-                                };
-
-                                process.Start();
-                                process.BeginOutputReadLine();
-                                process.BeginErrorReadLine();
-                                process.WaitForExit();
-
-                                if (process.ExitCode == 0)
-                                {
-                                    var filesAfter = new HashSet<string>(
-                                        Directory.GetFiles(parentDir, "*.*", SearchOption.AllDirectories)
-                                            .Where(f => !f.EndsWith(".pak"))
-                                    );
-
-                                    var newFiles = filesAfter.Except(filesBefore).ToArray();
-
-                                    foreach (var newFile in newFiles)
-                                    {
-                                        OnFileExtracted(newFile);
-                                        ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(newFile)}");
-                                    }
-
-                                    totalExtractedFiles += newFiles.Length;
-                                    ExtractionProgress?.Invoke(this, $"提取成功:{Path.GetFileName(pakFilePath)} → 已提取{newFiles.Length}个文件");
+                                    OnFileExtracted(newFile);
+                                    ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(newFile)}");
                                 }
-                                else
-                                {
-                                    ExtractionError?.Invoke(this, $"失败:{Path.GetFileName(pakFilePath)}(代码:{process.ExitCode})");
-                                }
-                            } 
+
+                                totalExtractedFiles += newFiles.Length;
+                                ExtractionProgress?.Invoke(this, $"提取成功:{Path.GetFileName(pakFilePath)} → 已提取{newFiles.Length}个文件");
+                            }
+                            else
+                            {
+                                ExtractionError?.Invoke(this, $"失败:{Path.GetFileName(pakFilePath)}(代码:{result})");
+                            }
                         }
                         catch (Exception ex)
                         {
