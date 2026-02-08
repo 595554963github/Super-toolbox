@@ -5,16 +5,9 @@ namespace super_toolbox
 {
     public class GustGmpk_Extractor : BaseExtractor
     {
-        private static string _tempExePath;
-
         public new event EventHandler<string>? ExtractionStarted;
         public new event EventHandler<string>? ExtractionProgress;
         public new event EventHandler<string>? ExtractionError;
-
-        static GustGmpk_Extractor()
-        {
-            _tempExePath = LoadEmbeddedExe("embedded.gust_gmpk.exe", "gust_gmpk.exe");
-        }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -55,68 +48,58 @@ namespace super_toolbox
                                 ExtractionError?.Invoke(this, $"无法获取文件目录:{gmpkFilePath}");
                                 continue;
                             }
-                            var process = new Process
-                            {
-                                StartInfo = new ProcessStartInfo
-                                {
-                                    FileName = _tempExePath,
-                                    Arguments = $"\"{gmpkFilePath}\"",
-                                    WorkingDirectory = parentDir,
-                                    UseShellExecute = false,
-                                    CreateNoWindow = true,
-                                    RedirectStandardOutput = true,
-                                    RedirectStandardError = true,
-                                    StandardOutputEncoding = Encoding.UTF8,
-                                    StandardErrorEncoding = Encoding.UTF8
-                                }
-                            };
-                            process.Start();
-                            process.OutputDataReceived += (sender, e) =>
-                            {
-                                if (!string.IsNullOrEmpty(e.Data))
-                                {
-                                    ExtractionProgress?.Invoke(this, e.Data);
-                                }
-                            };
-                            process.ErrorDataReceived += (sender, e) =>
-                            {
-                                if (!string.IsNullOrEmpty(e.Data))
-                                {
-                                    ExtractionError?.Invoke(this, $"错误:{e.Data}");
-                                }
-                            };
-                            process.BeginOutputReadLine();
-                            process.BeginErrorReadLine();
-                            process.WaitForExit();
 
-                            if (process.ExitCode == 0)
+                            byte[] fileData = File.ReadAllBytes(gmpkFilePath);
+                            string baseName = Path.GetFileNameWithoutExtension(gmpkFilePath);
+                            bool foundG1m = false;
+                            bool foundG1t = false;
+                            int extractedCount = 0;
+
+                            for (int i = 0; i < fileData.Length; i++)
                             {
+                                if (i + 8 >= fileData.Length) break;
+
+                                if (!foundG1m && fileData[i] == 0x5F && fileData[i + 1] == 0x4D && fileData[i + 2] == 0x31 && fileData[i + 3] == 0x47)
+                                {
+                                    uint fileSize = BitConverter.ToUInt32(fileData, i + 8);
+                                    if (fileSize > 0 && i + fileSize <= fileData.Length)
+                                    {
+                                        string outputPath = Path.Combine(parentDir, $"{baseName}.g1m");
+                                        File.WriteAllBytes(outputPath, fileData.Skip(i).Take((int)fileSize).ToArray());
+                                        foundG1m = true;
+                                        extractedCount++;
+                                        totalExtractedFiles++;
+                                        OnFileExtracted(outputPath);
+                                        i += (int)fileSize - 1;
+                                    }
+                                }
+                                else if (!foundG1t && fileData[i] == 0x47 && fileData[i + 1] == 0x54 && fileData[i + 2] == 0x31 && fileData[i + 3] == 0x47)
+                                {
+                                    uint fileSize = BitConverter.ToUInt32(fileData, i + 8);
+                                    if (fileSize > 0 && i + fileSize <= fileData.Length)
+                                    {
+                                        string outputPath = Path.Combine(parentDir, $"{baseName}.g1t");
+                                        File.WriteAllBytes(outputPath, fileData.Skip(i).Take((int)fileSize).ToArray());
+                                        foundG1t = true;
+                                        extractedCount++;
+                                        totalExtractedFiles++;
+                                        OnFileExtracted(outputPath);
+                                        i += (int)fileSize - 1;
+                                    }
+                                }
+
+                                if (foundG1m && foundG1t) break;
                             }
-                            else
-                            {
-                                ExtractionError?.Invoke(this, $"处理文件{Path.GetFileName(gmpkFilePath)}失败，退出代码:{process.ExitCode}");
-                            }
+
+                            ExtractionProgress?.Invoke(this, $"文件{Path.GetFileName(gmpkFilePath)}提取完成,找到{extractedCount}个文件");
                         }
                         catch (Exception ex)
                         {
                             ExtractionError?.Invoke(this, $"文件{Path.GetFileName(gmpkFilePath)}处理错误:{ex.Message}");
                         }
                     }
-                    var allExistingFiles = new HashSet<string>(
-                        Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories)
-                    );
-                    var newFiles = allExistingFiles
-                        .Except(gmpkFiles)
-                        .Where(f => !f.EndsWith(".gmpk", StringComparison.OrdinalIgnoreCase))
-                        .ToArray();
 
-                    totalExtractedFiles = newFiles.Length;
-
-                    foreach (var newFile in newFiles)
-                    {
-                        OnFileExtracted(newFile);
-                    }
-                    ExtractionProgress?.Invoke(this, $"提取完成，总共生成{totalExtractedFiles}个文件");
+                    ExtractionProgress?.Invoke(this, $"提取完成,总共生成{totalExtractedFiles}个文件");
                     OnExtractionCompleted();
                 }, cancellationToken);
             }
@@ -131,6 +114,7 @@ namespace super_toolbox
                 OnExtractionFailed($"提取失败:{ex.Message}");
             }
         }
+
         public override void Extract(string directoryPath)
         {
             ExtractAsync(directoryPath).Wait();
