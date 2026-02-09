@@ -54,9 +54,9 @@ namespace super_toolbox
             { "万代南梦宫 - bnsf", ("音频", "万代南梦宫的bnsf音频提取器,以二进制形式从TLFILE.TLDAT文件中提取。可解析情热传说和ps3平台的狂战传说中的音频,注意狂战传说steam版因加密无法提取") },
             { "索尼 - gxt提取器", ("其他档案", "从索尼的psv、psp等平台游戏中提取gxt文件。许多游戏喜欢将多个gxt文件打包存储,该工具可有效提取这些gxt文件") },
             { "直接绘制表面 - DDS", ("图片", "以二进制形式从游戏文件中提取dds图片,亲测适用于战场女武神4等游戏,支持一般的dds和DX10纹理的dds格式") },
-            { "Filename小端序 - pck", ("其他档案", "steam和switch平台的超女神信仰诺瓦露、steam和psv的约战凛绪轮回、steam白色相簿编缀的冬日回忆、\r\nsteam和psv传颂之物虚伪的假面、steam和psv和switch传颂之物致逝者的摇篮曲、steam和psv传颂之物二人的白皇的专用解包工具") },
+            { "Filename小端序 - pck/sdat", ("其他档案", "steam和switch平台的超女神信仰诺瓦露、steam和psv的约战凛绪轮回、steam白色相簿编缀的冬日回忆、\r\nsteam和psv传颂之物虚伪的假面、steam和psv和switch传颂之物致逝者的摇篮曲、steam和psv传颂之物二人的白皇的专用解包工具\r\nsteam和psv黑蝶幻境") },
             { "Filename大端序 - pck", ("其他档案", "ps3约会大作战凛祢理想乡和约会大作战或守安装、白色相簿的专用解包工具") },
-            { "地雷社和AQUAPLUS专用纹理 - tex", ("图片", "超女神信仰诺瓦露、白色相簿_编缀的冬日回忆、约会大作战系列、传颂之物二人的白皇专用tex转换器") },
+            { "地雷社和AQUAPLUS专用纹理 - tex", ("图片", "超女神信仰诺瓦露、黑蝶幻境、白色相簿系列、约会大作战系列、传颂之物系列tex转换器,目前psv平台不完美支持,steam和switch正常") },
             { "ps3苍翼默示录_刻之幻影 - bin", ("其他档案", "ps3平台的苍翼默示录_刻之幻影专用bin文件解包工具,可提取其中包含的所有pac文件") },
             { "ps3苍翼默示录_刻之幻影 - pac", ("其他档案", "ps3平台的苍翼默示录_刻之幻影的专用解包工具,无法用于psv版和苍翼默示录_神观之梦") },
             { "psv苍翼默示录_刻之幻影 - pac", ("其他档案", "psv平台的苍翼默示录_刻之幻影的专用解包工具,无法用于ps3版和苍翼默示录_神观之梦") },
@@ -79,10 +79,13 @@ namespace super_toolbox
             { "反恐精英OL - nar", ("其他档案", "反恐精英ol的nar提取器") },
             { "IdeaFactory - pac提取器", ("其他档案", "地雷社游戏的pac提取器,此pac格式常用于海王星系列游戏") },
             { "IdeaFactory - pac打包器", ("其他档案", "地雷社游戏的pac打包器,能将文件夹重新打包成pac文件") },
-            { "光荣特库摩 - gz/exlilr", ("其他档案", "光荣特库摩的gz和elixir文件提取器,适用于蓝色反射_帝、幻舞少女之剑、无夜之国等游戏") },
+            { "光荣特库摩 - gz/exlilr", ("其他档案", "光荣特库摩的gz和elixir文件解压器,适用于蓝色反射_帝、幻舞少女之剑、无夜之国等游戏") },
             { "光荣特库摩 - ebm", ("其他档案", "光荣特库摩的ebm文件提取器,适配蓝色反射_帝、幻舞少女之剑、无夜之国等游戏") },
             { "光荣特库摩 - g1t", ("图片", "光荣特库摩的g1t文件提取器,可提取出dds图片,适用于fate系列、无夜之国2等游戏") },
-            { "光荣特库摩 - gmpk", ("其他档案", "光荣特库摩的gmpk文件提取器,适用于零系列的濡鸦之巫女等游戏") },
+            { "光荣特库摩 - gmpk", ("其他档案", "光荣特库摩的gmpk文件提取器,适用于零系列的濡鸦之巫女等游戏,可提取出g1m和g1t文件") },
+            { "光荣特库摩 - gapk", ("其他档案", "光荣特库摩的gapk文件提取器,适用于零系列的濡鸦之巫女等游戏,可提取出g1a文件") },
+            { "光荣特库摩 - gepk", ("其他档案", "光荣特库摩的gepk文件提取器,适用于零系列的濡鸦之巫女等游戏") },
+            { "光荣特库摩 - gspk", ("其他档案", "光荣特库摩的gspk和trd文件提取器,适用于零系列的濡鸦之巫女等游戏,提取出来的g2s文件里面包含DXBC着色器文件") },
             { "光荣特库摩 - pak", ("其他档案", "光荣特库摩的pak文件提取器,适用于蓝色反射_帝、幻舞少女之剑、苏菲的炼金工房2等游戏") },
             { "PowerVR转换png", ("图片", "pvr纹理转换器,无需依赖Texturepacker的免费试用限制,可无限使用,将pvr纹理转换为png格式,适用于逆战upk文件提取的pvr") },
             { "逆战 - upk", ("其他档案", "逆战upk提取器,解决手动逐个解包的麻烦,支持批量解包,高效提取upk文件中的资源") },
@@ -223,6 +226,9 @@ namespace super_toolbox
             { "CMVS引擎 - pb3", ("图片", "紫社cmvs引擎的pb3转换器,已测试青鸟、天津罪") },
             { "初音未来歌姬计划 - DIVAFILE", ("其他档案", "psv初音未来歌姬计划系列的DIVAFILE文件解包器") },
             { "初音未来歌姬计划 - farc", ("其他档案", "psv初音未来歌姬计划系列的farc文件解包器,F2和X两个游戏都支持") },
+            { "创意赛车族摩登赛车 - hdr/dat", ("其他档案", "创意赛车族摩登赛车的专用dat提取器") },
+            { "psv无双大蛇2终极版 - bin/idx", ("其他档案", "psv无双大蛇2终极版的LINKDATA专用提取器") },
+            { "光荣特库摩 - rdb.bin", ("其他档案", "steam女神异闻录5对决:幽灵先锋、卧龙苍天陨落的rdb.bin专用提取器,不适用早期游戏的rdb.bin") },
         };
         public SuperToolbox()
         {
@@ -592,7 +598,7 @@ namespace super_toolbox
                 case "万代南梦宫 - bnsf": return new Bnsf_Extractor();
                 case "索尼 - gxt提取器": return new SonyGxtExtractor();
                 case "直接绘制表面 - DDS": return new DdsExtractor();
-                case "Filename小端序 - pck": return new Filename_Pck_LE_Extractor();
+                case "Filename小端序 - pck/sdat": return new Filename_Pck_LE_Extractor();
                 case "Filename大端序 - pck": return new Filename_Pck_BE_Extractor();
                 case "地雷社和AQUAPLUS专用纹理 - tex": return new StingTexConverter();
                 case "ps3苍翼默示录_刻之幻影 - bin": return new SEGS_BinExtractor();
@@ -622,6 +628,9 @@ namespace super_toolbox
                 case "光荣特库摩 - ebm": return new GustEbm_Extractor();
                 case "光荣特库摩 - g1t": return new GustG1t_Extractor();
                 case "光荣特库摩 - gmpk": return new GustGmpk_Extractor();
+                case "光荣特库摩 - gapk": return new GustGapk_Extractor();
+                case "光荣特库摩 - gepk": return new GustGepk_Extractor();
+                case "光荣特库摩 - gspk": return new GustGspk_Extractor();
                 case "光荣特库摩 - pak": return new GustPak_Extractor();
                 case "PowerVR转换png": return new PVR2PNG_Converter();
                 case "逆战 - upk": return new AFUpkExtractor();
@@ -762,6 +771,9 @@ namespace super_toolbox
                 case "CMVS引擎 - pb3": return new PB3_Converter();
                 case "初音未来歌姬计划 - DIVAFILE": return new DIVAFILE_Extractor();
                 case "初音未来歌姬计划 - farc": return new Farc_Extractor();
+                case "创意赛车族摩登赛车 - hdr/dat": return new ModNationRacers_Extractor();
+                case "psv无双大蛇2终极版 - bin/idx": return new MusouOrochi2Ultimate_Extractor();
+                case "光荣特库摩 - rdb.bin": return new P5S_IDRK_Extractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
