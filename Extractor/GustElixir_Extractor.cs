@@ -1,30 +1,33 @@
-using System.Diagnostics;
-using System.Text;
+using System.IO.Compression;
 
 namespace super_toolbox
 {
     public class GustElixir_Extractor : BaseExtractor
     {
-        private static string _tempExePath;
-
         public new event EventHandler<string>? ExtractionStarted;
         public new event EventHandler<string>? ExtractionProgress;
         public new event EventHandler<string>? ExtractionError;
-        static GustElixir_Extractor()
+
+        public override void Extract(string directoryPath)
         {
-            _tempExePath = LoadEmbeddedExe("embedded.gust_elixir.exe", "gust_elixir.exe");
+            ExtractAsync(directoryPath).Wait();
         }
+
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(directoryPath) || !Directory.Exists(directoryPath))
+            if (!Directory.Exists(directoryPath))
             {
-                ExtractionError?.Invoke(this, "错误:目录不存在或路径为空");
-                OnExtractionFailed("错误:目录不存在或路径为空");
+                ExtractionError?.Invoke(this, $"错误:{directoryPath}不是有效的目录");
+                OnExtractionFailed($"错误:{directoryPath}不是有效的目录");
                 return;
             }
-            var elixirFiles = Directory.GetFiles(directoryPath, "*.elixir*", SearchOption.AllDirectories);
-            var gzFiles = Directory.GetFiles(directoryPath, "*.gz", SearchOption.AllDirectories);
-            var allFiles = elixirFiles.Concat(gzFiles).ToArray();
+
+            var elixirFiles = Directory.EnumerateFiles(directoryPath, "*.elixir", SearchOption.AllDirectories);
+            var elixirGzFiles = Directory.EnumerateFiles(directoryPath, "*.elixir.gz", SearchOption.AllDirectories);
+            var gzFiles = Directory.EnumerateFiles(directoryPath, "*.gz", SearchOption.AllDirectories)
+                .Where(file => !file.EndsWith(".elixir.gz", StringComparison.OrdinalIgnoreCase));
+
+            var allFiles = elixirFiles.Concat(elixirGzFiles).Concat(gzFiles).Distinct().ToArray();
 
             if (allFiles.Length == 0)
             {
@@ -32,111 +35,133 @@ namespace super_toolbox
                 OnExtractionFailed("未找到.elixir或.gz文件");
                 return;
             }
-            TotalFilesToExtract = allFiles.Length;
+
             ExtractionStarted?.Invoke(this, $"开始处理{allFiles.Length}个文件(.elixir/.gz)");
-            try
+
+            int totalExtractedFiles = 0;
+
+            foreach (var filePath in allFiles)
             {
-                await Task.Run(() =>
+                ThrowIfCancellationRequested(cancellationToken);
+                ExtractionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(filePath)}");
+
+                try
                 {
-                    int processedCount = 0;
-                    int totalExtractedFiles = 0;
-
-                    foreach (var filePath in allFiles)
+                    string fileNameWithoutExt = Path.GetFileNameWithoutExtension(filePath);
+                    if (filePath.EndsWith(".elixir.gz", StringComparison.OrdinalIgnoreCase))
                     {
-                        ThrowIfCancellationRequested(cancellationToken);
+                        fileNameWithoutExt = Path.GetFileNameWithoutExtension(fileNameWithoutExt);
+                    }
 
-                        processedCount++;
+                    string outputDir = Path.Combine(Path.GetDirectoryName(filePath) ?? directoryPath, fileNameWithoutExt);
+                    Directory.CreateDirectory(outputDir);
 
-                        if (processedCount % 10 == 1 || processedCount == allFiles.Length)
-                        {
-                            ExtractionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(filePath)} ({processedCount}/{allFiles.Length})");
-                        }
-                        try
-                        {
-                            string? parentDir = Path.GetDirectoryName(filePath);
-                            if (string.IsNullOrEmpty(parentDir))
-                            {
-                                ExtractionError?.Invoke(this, $"无法获取文件目录:{filePath}");
-                                continue;
-                            }
-                            var process = new Process
-                            {
-                                StartInfo = new ProcessStartInfo
-                                {
-                                    FileName = _tempExePath,
-                                    Arguments = $"\"{filePath}\"",
-                                    WorkingDirectory = parentDir,
-                                    UseShellExecute = false,
-                                    CreateNoWindow = true,
-                                    RedirectStandardOutput = true,
-                                    RedirectStandardError = true,
-                                    StandardOutputEncoding = Encoding.UTF8,
-                                    StandardErrorEncoding = Encoding.UTF8
-                                }
-                            };
-                            process.Start();
-                            process.OutputDataReceived += (sender, e) =>
-                            {
-                                if (!string.IsNullOrEmpty(e.Data) &&
-                                   (e.Data.Contains("ERROR") || e.Data.Contains("error") || e.Data.Contains("完成")))
-                                {
-                                    ExtractionProgress?.Invoke(this, e.Data);
-                                }
-                            };
-                            process.ErrorDataReceived += (sender, e) =>
-                            {
-                                if (!string.IsNullOrEmpty(e.Data))
-                                {
-                                    ExtractionError?.Invoke(this, $"错误:{e.Data}");
-                                }
-                            };
-                            process.BeginOutputReadLine();
-                            process.BeginErrorReadLine();
-                            process.WaitForExit();
+                    string outputFilePath = Path.Combine(outputDir, fileNameWithoutExt + ".decompress");
 
-                            if (process.ExitCode == 0)
-                            {
-                            }
-                            else
-                            {
-                                ExtractionError?.Invoke(this, $"处理文件{Path.GetFileName(filePath)}失败，退出代码:{process.ExitCode}");
-                            }
-                        }
-                        catch (Exception ex)
+                    bool hasData = false;
+
+                    using (var inputStream = File.OpenRead(filePath))
+                    using (var outputStream = File.Create(outputFilePath))
+                    {
+                        byte[] marker = new byte[] { 0x00, 0x00, 0x78, 0x9C };
+                        byte[] buffer = new byte[4];
+                        long position = 0;
+
+                        while (position + 4 < inputStream.Length)
                         {
-                            ExtractionError?.Invoke(this, $"文件{Path.GetFileName(filePath)}处理错误: {ex.Message}");
+                            inputStream.Position = position;
+                            inputStream.Read(buffer, 0, 4);
+
+                            if (buffer.SequenceEqual(marker))
+                            {
+                                inputStream.Position = position - 2;
+                                byte[] sizeBytes = new byte[2];
+                                inputStream.Read(sizeBytes, 0, 2);
+                                int compressedSize = BitConverter.ToUInt16(sizeBytes, 0);
+
+                                inputStream.Position = position + 4;
+                                byte[] compressedBlock = new byte[compressedSize];
+                                inputStream.Read(compressedBlock, 0, compressedSize);
+
+                                using (var compressedStream = new MemoryStream(compressedBlock))
+                                using (var decompressor = new DeflateStream(compressedStream, CompressionMode.Decompress))
+                                {
+                                    decompressor.CopyTo(outputStream);
+                                    hasData = true;
+                                }
+                            }
+                            position++;
                         }
                     }
-                    var allExistingFiles = new HashSet<string>(
-                        Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories)
-                    );
-                    var newFiles = allExistingFiles
-                        .Except(allFiles)
-                        .Where(f => !f.EndsWith(".elixir") && !f.EndsWith(".gz"))
-                        .ToArray();
-                    totalExtractedFiles = newFiles.Length;
-                    foreach (var newFile in newFiles)
+
+                    if (hasData)
                     {
-                        OnFileExtracted(newFile);
+                        byte[] decompressedData = File.ReadAllBytes(outputFilePath);
+                        File.Delete(outputFilePath);
+
+                        byte[] g1mMarker = new byte[] { 0x5F, 0x4D, 0x31, 0x47 };
+                        byte[] g1tMarker = new byte[] { 0x47, 0x54, 0x31, 0x47 };
+
+                        int fileCount = 0;
+
+                        for (int i = 0; i <= decompressedData.Length - 4; i++)
+                        {
+                            bool isG1m = decompressedData[i] == g1mMarker[0] &&
+                                         decompressedData[i + 1] == g1mMarker[1] &&
+                                         decompressedData[i + 2] == g1mMarker[2] &&
+                                         decompressedData[i + 3] == g1mMarker[3];
+
+                            bool isG1t = decompressedData[i] == g1tMarker[0] &&
+                                         decompressedData[i + 1] == g1tMarker[1] &&
+                                         decompressedData[i + 2] == g1tMarker[2] &&
+                                         decompressedData[i + 3] == g1tMarker[3];
+
+                            if (isG1m || isG1t)
+                            {
+                                if (i + 0x0B < decompressedData.Length)
+                                {
+                                    int size = BitConverter.ToInt32(decompressedData, i + 0x08);
+                                    if (size > 0 && i + size <= decompressedData.Length)
+                                    {
+                                        string extension = isG1m ? ".g1m" : ".g1t";
+                                        string savePath = Path.Combine(outputDir, $"{fileNameWithoutExt}_{fileCount}{extension}");
+                                        using (var fs = File.Create(savePath))
+                                        {
+                                            fs.Write(decompressedData, i, size);
+                                        }
+                                        fileCount++;
+                                        OnFileExtracted(savePath);
+                                        totalExtractedFiles++;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (fileCount == 0)
+                        {
+                            Directory.Delete(outputDir, true);
+                        }
                     }
-                    ExtractionProgress?.Invoke(this, $"提取完成，总共生成{totalExtractedFiles}个文件");
-                    OnExtractionCompleted();
-                }, cancellationToken);
+                    else
+                    {
+                        File.Delete(outputFilePath);
+                        Directory.Delete(outputDir, true);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    ExtractionError?.Invoke(this, "提取操作已取消");
+                    OnExtractionFailed("提取操作已取消");
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    ExtractionError?.Invoke(this, $"文件{Path.GetFileName(filePath)}处理错误:{ex.Message}");
+                }
             }
-            catch (OperationCanceledException)
-            {
-                ExtractionError?.Invoke(this, "提取操作已取消");
-                OnExtractionFailed("提取操作已取消");
-            }
-            catch (Exception ex)
-            {
-                ExtractionError?.Invoke(this, $"提取失败:{ex.Message}");
-                OnExtractionFailed($"提取失败:{ex.Message}");
-            }
-        }
-        public override void Extract(string directoryPath)
-        {
-            ExtractAsync(directoryPath).Wait();
+
+            ExtractionProgress?.Invoke(this, $"提取完成，总共提取{totalExtractedFiles}个文件");
+            OnExtractionCompleted();
         }
     }
 }
