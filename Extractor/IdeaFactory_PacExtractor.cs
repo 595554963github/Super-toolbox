@@ -1,6 +1,4 @@
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace super_toolbox
 {
@@ -10,76 +8,16 @@ namespace super_toolbox
         public new event EventHandler<string>? ExtractionProgress;
         public new event EventHandler<string>? ExtractionError;
 
-        private static bool _dllLoaded = false;
-        private static readonly object _lock = new object();
-        private readonly ConcurrentDictionary<string, bool> _processedFiles = new ConcurrentDictionary<string, bool>();
-        private CancellationTokenSource? _monitorCancellationTokenSource;
+        private static string _tempExePath;
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _processedFiles = new System.Collections.Concurrent.ConcurrentDictionary<string, bool>();
+        private System.Threading.CancellationTokenSource? _monitorCancellationTokenSource;
 
         static IdeaFactory_PacExtractor()
         {
-            LoadPacToolDll();
+            _tempExePath = LoadEmbeddedExe("embedded.pactool.exe", "pactool.exe");
         }
 
-        private static void LoadPacToolDll()
-        {
-            lock (_lock)
-            {
-                if (_dllLoaded) return;
-
-                try
-                {
-                    string tempDir = Path.Combine(Path.GetTempPath(), "supertoolbox_temp");
-                    Directory.CreateDirectory(tempDir);
-                    string dllPath = Path.Combine(tempDir, "pactool.dll");
-
-                    if (!File.Exists(dllPath))
-                    {
-                        ExtractEmbeddedResource("embedded.pactool.dll", dllPath);
-                    }
-
-                    NativeLibrary.Load(dllPath);
-                    _dllLoaded = true;
-                }
-                catch (Exception ex)
-                {
-                    throw new DllNotFoundException($"无法加载pactool.dll:{ex.Message}", ex);
-                }
-            }
-        }
-
-        private static void ExtractEmbeddedResource(string resourceName, string outputPath)
-        {
-            using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName))
-            {
-                if (stream == null)
-                    throw new FileNotFoundException($"嵌入的资源未找到:{resourceName}");
-
-                byte[] buffer = new byte[stream.Length];
-                stream.Read(buffer, 0, buffer.Length);
-                File.WriteAllBytes(outputPath, buffer);
-            }
-        }
-
-        [DllImport("pactool.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool ExtractPAC([MarshalAs(UnmanagedType.LPWStr)] string pacFile,
-                                            [MarshalAs(UnmanagedType.LPWStr)] string outputDir);
-
-        [DllImport("pactool.dll", CallingConvention = CallingConvention.StdCall)]
-        private static extern IntPtr GetLastErrorMsg();
-
-        private static string GetLastErrorMessage()
-        {
-            IntPtr ptr = GetLastErrorMsg();
-            return Marshal.PtrToStringAnsi(ptr) ?? string.Empty;
-        }
-
-        public override void Extract(string directoryPath)
-        {
-            ExtractAsync(directoryPath).Wait();
-        }
-
-        public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
+        public override async System.Threading.Tasks.Task ExtractAsync(string directoryPath, System.Threading.CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
             {
@@ -89,7 +27,7 @@ namespace super_toolbox
             }
 
             ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
-            var pacFiles = Directory.GetFiles(directoryPath, "*.pac", SearchOption.AllDirectories);
+            var pacFiles = Directory.GetFiles(directoryPath, "*.pac", System.IO.SearchOption.AllDirectories);
             if (pacFiles.Length == 0)
             {
                 ExtractionError?.Invoke(this, "未找到任何.pac文件");
@@ -98,9 +36,9 @@ namespace super_toolbox
             }
 
             _processedFiles.Clear();
-            _monitorCancellationTokenSource = new CancellationTokenSource();
+            _monitorCancellationTokenSource = new System.Threading.CancellationTokenSource();
 
-            var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
+            var linkedTokenSource = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(
                 cancellationToken, _monitorCancellationTokenSource.Token);
 
             int processedPacFiles = 0;
@@ -129,37 +67,74 @@ namespace super_toolbox
 
                         var monitorTask = StartDirectoryMonitor(extractedFolder, linkedTokenSource.Token);
 
-                        await Task.Run(() =>
+                        await System.Threading.Tasks.Task.Run(() =>
                         {
-                            bool success = ExtractPAC(pacFilePath, extractedFolder);
-
-                            if (!success)
+                            var processStartInfo = new ProcessStartInfo
                             {
-                                string errorMsg = GetLastErrorMessage();
-                                throw new Exception($"{Path.GetFileName(pacFilePath)}解包失败:{errorMsg}");
+                                FileName = _tempExePath,
+                                Arguments = $"-x \"{pacFilePath}\"",
+                                WorkingDirectory = fileDirectory,
+                                UseShellExecute = false,
+                                CreateNoWindow = true,
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true
+                            };
+
+                            using (var process = Process.Start(processStartInfo))
+                            {
+                                if (process == null)
+                                {
+                                    throw new Exception($"无法启动解包进程:{Path.GetFileName(pacFilePath)}");
+                                }
+
+                                process.OutputDataReceived += (sender, e) =>
+                                {
+                                    if (!string.IsNullOrEmpty(e.Data))
+                                    {
+                                        ExtractionProgress?.Invoke(this, e.Data);
+                                    }
+                                };
+
+                                process.ErrorDataReceived += (sender, e) =>
+                                {
+                                    if (!string.IsNullOrEmpty(e.Data))
+                                    {
+                                        ExtractionError?.Invoke(this, $"错误:{e.Data}");
+                                    }
+                                };
+
+                                process.BeginOutputReadLine();
+                                process.BeginErrorReadLine();
+                                process.WaitForExit();
+
+                                if (process.ExitCode != 0)
+                                {
+                                    throw new Exception($"{Path.GetFileName(pacFilePath)}解包失败,错误代码:{process.ExitCode}");
+                                }
                             }
                         }, cancellationToken);
 
-                        await Task.Delay(500);
+                        await System.Threading.Tasks.Task.Delay(500);
 
-                        _monitorCancellationTokenSource!.Cancel();
-
+                        var monitorTokenSource = _monitorCancellationTokenSource;
+                        if (monitorTokenSource != null)
+                        {
+                            monitorTokenSource.Cancel();
+                        }
 
                         try
                         {
                             await monitorTask;
                         }
-                        catch (OperationCanceledException)
+                        catch (OperationCanceledException) { }
+
+                        if (monitorTokenSource != null)
                         {
-                        }
-                        catch (Exception)
-                        {
+                            monitorTokenSource.Dispose();
+                            _monitorCancellationTokenSource = null;
                         }
 
-                        _monitorCancellationTokenSource.Dispose();
-                        _monitorCancellationTokenSource = null;
-
-                        var allExtractedFiles = Directory.GetFiles(extractedFolder, "*", SearchOption.AllDirectories);
+                        var allExtractedFiles = Directory.GetFiles(extractedFolder, "*", System.IO.SearchOption.AllDirectories);
                         ExtractionProgress?.Invoke(this, $"{Path.GetFileName(pacFilePath)}解包完成,共提取了{allExtractedFiles.Length}个文件");
                     }
                     catch (OperationCanceledException)
@@ -184,19 +159,25 @@ namespace super_toolbox
             }
             finally
             {
-                if (_monitorCancellationTokenSource != null)
+                var monitorTokenSource = _monitorCancellationTokenSource;
+                if (monitorTokenSource != null)
                 {
-                    _monitorCancellationTokenSource.Cancel();
-                    _monitorCancellationTokenSource.Dispose();
+                    try
+                    {
+                        monitorTokenSource.Cancel();
+                        monitorTokenSource.Dispose();
+                    }
+                    catch { }
+                    _monitorCancellationTokenSource = null;
                 }
             }
         }
 
-        private async Task StartDirectoryMonitor(string directoryPath, CancellationToken cancellationToken)
+        private async System.Threading.Tasks.Task StartDirectoryMonitor(string directoryPath, System.Threading.CancellationToken cancellationToken)
         {
             try
             {
-                HashSet<string> lastFiles = new HashSet<string>();
+                System.Collections.Generic.HashSet<string> lastFiles = new System.Collections.Generic.HashSet<string>();
 
                 while (!cancellationToken.IsCancellationRequested)
                 {
@@ -204,11 +185,11 @@ namespace super_toolbox
                     {
                         if (!Directory.Exists(directoryPath))
                         {
-                            await Task.Delay(500, cancellationToken);
+                            await System.Threading.Tasks.Task.Delay(500, cancellationToken);
                             continue;
                         }
 
-                        var currentFiles = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories);
+                        var currentFiles = Directory.GetFiles(directoryPath, "*", System.IO.SearchOption.AllDirectories);
 
                         foreach (var file in currentFiles)
                         {
@@ -220,18 +201,23 @@ namespace super_toolbox
                             }
                         }
 
-                        lastFiles = new HashSet<string>(currentFiles);
+                        lastFiles = new System.Collections.Generic.HashSet<string>(currentFiles);
                     }
                     catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
                     {
                     }
 
-                    await Task.Delay(100, cancellationToken);
+                    await System.Threading.Tasks.Task.Delay(100, cancellationToken);
                 }
             }
             catch (OperationCanceledException)
             {
             }
+        }
+
+        public override void Extract(string directoryPath)
+        {
+            ExtractAsync(directoryPath).Wait();
         }
     }
 }
