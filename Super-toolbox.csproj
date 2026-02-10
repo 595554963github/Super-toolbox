@@ -179,6 +179,9 @@
 		<Reference Include="NARToolLib">
 		  <HintPath>plugins\NARToolLib.dll</HintPath>
 		</Reference>
+		<Reference Include="PuyoTools.Core">
+		  <HintPath>plugins\PuyoTools.Core.dll</HintPath>
+		</Reference>
 		<Reference Include="Shadowrun">
 			<HintPath>plugins\Shadowrun.dll</HintPath>
 		</Reference>
