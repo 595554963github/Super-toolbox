@@ -229,6 +229,10 @@ namespace super_toolbox
             { "创意赛车族摩登赛车 - hdr/dat", ("其他档案", "创意赛车族摩登赛车的专用dat提取器") },
             { "psv无双大蛇2终极版 - bin/idx", ("其他档案", "psv无双大蛇2终极版的LINKDATA专用提取器") },
             { "光荣特库摩 - rdb.bin", ("其他档案", "steam女神异闻录5对决:幽灵先锋、卧龙苍天陨落的rdb.bin专用提取器,不适用早期游戏的rdb.bin") },
+            { "psv弹丸论破 - pak", ("其他档案", "psv弹丸论破的专用pak提取器") },
+            { "索尼 - gim", ("图片", "psp平台的专用转换器,把gim转换成png") },
+            { "GBIX_PVRT - pvr", ("图片", "世嘉和索尼平台游戏的pvr转换器") },
+            { "OKI ADPCM - pcm", ("音频", "OKI ADPCM的音频专用提取器") },
         };
         public SuperToolbox()
         {
@@ -336,9 +340,9 @@ namespace super_toolbox
         }
         private readonly HashSet<string> _converters = new HashSet<string>
         {
-         "PNG编码ASTC", "ASTC解码PNG", "Gnf2Png", "PowerVR转换png","异度之刃 - tpl2bclim","异度之刃 - bclim2png","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal",
+         "PNG2ASTC", "ASTC解码PNG", "Gnf2Png", "PowerVR转换png","异度之刃 - tpl2bclim","异度之刃 - bclim2png","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal",
          "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS专用纹理 - tex","DXBC2HLSL","rad game tools - rada转换器","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3",
-         "wav转换qoa","qoa转换wav","Wiiu - gtx转换器", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin/Cue转换GDI","CMVS引擎 - pb3",
+         "wav转换qoa","qoa转换wav","Wiiu - gtx转换器", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin/Cue转换GDI","CMVS引擎 - pb3","索尼 - gim","GBIX_PVRT - pvr"
         };
         private bool IsConverter(string formatName) => _converters.Contains(formatName);
         private async void btnExtract_Click(object sender, EventArgs e)
@@ -774,6 +778,10 @@ namespace super_toolbox
                 case "创意赛车族摩登赛车 - hdr/dat": return new ModNationRacers_Extractor();
                 case "psv无双大蛇2终极版 - bin/idx": return new MusouOrochi2Ultimate_Extractor();
                 case "光荣特库摩 - rdb.bin": return new P5S_IDRK_Extractor();
+                case "psv弹丸论破 - pak": return new Danganronpa_Pak_Extractor();
+                case "索尼 - gim": return new GIM2PNG_Converter();
+                case "GBIX_PVRT - pvr": return new PVRT2PNG_Converter();
+                case "OKI ADPCM - pcm": return new OKI_ADPCM_Extractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
