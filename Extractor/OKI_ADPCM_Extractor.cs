@@ -110,6 +110,8 @@ namespace super_toolbox
                 int headerPos = headerPositions[h];
                 if (headerPos + 0x11 >= content.Length || content[headerPos + 0x11] != OFFSET_0x11_MUST_BE)
                     continue;
+                if (HasTooManyConsecutiveZerosAfterHeader(content, headerPos))
+                    continue;
 
                 for (int f = 0; f < footerPositions.Count; f++)
                 {
@@ -138,6 +140,33 @@ namespace super_toolbox
             }
 
             return count;
+        }
+
+        private bool HasTooManyConsecutiveZerosAfterHeader(byte[] content, int headerPos)
+        {
+            int startCheckPos = headerPos + 0x12;
+            int checkLength = 256;
+            if (startCheckPos + checkLength >= content.Length)
+                return false;
+            int maxConsecutiveZeros = 16;
+            int consecutiveZeros = 0;
+            for (int i = startCheckPos; i < Math.Min(startCheckPos + checkLength, content.Length); i++)
+            {
+                if (content[i] == 0x00)
+                {
+                    consecutiveZeros++;
+                    if (consecutiveZeros > maxConsecutiveZeros)
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    consecutiveZeros = 0;
+                }
+            }
+
+            return false;
         }
 
         private async Task<string> ExtractSegmentAsync(byte[] content, int startIndex, int endIndex,
