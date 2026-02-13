@@ -90,12 +90,6 @@
 		<EmbeddedResource Include="plugins\ahx2wav.dll">
 			<LogicalName>embedded.ahx2wav.dll</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\ETC1Lib.dll">
-			<LogicalName>embedded.ETC1Lib.dll</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\png2bclim.exe">
-			<LogicalName>embedded.png2bclim.exe</LogicalName>
-		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\bdat-toolset.exe">
 			<LogicalName>embedded.bdat-toolset.exe</LogicalName>
 		</EmbeddedResource>
@@ -143,9 +137,6 @@
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
 	</ItemGroup>
 	<ItemGroup>
-		<Reference Include="AFSLib">
-			<HintPath>plugins\AFSLib.dll</HintPath>
-		</Reference>
 		<Reference Include="ByteSize">
 			<HintPath>plugins\ByteSize.dll</HintPath>
 		</Reference>
