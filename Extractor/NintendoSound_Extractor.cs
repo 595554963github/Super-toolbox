@@ -58,6 +58,7 @@ namespace super_toolbox
         {
             if (!Directory.Exists(directoryPath))
             {
+                ExtractionError?.Invoke(this, $"错误:{directoryPath}不是有效的目录");
                 OnExtractionFailed($"错误:{directoryPath}不是有效的目录");
                 return;
             }
@@ -70,6 +71,7 @@ namespace super_toolbox
                 .ToList();
 
             TotalFilesToExtract = files.Count;
+            ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}，共找到{files.Count}个文件");
 
             foreach (var format in FormatInfos)
             {
@@ -97,7 +99,10 @@ namespace super_toolbox
                                 }
                             }
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            ExtractionError?.Invoke(this, $"扫描文件{Path.GetFileName(filePath)}时出错:{ex.Message}");
+                        }
                     });
                 }, cancellationToken);
 
@@ -108,6 +113,7 @@ namespace super_toolbox
                         string dirName = format.OriginalName ?? format.Name;
                         string formatDir = Path.Combine(extractedDir, dirName);
                         Directory.CreateDirectory(formatDir);
+                        ExtractionProgress?.Invoke(this, $"创建格式目录:{dirName}");
                     }
                 }
 
@@ -135,12 +141,16 @@ namespace super_toolbox
                         {
                             throw;
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            ExtractionError?.Invoke(this, $"处理文件{Path.GetFileName(filePath)}时出错:{ex.Message}");
+                        }
                     });
                 }, cancellationToken);
 
                 if (_reversibleFiles.Count > 0)
                 {
+                    ExtractionProgress?.Invoke(this, $"开始修复{_reversibleFiles.Count}个反转字节的文件");
                     int fixedCount = 0;
                     foreach (var filePath in _reversibleFiles)
                     {
@@ -150,22 +160,37 @@ namespace super_toolbox
                             if (FixReversedBytes(filePath))
                             {
                                 fixedCount++;
+                                ExtractionProgress?.Invoke(this, $"已修复:{Path.GetFileName(filePath)}");
                             }
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            ExtractionError?.Invoke(this, $"修复文件{Path.GetFileName(filePath)}时出错:{ex.Message}");
+                        }
                     }
+                    ExtractionProgress?.Invoke(this, $"修复完成，共修复{fixedCount}个文件");
                 }
 
                 int totalExtracted = _counters.Sum(x => x.Value);
+                if (totalExtracted > 0)
+                {
+                    ExtractionProgress?.Invoke(this, $"处理完成，共提取出{totalExtracted}个音频文件");
+                }
+                else
+                {
+                    ExtractionProgress?.Invoke(this, "处理完成，未找到支持的音频格式");
+                }
                 OnExtractionCompleted();
             }
             catch (OperationCanceledException)
             {
+                ExtractionError?.Invoke(this, "提取操作已取消");
                 OnExtractionFailed("提取操作已取消");
                 throw;
             }
             catch (Exception ex)
             {
+                ExtractionError?.Invoke(this, $"严重错误:{ex.Message}");
                 OnExtractionFailed($"严重错误:{ex.Message}");
                 throw;
             }
@@ -275,6 +300,7 @@ namespace super_toolbox
 
                 File.WriteAllBytes(audioFilePath, audioData);
                 OnFileExtracted(audioFilePath);
+                ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(audioFilePath)}");
 
                 if (format.IsReversible)
                 {
@@ -331,7 +357,10 @@ namespace super_toolbox
                     return true;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                ExtractionError?.Invoke(this, $"修复文件时出错:{ex.Message}");
+            }
 
             return false;
         }
