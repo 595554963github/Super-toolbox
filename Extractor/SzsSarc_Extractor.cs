@@ -31,9 +31,6 @@ namespace super_toolbox
             new FormatInfo { Signature = new byte[] { 0x46, 0x4C, 0x49, 0x4D }, Extension = "bflim", IsFlimFormat = true },
             new FormatInfo { Signature = new byte[] { 0x46, 0x52, 0x45, 0x53 }, Extension = "bfres" },
             new FormatInfo { Signature = new byte[] { 0x46, 0x47, 0x52, 0x50 }, Extension = "bfrgp" },
-            new FormatInfo { Signature = new byte[] { 0x46, 0x57, 0x53, 0x44 }, Extension = "bfwsd" },
-            new FormatInfo { Signature = new byte[] { 0x46, 0x57, 0x41, 0x52 }, Extension = "bfwar" },
-            new FormatInfo { Signature = new byte[] { 0x46, 0x57, 0x41, 0x56 }, Extension = "bfwav" },
         };
 
         private uint ReadBigEndianUInt32(byte[] data, int offset)
