@@ -4,6 +4,10 @@ namespace super_toolbox
 {
     public class NintendoSound_Extractor : BaseExtractor
     {
+        public new event EventHandler<string>? ExtractionStarted;
+        public new event EventHandler<string>? ExtractionProgress;
+        public new event EventHandler<string>? ExtractionError;
+
         private static readonly AudioFormatInfo[] FormatInfos = new AudioFormatInfo[]
         {
             new AudioFormatInfo(
@@ -107,6 +111,8 @@ namespace super_toolbox
                     }
                 }
 
+                int totalExtractedFiles = 0;
+
                 await Task.Run(() =>
                 {
                     Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = cancellationToken }, filePath =>
@@ -120,7 +126,8 @@ namespace super_toolbox
                             {
                                 if (existingFormats.ContainsKey(format.Name))
                                 {
-                                    ExtractAudioFormat(filePath, content, format, extractedDir, cancellationToken);
+                                    int extracted = ExtractAudioFormat(filePath, content, format, extractedDir, cancellationToken);
+                                    Interlocked.Add(ref totalExtractedFiles, extracted);
                                 }
                             }
                         }
@@ -134,24 +141,34 @@ namespace super_toolbox
 
                 if (_reversibleFiles.Count > 0)
                 {
+                    int fixedCount = 0;
                     foreach (var filePath in _reversibleFiles)
                     {
                         ThrowIfCancellationRequested(cancellationToken);
                         try
                         {
-                            FixReversedBytes(filePath);
+                            if (FixReversedBytes(filePath))
+                            {
+                                fixedCount++;
+                            }
                         }
                         catch { }
                     }
                 }
+
+                int totalExtracted = _counters.Sum(x => x.Value);
+                OnExtractionCompleted();
             }
             catch (OperationCanceledException)
             {
                 OnExtractionFailed("提取操作已取消");
                 throw;
             }
-
-            OnExtractionCompleted();
+            catch (Exception ex)
+            {
+                OnExtractionFailed($"严重错误:{ex.Message}");
+                throw;
+            }
         }
 
         private bool ContainsValidAudioFormat(byte[] content, AudioFormatInfo format)
@@ -208,12 +225,12 @@ namespace super_toolbox
             return true;
         }
 
-        private void ExtractAudioFormat(string filePath, byte[] content, AudioFormatInfo format, string rootOutputDir, CancellationToken cancellationToken)
+        private int ExtractAudioFormat(string filePath, byte[] content, AudioFormatInfo format, string rootOutputDir, CancellationToken cancellationToken)
         {
             int index = 0;
             string baseFileName = Path.GetFileNameWithoutExtension(filePath);
             string outputDir = Path.Combine(rootOutputDir, format.OriginalName ?? format.Name);
-            int localCounter = 1;
+            int extractedCount = 0;
 
             while (index <= content.Length - format.Signature.Length)
             {
@@ -247,11 +264,11 @@ namespace super_toolbox
                 byte[] audioData = new byte[fileSize];
                 Array.Copy(content, startIndex, audioData, 0, fileSize);
 
-                _counters.AddOrUpdate(format.Name, 1, (key, oldValue) => oldValue + 1);
+                int counterValue = _counters.AddOrUpdate(format.Name, 1, (key, oldValue) => oldValue + 1);
 
                 string audioFileName = format.IsReversible
-                    ? $"{baseFileName}_{localCounter}_reversed{format.Extension}"
-                    : $"{baseFileName}_{localCounter}{format.Extension}";
+                    ? $"{baseFileName}_{counterValue}_reversed{format.Extension}"
+                    : $"{baseFileName}_{counterValue}{format.Extension}";
 
                 string audioFilePath = Path.Combine(outputDir, audioFileName);
                 audioFilePath = MakeUniqueFilename(audioFilePath);
@@ -264,9 +281,11 @@ namespace super_toolbox
                     _reversibleFiles.Add(audioFilePath);
                 }
 
-                localCounter++;
+                extractedCount++;
                 index = startIndex + fileSize;
             }
+
+            return extractedCount;
         }
 
         private bool FixReversedBytes(string filePath)
@@ -283,8 +302,6 @@ namespace super_toolbox
                     { new byte[] { 0x41, 0x54, 0x41, 0x44 }, new byte[] { 0x44, 0x41, 0x54, 0x41 } }
                 };
 
-                int fixCount = 0;
-
                 for (int i = 0; i <= data.Length - 4; i++)
                 {
                     foreach (var kvp in fixMap)
@@ -298,7 +315,6 @@ namespace super_toolbox
                             data[i + 3] == reversed[3])
                         {
                             Array.Copy(normal, 0, data, i, 4);
-                            fixCount++;
                             fixedSomething = true;
                         }
                     }
