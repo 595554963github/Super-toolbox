@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace super_toolbox.Compress
+namespace super_toolbox
 {
     public class Lzx_Compressor : BaseExtractor
     {
