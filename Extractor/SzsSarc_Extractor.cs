@@ -1,4 +1,6 @@
 using AuroraLib.Compression.Algorithms;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace super_toolbox
 {
@@ -8,402 +10,305 @@ namespace super_toolbox
         public new event EventHandler<string>? ExtractionProgress;
         public new event EventHandler<string>? ExtractionError;
 
-        private class FormatInfo
-        {
-            public byte[] Signature { get; set; } = Array.Empty<byte>();
-            public string Extension { get; set; } = string.Empty;
-            public int SizeOffset { get; set; } = 12;
-            public int HeaderSize { get; set; } = 0;
-            public bool IsFlimFormat { get; set; }
-            public bool IsLittleEndian { get; set; } = false;
-        }
+        private static readonly byte[] SARC = { 0x53, 0x41, 0x52, 0x43 };
+        private static readonly byte[] SFAT = { 0x53, 0x46, 0x41, 0x54 };
+        private static readonly byte[] SFNT = { 0x53, 0x46, 0x4E, 0x54 };
+        private static readonly byte[] Yaz0 = { 0x59, 0x61, 0x7A, 0x30 };
+        private static readonly byte[] FLIM = { 0x46, 0x4C, 0x49, 0x4D };
 
-        private static readonly byte[] Yaz0Magic = { 0x59, 0x61, 0x7A, 0x30 };
-        private static readonly byte[] SarcMagic = { 0x53, 0x41, 0x52, 0x43 };
-        private static readonly byte[] BYML_SIGNATURE = { 0x42, 0x59, 0x00, 0x02, 0x00, 0x00, 0x00, 0x10 };
-        private static readonly byte[] AAMP_SIGNATURE = { 0x41, 0x41, 0x4D, 0x50 };
+        private const string NullChar = "\x00";
+        private const string Empty = "";
+        private const string BFFNT = "bffnt";
+        private const uint HashKey = 0x65;
+        private const int MinAlignment = 4;
 
-        private readonly FormatInfo[] Formats = new[]
-        {
-            new FormatInfo { Signature = new byte[] { 0x46, 0x4C, 0x41, 0x4E }, Extension = "bflan" },
-            new FormatInfo { Signature = new byte[] { 0x46, 0x4C, 0x59, 0x54 }, Extension = "bflyt" },
-            new FormatInfo { Signature = new byte[] { 0x46, 0x53, 0x48, 0x41 }, Extension = "bfsha" },
-            new FormatInfo { Signature = new byte[] { 0x46, 0x4C, 0x49, 0x4D }, Extension = "bflim", IsFlimFormat = true },
-            new FormatInfo { Signature = new byte[] { 0x46, 0x52, 0x45, 0x53 }, Extension = "bfres" },
-            new FormatInfo { Signature = new byte[] { 0x46, 0x47, 0x52, 0x50 }, Extension = "bfrgp" },
+        private static readonly Regex RegexAZ = new Regex("[^a-zA-Z0-9 -]", RegexOptions.Compiled);
+
+        private static readonly Dictionary<string, string> FileExtensions = new() {
+            { "AAHS", ".sharc" }, { "AAMP", ".aamp" }, { "BAHS", ".sharcb" },
+            { "BNSH", ".bnsh" }, { "BNTX", ".bntx" }, { "BY", ".byaml" },
+            { "CFNT", ".bcfnt" }, { "CGFX", ".bcres" }, { "CLAN", ".bclan" },
+            { "CLYT", ".bclyt" }, { "CSTM", ".bcstm" }, { "CTPK", ".ctpk" },
+            { "CWAV", ".bcwav" }, { "FFNT", ".bffnt" }, { "FLAN", ".bflan" },
+            { "FLIM", ".bclim" }, { "FLYT", ".bflyt" }, { "FRES", ".bfres" },
+            { "FSEQ", ".bfseq" }, { "FSHA", ".bfsha" }, { "FSTM", ".bfstm" },
+            { "FWAV", ".bfwav" }, { "Gfx2", ".gtx" }, { "MsgPrjBn", ".msbp" },
+            { "MsgStdBn", ".msbt" }, { "SARC", ".sarc" }, { "STM", ".bfsha" },
+            { "VFXB", ".pctl" }, { "Yaz", ".szs" }, { "YB", ".byaml" },
         };
 
-        private uint ReadBigEndianUInt32(byte[] data, int offset)
+        private enum Endian : ushort { Big = 0xFFFE, Little = 0xFEFF }
+
+        private class SarcArchive : Dictionary<string, byte[]>
         {
-            if (offset + 4 > data.Length) return 0;
-            return (uint)(
-                data[offset] << 24 |
-                data[offset + 1] << 16 |
-                data[offset + 2] << 8 |
-                data[offset + 3]
-            );
-        }
+            public Endian Endian { get; set; }
+            public bool HashOnly { get; set; } = false;
+            public bool Legacy { get; set; } = false;
 
-        private uint ReadLittleEndianUInt32(byte[] data, int offset)
-        {
-            if (offset + 4 > data.Length) return 0;
-            return (uint)(
-                data[offset] |
-                data[offset + 1] << 8 |
-                data[offset + 2] << 16 |
-                data[offset + 3] << 24
-            );
-        }
-
-        private int CalculateBymlSize(byte[] data, int startIndex)
-        {
-            if (startIndex + 16 > data.Length) return 0;
-
-            uint nameArrayOffset = ReadBigEndianUInt32(data, startIndex + 4);
-            uint stringArrayOffset = ReadBigEndianUInt32(data, startIndex + 8);
-            uint rootNodeOffset = ReadBigEndianUInt32(data, startIndex + 12);
-
-            uint maxOffset = rootNodeOffset;
-            if (nameArrayOffset > maxOffset && nameArrayOffset < data.Length - startIndex)
-                maxOffset = nameArrayOffset;
-            if (stringArrayOffset > maxOffset && stringArrayOffset < data.Length - startIndex)
-                maxOffset = stringArrayOffset;
-
-            int estimatedSize = (int)maxOffset + 4096;
-
-            for (int i = startIndex + (int)maxOffset; i < data.Length - 8; i++)
+            public SarcArchive(byte[] data)
             {
-                if (data[i] == BYML_SIGNATURE[0] && data[i + 1] == BYML_SIGNATURE[1] &&
-                    data[i + 2] == BYML_SIGNATURE[2] && data[i + 3] == BYML_SIGNATURE[3] &&
-                    data[i + 4] == BYML_SIGNATURE[4] && data[i + 5] == BYML_SIGNATURE[5] &&
-                    data[i + 6] == BYML_SIGNATURE[6] && data[i + 7] == BYML_SIGNATURE[7])
+                using MemoryStream ms = new(data);
+                using BinaryReader reader = new(ms);
+
+                byte[] magic = reader.ReadBytes(4);
+                if (!magic.SequenceEqual(SARC))
+                    throw new InvalidDataException("无效的SARC魔数");
+
+                reader.ReadBytes(2);
+                Endian = (Endian)reader.ReadUInt16();
+
+                int fileSize = reader.ReadInt32();
+                int dataOffset = reader.ReadInt32();
+                reader.ReadBytes(10);
+
+                ushort fileCount = reader.ReadUInt16();
+                reader.ReadBytes(4);
+
+                if (Endian == Endian.Big)
                 {
-                    estimatedSize = i - startIndex;
-                    break;
+                    fileSize = SwapEndian(fileSize);
+                    dataOffset = SwapEndian(dataOffset);
+                    fileCount = SwapEndian(fileCount);
+                }
+
+                var nodes = new List<(uint Hash, int StringOffset, int DataStart, int DataEnd)>();
+
+                for (int i = 0; i < fileCount; i++)
+                {
+                    uint hash = reader.ReadUInt32();
+                    int attributes = reader.ReadInt32();
+                    int dataStart = reader.ReadInt32();
+                    int dataEnd = reader.ReadInt32();
+
+                    if (Endian == Endian.Big)
+                    {
+                        hash = SwapEndian(hash);
+                        attributes = SwapEndian(attributes);
+                        dataStart = SwapEndian(dataStart);
+                        dataEnd = SwapEndian(dataEnd);
+                    }
+
+                    HashOnly = (byte)(attributes >> 24) != 1;
+                    int strOffset = (attributes & 0xFFFF) * 4;
+
+                    nodes.Add((hash, strOffset, dataStart, dataEnd));
+                }
+
+                byte[] sfntMagic = reader.ReadBytes(4);
+                if (!sfntMagic.SequenceEqual(SFNT))
+                    throw new InvalidDataException("无效的SFNT魔数");
+
+                reader.ReadBytes(4);
+
+                if (!HashOnly)
+                {
+                    int stringTableSize = dataOffset - (int)ms.Position;
+                    byte[] stringTable = reader.ReadBytes(stringTableSize);
+
+                    for (int i = 0; i < nodes.Count; i++)
+                    {
+                        ms.Seek(dataOffset + nodes[i].DataStart, SeekOrigin.Begin);
+                        byte[] fileData = reader.ReadBytes(nodes[i].DataEnd - nodes[i].DataStart);
+
+                        string fileName = ReadString(stringTable, nodes[i].StringOffset);
+                        Add(fileName, fileData);
+                    }
+                }
+                else
+                {
+                    ms.Seek(dataOffset, SeekOrigin.Begin);
+                    for (int i = 0; i < nodes.Count; i++)
+                    {
+                        byte[] fileData = reader.ReadBytes(nodes[i].DataEnd - nodes[i].DataStart);
+                        string fileName = $"{nodes[i].Hash:x8}.{GuessFileExtension(fileData)}";
+                        Add(fileName, fileData);
+                    }
                 }
             }
 
-            if (estimatedSize > data.Length - startIndex)
-                estimatedSize = data.Length - startIndex;
+            private string ReadString(byte[] stringTable, int offset)
+            {
+                int end = offset;
+                while (end < stringTable.Length && stringTable[end] != 0)
+                    end++;
+                return Encoding.UTF8.GetString(stringTable, offset, end - offset).Replace(NullChar, Empty);
+            }
 
-            return estimatedSize;
+            private string GuessFileExtension(byte[] data)
+            {
+                string magic = data.Length >= 8 && data.Take(4).SequenceEqual(Yaz0)
+                    ? Encoding.UTF8.GetString(data, 0x11, 4)
+                    : data.Length >= 4 ? Encoding.UTF8.GetString(data, 0, 4) : "";
+
+                return FileExtensions.TryGetValue(RegexAZ.Replace(magic, Empty), out string? value) ? value : "bin";
+            }
+
+            private int SwapEndian(int value)
+            {
+                uint unsigned = (uint)value;
+                uint swapped = ((unsigned & 0x000000FF) << 24) |
+                               ((unsigned & 0x0000FF00) << 8) |
+                               ((unsigned & 0x00FF0000) >> 8) |
+                               ((unsigned & 0xFF000000) >> 24);
+                return (int)swapped;
+            }
+
+            private uint SwapEndian(uint value)
+            {
+                return ((value & 0x000000FF) << 24) |
+                       ((value & 0x0000FF00) << 8) |
+                       ((value & 0x00FF0000) >> 8) |
+                       ((value & 0xFF000000) >> 24);
+            }
+
+            private ushort SwapEndian(ushort value)
+            {
+                return (ushort)(((value & 0x00FF) << 8) | ((value & 0xFF00) >> 8));
+            }
         }
 
         private byte[] DecompressYaz0(byte[] compressedData)
         {
-            int yaz0Start = IndexOf(compressedData, Yaz0Magic, 0);
-            if (yaz0Start < 0) return compressedData;
+            if (compressedData.Length < 4) return compressedData;
+            if (!compressedData.Take(4).SequenceEqual(Yaz0)) return compressedData;
 
-            using (var inputStream = new MemoryStream(compressedData))
-            using (var outputStream = new MemoryStream())
-            {
-                inputStream.Seek(yaz0Start, SeekOrigin.Begin);
-                Yaz0 yaz0 = new Yaz0();
-                yaz0.Decompress(inputStream, outputStream);
-                return outputStream.ToArray();
-            }
-        }
-
-        private bool StartsWith(byte[] data, byte[] pattern)
-        {
-            if (data.Length < pattern.Length) return false;
-            for (int i = 0; i < pattern.Length; i++)
-                if (data[i] != pattern[i]) return false;
-            return true;
-        }
-
-        private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
-        {
-            if (data == null || pattern == null || startIndex < 0 || startIndex > data.Length - pattern.Length)
-                return -1;
-
-            for (int i = startIndex; i <= data.Length - pattern.Length; i++)
-            {
-                bool match = true;
-                for (int j = 0; j < pattern.Length; j++)
-                {
-                    if (data[i + j] != pattern[j])
-                    {
-                        match = false;
-                        break;
-                    }
-                }
-                if (match) return i;
-            }
-            return -1;
+            using var input = new MemoryStream(compressedData);
+            using var output = new MemoryStream();
+            new Yaz0().Decompress(input, output);
+            return output.ToArray();
         }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
             {
-                ExtractionError?.Invoke(this, $"错误:目录{directoryPath}不存在");
-                OnExtractionFailed($"错误:目录{directoryPath}不存在");
+                ExtractionError?.Invoke(this, $"源文件夹{directoryPath}不存在");
+                OnExtractionFailed($"源文件夹{directoryPath}不存在");
                 return;
             }
 
-            ExtractionStarted?.Invoke(this, $"开始扫描目录:{directoryPath}");
+            ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
-            var allFiles = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
+            var allFiles = Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories).ToList();
+            var archiveFiles = new List<string>();
 
-            if (allFiles.Length == 0)
+            ExtractionProgress?.Invoke(this, $"正在扫描文件头,共{allFiles.Count}个文件...");
+
+            foreach (var file in allFiles)
             {
-                ExtractionProgress?.Invoke(this, "目录中没有文件");
-                OnExtractionCompleted();
+                try
+                {
+                    using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    if (fs.Length < 4) continue;
+
+                    byte[] header = new byte[4];
+                    await fs.ReadAsync(header, 0, 4, cancellationToken);
+
+                    if (header.SequenceEqual(SARC) || header.SequenceEqual(Yaz0))
+                    {
+                        archiveFiles.Add(file);
+                        ExtractionProgress?.Invoke(this, $"发现sarc/Yaz0文件:{Path.GetFileName(file)}");
+                    }
+                }
+                catch { }
+            }
+
+            if (archiveFiles.Count == 0)
+            {
+                ExtractionError?.Invoke(this, "未找到任何sarc/Yaz0格式的文件");
+                OnExtractionFailed("未找到任何sarc/Yaz0格式的文件");
                 return;
             }
 
-            TotalFilesToExtract = allFiles.Length;
-            int totalExtractedFiles = 0;
+            TotalFilesToExtract = archiveFiles.Count;
+            int processedFiles = 0;
+            int totalExtracted = 0;
 
             try
             {
-                await Task.Run(() =>
+                foreach (var archiveFile in archiveFiles)
                 {
-                    int processedCount = 0;
+                    ThrowIfCancellationRequested(cancellationToken);
+                    processedFiles++;
 
-                    foreach (var filePath in allFiles)
+                    ExtractionProgress?.Invoke(this, $"正在处理文件:{Path.GetFileName(archiveFile)} ({processedFiles}/{TotalFilesToExtract})");
+
+                    try
                     {
-                        ThrowIfCancellationRequested(cancellationToken);
-                        processedCount++;
+                        string baseName = Path.GetFileNameWithoutExtension(archiveFile);
+                        string outputDir = Path.Combine(Path.GetDirectoryName(archiveFile) ?? "", baseName);
+                        Directory.CreateDirectory(outputDir);
 
-                        ExtractionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(filePath)} ({processedCount}/{allFiles.Length})");
+                        byte[] fileData = await File.ReadAllBytesAsync(archiveFile, cancellationToken);
+                        byte[] dataToProcess = fileData;
 
-                        try
+                        if (fileData.Length >= 4 && fileData.Take(4).SequenceEqual(Yaz0))
                         {
-                            string? parentDir = Path.GetDirectoryName(filePath);
-                            if (string.IsNullOrEmpty(parentDir)) continue;
+                            ExtractionProgress?.Invoke(this, $"检测到Yaz0压缩,开始解压:{Path.GetFileName(archiveFile)}");
+                            dataToProcess = DecompressYaz0(fileData);
+                        }
 
-                            string baseName = Path.GetFileNameWithoutExtension(filePath);
-                            string outputDir = Path.Combine(parentDir, baseName);
-                            Directory.CreateDirectory(outputDir);
-
-                            byte[] fileData = File.ReadAllBytes(filePath);
-
-                            if (StartsWith(fileData, Yaz0Magic))
+                        if (dataToProcess.Length >= 4 && dataToProcess.Take(4).SequenceEqual(SARC))
+                        {
+                            try
                             {
-                                ExtractionProgress?.Invoke(this, $"检测到Yaz0压缩,开始解压:{Path.GetFileName(filePath)}");
-                                byte[] decompressedData = DecompressYaz0(fileData);
+                                var archive = new SarcArchive(dataToProcess);
+                                int extractedCount = 0;
 
-                                if (StartsWith(decompressedData, SarcMagic))
+                                foreach (var entry in archive)
                                 {
-                                    int extractedCount = ExtractFromSarc(decompressedData, baseName, outputDir);
-                                    totalExtractedFiles += extractedCount;
-                                    ExtractionProgress?.Invoke(this, $"文件{Path.GetFileName(filePath)}解压并提取完成,找到{extractedCount}个文件");
+                                    ThrowIfCancellationRequested(cancellationToken);
+                                    string fileName = entry.Key;
+                                    string outputPath = Path.Combine(outputDir, fileName);
+
+                                    string? fileDir = Path.GetDirectoryName(outputPath);
+                                    if (!string.IsNullOrEmpty(fileDir) && !Directory.Exists(fileDir))
+                                        Directory.CreateDirectory(fileDir);
+
+                                    outputPath = await GenerateUniqueFilePathAsync(outputPath, cancellationToken);
+                                    await File.WriteAllBytesAsync(outputPath, entry.Value, cancellationToken);
+
+                                    extractedCount++;
+                                    totalExtracted++;
+                                    OnFileExtracted(outputPath);
                                 }
-                                else
-                                {
-                                    int extractedCount = ExtractEmbeddedFiles(decompressedData, baseName, outputDir);
-                                    if (extractedCount > 0)
-                                    {
-                                        totalExtractedFiles += extractedCount;
-                                        ExtractionProgress?.Invoke(this, $"文件{Path.GetFileName(filePath)}解压并提取完成,找到{extractedCount}个嵌入式文件");
-                                    }
-                                    else
-                                    {
-                                        string decompressedFilePath = Path.Combine(outputDir, $"{baseName}_decompressed.bin");
-                                        File.WriteAllBytes(decompressedFilePath, decompressedData);
-                                        totalExtractedFiles++;
-                                        OnFileExtracted(decompressedFilePath);
-                                        ExtractionProgress?.Invoke(this, $"文件{Path.GetFileName(filePath)}解压完成,保存为:{Path.GetFileName(decompressedFilePath)}");
-                                    }
-                                }
+
+                                ExtractionProgress?.Invoke(this, $"文件{Path.GetFileName(archiveFile)}提取完成,共{extractedCount}个文件");
                             }
-                            else if (StartsWith(fileData, SarcMagic))
+                            catch (Exception ex)
                             {
-                                int extractedCount = ExtractFromSarc(fileData, baseName, outputDir);
-                                totalExtractedFiles += extractedCount;
-                                ExtractionProgress?.Invoke(this, $"文件{Path.GetFileName(filePath)}提取完成,找到{extractedCount}个文件");
-                            }
-                            else
-                            {
-                                int extractedCount = ExtractEmbeddedFiles(fileData, baseName, outputDir);
-                                if (extractedCount > 0)
-                                {
-                                    totalExtractedFiles += extractedCount;
-                                    ExtractionProgress?.Invoke(this, $"文件{Path.GetFileName(filePath)}提取完成,找到{extractedCount}个嵌入式文件");
-                                }
-                                else
-                                {
-                                    totalExtractedFiles++;
-                                    OnFileExtracted(filePath);
-                                }
+                                ExtractionError?.Invoke(this, $"解析SARC文件{Path.GetFileName(archiveFile)}时出错:{ex.Message}");
                             }
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            ExtractionError?.Invoke(this, $"文件{Path.GetFileName(filePath)}处理错误:{ex.Message}");
+                            string outputPath = Path.Combine(outputDir, $"{baseName}_decompressed.bin");
+                            outputPath = await GenerateUniqueFilePathAsync(outputPath, cancellationToken);
+                            await File.WriteAllBytesAsync(outputPath, dataToProcess, cancellationToken);
+                            totalExtracted++;
+                            OnFileExtracted(outputPath);
+                            ExtractionProgress?.Invoke(this, $"文件{Path.GetFileName(archiveFile)}解压完成");
                         }
                     }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        ExtractionError?.Invoke(this, $"处理文件{Path.GetFileName(archiveFile)}时出错:{ex.Message}");
+                    }
+                }
 
-                    ExtractionProgress?.Invoke(this, $"提取完成,总共生成{totalExtractedFiles}个文件");
-                    OnExtractionCompleted();
-                }, cancellationToken);
+                ExtractionProgress?.Invoke(this, $"处理完成,共提取{totalExtracted}个文件");
+                OnExtractionCompleted();
             }
             catch (OperationCanceledException)
             {
                 ExtractionError?.Invoke(this, "提取操作已取消");
                 OnExtractionFailed("提取操作已取消");
+                throw;
             }
-            catch (Exception ex)
-            {
-                ExtractionError?.Invoke(this, $"提取失败:{ex.Message}");
-                OnExtractionFailed($"提取失败:{ex.Message}");
-            }
-        }
-
-        private int ExtractFromSarc(byte[] sarcData, string baseName, string outputDir)
-        {
-            int extractedCount = 0;
-            var formatCounts = new Dictionary<string, int>();
-
-            for (int i = 0; i < sarcData.Length - 4; i++)
-            {
-                foreach (var format in Formats)
-                {
-                    if (sarcData[i] == format.Signature[0] &&
-                        sarcData[i + 1] == format.Signature[1] &&
-                        sarcData[i + 2] == format.Signature[2] &&
-                        sarcData[i + 3] == format.Signature[3])
-                    {
-                        if (i + format.SizeOffset + 4 > sarcData.Length) continue;
-
-                        uint size = ReadBigEndianUInt32(sarcData, i + format.SizeOffset);
-
-                        if (format.IsFlimFormat)
-                        {
-                            if (size < 40) continue;
-                            int dataSize = (int)size - 40;
-                            if (dataSize <= 0 || i - dataSize < 0) continue;
-
-                            if (!formatCounts.ContainsKey(format.Extension))
-                                formatCounts[format.Extension] = 0;
-                            formatCounts[format.Extension]++;
-
-                            string outputPath = Path.Combine(outputDir, $"{baseName}_{formatCounts[format.Extension]}.{format.Extension}");
-                            outputPath = GetUniqueFilePath(outputPath);
-
-                            byte[] flimData = new byte[size];
-                            Array.Copy(sarcData, i - dataSize, flimData, 0, dataSize);
-                            Array.Copy(sarcData, i, flimData, dataSize, 40);
-
-                            File.WriteAllBytes(outputPath, flimData);
-                            extractedCount++;
-                            OnFileExtracted(outputPath);
-                        }
-                        else
-                        {
-                            if (size <= 0 || i + size > sarcData.Length) continue;
-
-                            if (!formatCounts.ContainsKey(format.Extension))
-                                formatCounts[format.Extension] = 0;
-                            formatCounts[format.Extension]++;
-
-                            string outputPath = Path.Combine(outputDir, $"{baseName}_{formatCounts[format.Extension]}.{format.Extension}");
-                            outputPath = GetUniqueFilePath(outputPath);
-
-                            byte[] outputData = new byte[size];
-                            Array.Copy(sarcData, i, outputData, 0, size);
-                            File.WriteAllBytes(outputPath, outputData);
-
-                            extractedCount++;
-                            OnFileExtracted(outputPath);
-                            i += (int)size - 1;
-                        }
-                        break;
-                    }
-                }
-            }
-
-            int bymlCount = ExtractBymlFiles(sarcData, baseName, outputDir);
-            int aampCount = ExtractAampFiles(sarcData, baseName, outputDir);
-
-            return extractedCount + bymlCount + aampCount;
-        }
-
-        private int ExtractEmbeddedFiles(byte[] data, string baseName, string outputDir)
-        {
-            int bymlCount = ExtractBymlFiles(data, baseName, outputDir);
-            int aampCount = ExtractAampFiles(data, baseName, outputDir);
-            return bymlCount + aampCount;
-        }
-
-        private int ExtractBymlFiles(byte[] data, string baseName, string outputDir)
-        {
-            int index = 0;
-            int fileIndex = 1;
-            int extractedCount = 0;
-
-            while (index <= data.Length - BYML_SIGNATURE.Length)
-            {
-                int startIndex = IndexOf(data, BYML_SIGNATURE, index);
-                if (startIndex == -1) break;
-
-                int fileSize = CalculateBymlSize(data, startIndex);
-                if (fileSize <= 0 || startIndex + fileSize > data.Length)
-                {
-                    index = startIndex + 1;
-                    continue;
-                }
-
-                byte[] fileData = new byte[fileSize];
-                Array.Copy(data, startIndex, fileData, 0, fileSize);
-
-                string fileName = $"{baseName}_{fileIndex}.byml";
-                string outputPath = Path.Combine(outputDir, fileName);
-                outputPath = GetUniqueFilePath(outputPath);
-
-                File.WriteAllBytes(outputPath, fileData);
-                extractedCount++;
-                OnFileExtracted(outputPath);
-
-                fileIndex++;
-                index = startIndex + fileSize;
-            }
-
-            return extractedCount;
-        }
-
-        private int ExtractAampFiles(byte[] data, string baseName, string outputDir)
-        {
-            int index = 0;
-            int fileIndex = 1;
-            int extractedCount = 0;
-
-            while (index <= data.Length - AAMP_SIGNATURE.Length)
-            {
-                int startIndex = IndexOf(data, AAMP_SIGNATURE, index);
-                if (startIndex == -1) break;
-
-                if (startIndex + 16 > data.Length)
-                {
-                    index = startIndex + 1;
-                    continue;
-                }
-
-                uint fileSize = ReadLittleEndianUInt32(data, startIndex + 12);
-                if (fileSize <= 0 || startIndex + fileSize > data.Length)
-                {
-                    index = startIndex + 1;
-                    continue;
-                }
-
-                byte[] fileData = new byte[fileSize];
-                Array.Copy(data, startIndex, fileData, 0, fileSize);
-
-                string fileName = $"{baseName}_{fileIndex}.aamp";
-                string outputPath = Path.Combine(outputDir, fileName);
-                outputPath = GetUniqueFilePath(outputPath);
-
-                File.WriteAllBytes(outputPath, fileData);
-                extractedCount++;
-                OnFileExtracted(outputPath);
-
-                fileIndex++;
-                index = startIndex + (int)fileSize;
-            }
-
-            return extractedCount;
         }
 
         public override void Extract(string directoryPath)
@@ -411,24 +316,33 @@ namespace super_toolbox
             ExtractAsync(directoryPath).Wait();
         }
 
-        private string GetUniqueFilePath(string filePath)
+        private async Task<string> GenerateUniqueFilePathAsync(string filePath, CancellationToken cancellationToken)
         {
             if (!File.Exists(filePath))
                 return filePath;
 
-            string directory = Path.GetDirectoryName(filePath) ?? string.Empty;
-            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
-            string fileExtension = Path.GetExtension(filePath);
+            string directory = Path.GetDirectoryName(filePath) ?? "";
+            string fileNameWithoutExt = Path.GetFileNameWithoutExtension(filePath);
+            string extension = Path.GetExtension(filePath);
+            int counter = 1;
+            string newPath;
 
-            int duplicateCount = 1;
-            string newFilePath;
             do
             {
-                newFilePath = Path.Combine(directory, $"{fileNameWithoutExtension}_{duplicateCount}{fileExtension}");
-                duplicateCount++;
-            } while (File.Exists(newFilePath));
+                newPath = Path.Combine(directory, $"{fileNameWithoutExt}_{counter}{extension}");
+                counter++;
+                ThrowIfCancellationRequested(cancellationToken);
+            } while (File.Exists(newPath));
 
-            return newFilePath;
+            return newPath;
+        }
+
+        private new void ThrowIfCancellationRequested(CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
         }
     }
 }
