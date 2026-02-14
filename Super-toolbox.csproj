@@ -117,6 +117,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="AuroraLib.Compression" Version="1.5.4" />
+		<PackageReference Include="BymlLibrary" Version="2.1.18" />
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
