@@ -1,4 +1,3 @@
-using super_toolbox.Compress;
 using System.ComponentModel;
 using System.Text;
 
@@ -236,8 +235,11 @@ namespace super_toolbox
             { "索尼 - tim", ("图片", "ps1平台的专用转换器,把tim转换成png") },
             { "Java反编译 - jar/class", ("其他档案", "java反编译器,可将jar和class文件反编译成java伪代码,使用之前请务必下载JRE或者JDK") },
             { "任天堂 - szs/sarc", ("其他档案", "任天堂3ds/wiiu/switch平台的szs/sarc档案提取器,可提取bflan、bflyt、bfsha、bflim、bfres、bfrgp、byml等文件") },
-            { "任天堂 - tpl/brres/brlan/brlyt", ("其他档案", "任天堂wii平台的提取器,可将tpl、brres、brlan、brlyt等文件从游戏里面提取出来,已测试wii平台的异度之刃") },
+            { "任天堂 - tpl/brres/brlan/brlyt/mca", ("其他档案", "任天堂wii平台的提取器,可将tpl、brres、brlan、brlyt等文件从游戏里面提取出来,已测试wii平台的异度之刃") },
             { "任天堂 - bflim", ("图片", "wiiu平台的专用转换器,把bflim转换成dds") },
+            { "任天堂 - byml", ("其他档案", "wiiu平台的byml转换器,可将byml转换为yml") },
+            { "任天堂 - tpl", ("图片", "wii平台的专用转换器,可将tpl转换为png") },
+            { "SGGG - MRG/EFC", ("其他档案", "SEGA Dreamcast的MRG和EFC专用提取器,可提取mrg里面的所有文件") },
         };
         public SuperToolbox()
         {
@@ -345,9 +347,9 @@ namespace super_toolbox
         }
         private readonly HashSet<string> _converters = new HashSet<string>
         {
-         "png2astc", "astc2png", "Gnf2Png", "pvr2png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img",
+         "png2astc", "astc2png", "Gnf2Png", "pvr2png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl",
          "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rad game tools - rada转换器","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3",
-         "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class"
+         "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml"
         };
         private bool IsConverter(string formatName) => _converters.Contains(formatName);
         private async void btnExtract_Click(object sender, EventArgs e)
@@ -790,8 +792,11 @@ namespace super_toolbox
                 case "CloneCD - ccd/img": return new Ccdimg2isoConverter();
                 case "Java反编译 - jar/class": return new JavaDecompiler();
                 case "任天堂 - szs/sarc": return new SzsSarc_Extractor();
-                case "任天堂 - tpl/brres/brlan/brlyt": return new Wii_Misc_Extractor();
+                case "任天堂 - tpl/brres/brlan/brlyt/mca": return new Wii_Misc_Extractor();
                 case "任天堂 - bflim": return new Bflim2dds_Converter();
+                case "SGGG - MRG/EFC": return new SgggExtractor();
+                case "任天堂 - byml": return new Byml2yml_Converter();
+                case "任天堂 - tpl": return new Tpl2png_Converter();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
