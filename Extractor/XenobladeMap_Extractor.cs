@@ -1,4 +1,7 @@
-﻿namespace super_toolbox
+using System.IO.Compression;
+using System.Text;
+
+namespace super_toolbox
 {
     public class XenobladeMap_Extractor : BaseExtractor
     {
@@ -7,6 +10,18 @@
         public new event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] DAP1_HEADER = { 0x44, 0x41, 0x50, 0x31 };
+        private static readonly byte[] BRRES_HEADER = { 0x62, 0x72, 0x65, 0x73 };
+        private static readonly byte[] ZLIB_HEADER = { 0x78, 0x9C };
+
+        private static readonly Dictionary<byte[], string> MAGIC_EXTENSIONS = new Dictionary<byte[], string>(new ByteArrayComparer())
+        {
+            { new byte[] { 0x49, 0x44, 0x44, 0x45 }, "idde" },
+            { new byte[] { 0x4B, 0x59, 0x50 }, "kyp" },
+            { new byte[] { 0x53, 0x54, 0x47, 0x4C }, "stgl" },
+            { new byte[] { 0x4D, 0x50, 0x46, 0x46 }, "mpff" },
+            { new byte[] { 0x62, 0x72, 0x65, 0x73 }, "brres" },
+            { new byte[] { 0x6F, 0x63, 0x63 }, "occ" }
+        };
 
         public override void Extract(string directoryPath)
         {
@@ -15,7 +30,7 @@
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
-            List<DapSegmentInfo> dapSegments = new List<DapSegmentInfo>();
+            List<FileSegmentInfo> fileSegments = new List<FileSegmentInfo>();
             string extractedDir = Path.Combine(directoryPath, "Extracted");
             Directory.CreateDirectory(extractedDir);
 
@@ -47,11 +62,12 @@
                     try
                     {
                         byte[] content = await File.ReadAllBytesAsync(filePath, cancellationToken);
-                        int count = await FindDapSegmentsAsync(content, filePath, dapSegments, cancellationToken);
+                        int dapCount = FindDapSegments(content, filePath, fileSegments);
+                        int brresCount = FindBrresSegments(content, filePath, fileSegments);
 
-                        if (count > 0)
+                        if (dapCount + brresCount > 0)
                         {
-                            ExtractionProgress?.Invoke(this, $"从{Path.GetFileName(filePath)}中找到{count}个DAP片段");
+                            ExtractionProgress?.Invoke(this, $"从{Path.GetFileName(filePath)}中找到{dapCount}个DAP片段,{brresCount}个BRRES片段");
                         }
                     }
                     catch (OperationCanceledException)
@@ -64,53 +80,56 @@
                     }
                 }
 
-                if (dapSegments.Count > 0)
+                if (fileSegments.Count > 0)
                 {
-                    ExtractionProgress?.Invoke(this, $"开始处理{dapSegments.Count}个DAP片段...");
+                    ExtractionProgress?.Invoke(this, $"开始处理{fileSegments.Count}个文件片段...");
 
                     int totalExtractedCount = 0;
-                    int validDapSegmentCount = 0;
 
-                    for (int segmentIndex = 0; segmentIndex < dapSegments.Count; segmentIndex++)
+                    for (int segmentIndex = 0; segmentIndex < fileSegments.Count; segmentIndex++)
                     {
                         ThrowIfCancellationRequested(cancellationToken);
-                        var dapSegment = dapSegments[segmentIndex];
+                        var segment = fileSegments[segmentIndex];
 
                         try
                         {
-                            if (!IsValidDapSegment(dapSegment.SegmentData))
+                            int count = 0;
+                            if (segment.Type == "DAP")
                             {
-                                ExtractionProgress?.Invoke(this, $"跳过无效的DAP片段 {segmentIndex + 1}");
-                                continue;
+                                count = await ProcessDapSegmentAsync(segment, extractedDir, cancellationToken);
+                            }
+                            else if (segment.Type == "BRRES")
+                            {
+                                count = await ProcessBrresSegmentAsync(segment, extractedDir, segmentIndex + 1, cancellationToken);
                             }
 
-                            validDapSegmentCount++;
-                            int count = await ProcessDapSegmentAsync(dapSegment, extractedDir, validDapSegmentCount, cancellationToken);
-                            totalExtractedCount += count;
-
-                            ExtractionProgress?.Invoke(this, $"处理DAP片段{validDapSegmentCount}提取出{count}个文件");
+                            if (count > 0)
+                            {
+                                totalExtractedCount += count;
+                                ExtractionProgress?.Invoke(this, $"处理{segment.Type}片段提取出{count}个文件");
+                            }
                         }
-                        catch (Exception)
+                        catch (Exception ex)
                         {
-                            ExtractionError?.Invoke(this, $"处理DAP片段时出错");
+                            ExtractionError?.Invoke(this, $"处理{segment.Type}片段时出错:{ex.Message}");
                         }
                     }
 
                     if (totalExtractedCount > 0)
                     {
-                        ExtractionProgress?.Invoke(this, $"处理完成，共提取出{totalExtractedCount}个文件");
+                        ExtractionProgress?.Invoke(this, $"处理完成,共提取出{totalExtractedCount}个文件");
                         OnExtractionCompleted();
                     }
                     else
                     {
-                        ExtractionProgress?.Invoke(this, "处理完成，但未提取出任何有效文件");
+                        ExtractionProgress?.Invoke(this, "处理完成,但未提取出任何有效文件");
                         OnExtractionFailed("未提取出任何有效文件");
                     }
                 }
                 else
                 {
-                    ExtractionProgress?.Invoke(this, "处理完成，未找到DAP片段");
-                    OnExtractionFailed("未找到DAP片段");
+                    ExtractionProgress?.Invoke(this, "处理完成,未找到任何文件片段");
+                    OnExtractionFailed("未找到任何文件片段");
                 }
             }
             catch (OperationCanceledException)
@@ -121,76 +140,13 @@
             }
         }
 
-        private bool IsValidDapSegment(byte[] segmentData)
-        {
-            try
-            {
-                if (segmentData.Length < 32)
-                    return false;
-
-                using (var stream = new MemoryStream(segmentData))
-                using (var reader = new BinaryReader(stream))
-                {
-                    if (stream.Length < 8) return false;
-
-                    uint fileId = ReadBigEndianUInt32(reader);
-                    uint numFiles = ReadBigEndianUInt32(reader);
-
-                    if (numFiles == 0 || numFiles > 1000)
-                        return false;
-
-                    if (stream.Length < 8 + (numFiles * 20))
-                        return false;
-
-                    for (int i = 0; i < numFiles; i++)
-                    {
-                        if (stream.Position + 20 > stream.Length)
-                            break;
-
-                        byte[] nameBytes = reader.ReadBytes(8);
-                        string name = System.Text.Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
-
-                        uint offset = ReadBigEndianUInt32(reader);
-                        uint compressedSize = ReadBigEndianUInt32(reader);
-                        uint uncompressedSize = ReadBigEndianUInt32(reader);
-                        ushort unk1 = ReadBigEndianUInt16(reader);
-                        ushort unk2 = ReadBigEndianUInt16(reader);
-
-                        if (offset >= stream.Length || compressedSize == 0 || uncompressedSize == 0)
-                            continue;
-
-                        bool hasValidName = false;
-                        foreach (byte b in nameBytes)
-                        {
-                            if (b != 0 && b >= 0x20 && b <= 0x7E)
-                            {
-                                hasValidName = true;
-                                break;
-                            }
-                        }
-
-                        if (hasValidName)
-                            return true;
-                    }
-
-                    return false;
-                }
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private async Task<int> FindDapSegmentsAsync(byte[] content, string sourceFilePath, List<DapSegmentInfo> dapSegments, CancellationToken cancellationToken)
+        private int FindDapSegments(byte[] content, string sourceFilePath, List<FileSegmentInfo> fileSegments)
         {
             int count = 0;
             int index = 0;
 
             while (index < content.Length)
             {
-                ThrowIfCancellationRequested(cancellationToken);
-
                 int headerStartIndex = IndexOf(content, DAP1_HEADER, index);
                 if (headerStartIndex == -1)
                 {
@@ -204,11 +160,13 @@
                 byte[] segmentData = new byte[segmentSize];
                 Array.Copy(content, headerStartIndex, segmentData, 0, segmentSize);
 
-                dapSegments.Add(new DapSegmentInfo
+                fileSegments.Add(new FileSegmentInfo
                 {
                     SourceFilePath = sourceFilePath,
                     SegmentData = segmentData,
-                    HeaderOffset = headerStartIndex
+                    HeaderOffset = headerStartIndex,
+                    AbsoluteOffset = headerStartIndex,
+                    Type = "DAP"
                 });
 
                 count++;
@@ -218,7 +176,76 @@
             return count;
         }
 
-        private async Task<int> ProcessDapSegmentAsync(DapSegmentInfo dapSegment, string extractedDir, int segmentIndex, CancellationToken cancellationToken)
+        private int FindBrresSegments(byte[] content, string sourceFilePath, List<FileSegmentInfo> fileSegments)
+        {
+            int count = 0;
+            int index = 0;
+
+            while (index < content.Length)
+            {
+                int headerStartIndex = IndexOf(content, BRRES_HEADER, index);
+                if (headerStartIndex == -1)
+                {
+                    break;
+                }
+
+                if (headerStartIndex + 12 > content.Length)
+                {
+                    index = headerStartIndex + 1;
+                    continue;
+                }
+
+                int fileSize = ReadBigEndianInt32(content, headerStartIndex + 8);
+
+                if (fileSize <= 0 || headerStartIndex + fileSize > content.Length)
+                {
+                    index = headerStartIndex + 1;
+                    continue;
+                }
+
+                byte[] segmentData = new byte[fileSize];
+                Array.Copy(content, headerStartIndex, segmentData, 0, fileSize);
+
+                fileSegments.Add(new FileSegmentInfo
+                {
+                    SourceFilePath = sourceFilePath,
+                    SegmentData = segmentData,
+                    HeaderOffset = headerStartIndex,
+                    AbsoluteOffset = headerStartIndex,
+                    Type = "BRRES"
+                });
+
+                count++;
+                index = headerStartIndex + fileSize;
+            }
+
+            return count;
+        }
+
+        private string DetectExtension(byte[] data)
+        {
+            foreach (var kv in MAGIC_EXTENSIONS)
+            {
+                byte[] magic = kv.Key;
+                if (data.Length >= magic.Length)
+                {
+                    bool match = true;
+                    for (int i = 0; i < magic.Length; i++)
+                    {
+                        if (data[i] != magic[i])
+                        {
+                            match = false;
+                            break;
+                        }
+                    }
+                    if (match)
+                        return kv.Value;
+                }
+            }
+            return "bin";
+        }
+
+        private async Task<int> ProcessDapSegmentAsync(FileSegmentInfo dapSegment, string extractedDir, CancellationToken cancellationToken)
         {
             int count = 0;
             byte[] dapData = dapSegment.SegmentData;
@@ -228,50 +255,37 @@
                 using (var stream = new MemoryStream(dapData))
                 using (var reader = new BinaryReader(stream))
                 {
-                    if (stream.Length < 8) return 0;
-
-                    uint fileId = ReadBigEndianUInt32(reader);
+                    reader.ReadBytes(4);
                     uint numFiles = ReadBigEndianUInt32(reader);
 
-                    var fileEntries = new List<Dap1FileEntry>();
+                    if (numFiles == 0 || numFiles > 100)
+                        return 0;
+
+                    List<DapFileEntry> fileEntries = new List<DapFileEntry>();
+
                     for (int i = 0; i < numFiles; i++)
                     {
-                        ThrowIfCancellationRequested(cancellationToken);
-
-                        if (stream.Position + 20 > stream.Length)
+                        if (stream.Position + 24 > stream.Length)
                             break;
 
                         byte[] nameBytes = reader.ReadBytes(8);
-                        string rawName = System.Text.Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
-
-                        if (!IsValidFileName(rawName, rawName))
-                        {
-                            reader.ReadBytes(12);
-                            reader.ReadBytes(4);
-                            continue;
-                        }
-
+                        string fileName = Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
                         uint offset = ReadBigEndianUInt32(reader);
                         uint compressedSize = ReadBigEndianUInt32(reader);
                         uint uncompressedSize = ReadBigEndianUInt32(reader);
-                        ushort unk1 = ReadBigEndianUInt16(reader);
-                        ushort unk2 = ReadBigEndianUInt16(reader);
+                        reader.ReadBytes(4);
 
-                        fileEntries.Add(new Dap1FileEntry
+                        if (!string.IsNullOrEmpty(fileName))
                         {
-                            Name = rawName,
-                            RawName = rawName,
-                            NameBytes = nameBytes,
-                            Offset = offset,
-                            CompressedSize = compressedSize,
-                            UncompressedSize = uncompressedSize,
-                            Unknown1 = unk1,
-                            Unknown2 = unk2
-                        });
+                            fileEntries.Add(new DapFileEntry
+                            {
+                                Name = fileName,
+                                Offset = offset,
+                                CompressedSize = compressedSize,
+                                UncompressedSize = uncompressedSize
+                            });
+                        }
                     }
-
-                    string baseFileName = Path.GetFileNameWithoutExtension(dapSegment.SourceFilePath);
-                    int fileIndex = 1;
 
                     foreach (var entry in fileEntries)
                     {
@@ -279,60 +293,50 @@
 
                         try
                         {
-                            if (!IsValidFileName(entry.Name, entry.RawName))
-                            {
+                            if (entry.Offset + 8 > stream.Length)
                                 continue;
-                            }
-
-                            if (entry.Offset >= stream.Length)
-                            {
-                                continue;
-                            }
 
                             stream.Seek(entry.Offset, SeekOrigin.Begin);
+                            reader.ReadBytes(3);
+                            reader.ReadByte();
+                            uint sizeCheck = ReadBigEndianUInt32(reader);
 
-                            byte[] extBytes = reader.ReadBytes(3);
-                            string rawExt = System.Text.Encoding.ASCII.GetString(extBytes).TrimEnd('\0');
-
-                            if (!IsValidExtension(rawExt, rawExt))
-                            {
-                                continue;
-                            }
-
-                            byte unk3 = reader.ReadByte();
-                            uint uncompressedSize2 = ReadBigEndianUInt32(reader);
-
-                            uint dataOffset = entry.Offset + 8;
-
+                            long dataOffset = entry.Offset + 8;
                             if (dataOffset + entry.CompressedSize > stream.Length)
-                            {
                                 continue;
-                            }
 
-                            byte[] compressedData = new byte[entry.CompressedSize];
                             stream.Seek(dataOffset, SeekOrigin.Begin);
-                            stream.Read(compressedData, 0, (int)entry.CompressedSize);
+                            byte[] fileData = new byte[entry.CompressedSize];
+                            await stream.ReadAsync(fileData, 0, (int)entry.CompressedSize, cancellationToken);
 
-                            byte[] decompressedData;
-                            if (entry.CompressedSize == entry.UncompressedSize || entry.CompressedSize == uncompressedSize2)
+                            byte[] finalData;
+                            if (fileData.Length >= 2 && fileData[0] == ZLIB_HEADER[0] && fileData[1] == ZLIB_HEADER[1])
                             {
-                                decompressedData = compressedData;
+                                try
+                                {
+                                    finalData = DecompressZlib(fileData);
+                                    ExtractionProgress?.Invoke(this, $"  解压: {entry.Name} ({fileData.Length} -> {finalData.Length}字节)");
+                                }
+                                catch
+                                {
+                                    finalData = fileData;
+                                }
                             }
                             else
                             {
-                                decompressedData = await DecompressZlibAsync(compressedData, (int)entry.UncompressedSize, cancellationToken);
+                                finalData = fileData;
                             }
 
-                            string outputFileName = $"{baseFileName}_{segmentIndex}_{fileIndex}_{entry.Name}.{rawExt}";
+                            string extension = DetectExtension(finalData);
+                            string outputFileName = $"{entry.Name}.{extension}";
                             string outputFilePath = Path.Combine(extractedDir, outputFileName);
                             outputFilePath = await GenerateUniqueFilePathAsync(outputFilePath, cancellationToken);
 
-                            await File.WriteAllBytesAsync(outputFilePath, decompressedData, cancellationToken);
+                            await File.WriteAllBytesAsync(outputFilePath, finalData, cancellationToken);
                             OnFileExtracted(outputFilePath);
-                            ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(outputFilePath)}");
+                            ExtractionProgress?.Invoke(this, $"已提取:{outputFileName} ({finalData.Length}字节)");
 
                             count++;
-                            fileIndex++;
                         }
                         catch
                         {
@@ -341,101 +345,49 @@
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                ExtractionError?.Invoke(this, $"处理DAP片段{segmentIndex}时出错");
+                ExtractionError?.Invoke(this, $"处理DAP片段时出错:{ex.Message}");
             }
 
             return count;
         }
 
-        private bool IsValidFileName(string cleanedName, string rawName)
-        {
-            if (string.IsNullOrWhiteSpace(rawName))
-                return false;
-
-            bool hasPrintableChars = false;
-            foreach (char c in rawName)
-            {
-                if (c != 0 && c != '\0' && c >= 0x20 && c <= 0x7E)
-                {
-                    hasPrintableChars = true;
-                    break;
-                }
-            }
-
-            if (!hasPrintableChars)
-                return false;
-
-            if (string.IsNullOrWhiteSpace(cleanedName) || cleanedName == "unknown")
-                return false;
-
-            if (cleanedName.Contains("??") || cleanedName.Contains("**") || cleanedName.All(c => c == '_'))
-                return false;
-
-            return true;
-        }
-
-        private bool IsValidExtension(string cleanedExt, string rawExt)
-        {
-            if (string.IsNullOrWhiteSpace(rawExt))
-                return false;
-
-            bool hasPrintableChars = false;
-            foreach (char c in rawExt)
-            {
-                if (c != 0 && c != '\0' && c >= 0x20 && c <= 0x7E && char.IsLetterOrDigit(c))
-                {
-                    hasPrintableChars = true;
-                    break;
-                }
-            }
-
-            if (!hasPrintableChars)
-                return false;
-
-            if (string.IsNullOrWhiteSpace(cleanedExt) || cleanedExt == "unknown" || cleanedExt.Length > 4 || cleanedExt.Length < 1)
-                return false;
-
-            foreach (char c in cleanedExt)
-            {
-                if (!char.IsLetterOrDigit(c))
-                    return false;
-            }
-
-            return true;
-        }
-
-        private async Task<byte[]> DecompressZlibAsync(byte[] compressedData, int expectedSize, CancellationToken cancellationToken)
+        private async Task<int> ProcessBrresSegmentAsync(FileSegmentInfo brresSegment, string extractedDir, int segmentIndex, CancellationToken cancellationToken)
         {
             try
             {
-                if (compressedData.Length >= 2 && compressedData[0] == 0x78)
-                {
-                    using (var compressedStream = new MemoryStream(compressedData, 2, compressedData.Length - 2))
-                    using (var decompressionStream = new System.IO.Compression.DeflateStream(compressedStream, System.IO.Compression.CompressionMode.Decompress))
-                    using (var resultStream = new MemoryStream())
-                    {
-                        byte[] buffer = new byte[4096];
-                        int bytesRead;
+                byte[] brresData = brresSegment.SegmentData;
+                string baseFileName = Path.GetFileNameWithoutExtension(brresSegment.SourceFilePath);
+                string outputFileName = $"{baseFileName}_{segmentIndex}.brres";
+                string outputFilePath = Path.Combine(extractedDir, outputFileName);
 
-                        while ((bytesRead = await decompressionStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
-                        {
-                            ThrowIfCancellationRequested(cancellationToken);
-                            resultStream.Write(buffer, 0, bytesRead);
-                        }
+                outputFilePath = await GenerateUniqueFilePathAsync(outputFilePath, cancellationToken);
+                await File.WriteAllBytesAsync(outputFilePath, brresData, cancellationToken);
 
-                        return resultStream.ToArray();
-                    }
-                }
-                else
-                {
-                    return compressedData;
-                }
+                OnFileExtracted(outputFilePath);
+                ExtractionProgress?.Invoke(this, $"已提取:{outputFileName} ({brresData.Length}字节)");
+
+                return 1;
             }
-            catch
+            catch (Exception ex)
             {
+                ExtractionError?.Invoke(this, $"处理BRRES片段时出错:{ex.Message}");
+                return 0;
+            }
+        }
+
+        private byte[] DecompressZlib(byte[] compressedData)
+        {
+            if (compressedData.Length < 2)
                 return compressedData;
+
+            using (var compressedStream = new MemoryStream(compressedData, 2, compressedData.Length - 2))
+            using (var deflateStream = new DeflateStream(compressedStream, CompressionMode.Decompress))
+            using (var resultStream = new MemoryStream())
+            {
+                deflateStream.CopyTo(resultStream);
+                return resultStream.ToArray();
             }
         }
 
@@ -475,9 +427,7 @@
                     }
                 }
                 if (found)
-                {
                     return i;
-                }
             }
             return -1;
         }
@@ -490,31 +440,50 @@
             return BitConverter.ToUInt32(bytes, 0);
         }
 
-        private ushort ReadBigEndianUInt16(BinaryReader reader)
+        private int ReadBigEndianInt32(byte[] data, int offset)
         {
-            byte[] bytes = reader.ReadBytes(2);
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(bytes);
-            return BitConverter.ToUInt16(bytes, 0);
+            if (offset + 3 >= data.Length)
+                return 0;
+
+            return (data[offset] << 24) | (data[offset + 1] << 16) |
+                   (data[offset + 2] << 8) | data[offset + 3];
         }
 
-        private struct DapSegmentInfo
+        private class ByteArrayComparer : IEqualityComparer<byte[]>
+        {
+            public bool Equals(byte[]? x, byte[]? y)
+            {
+                if (x == null || y == null) return false;
+                if (x.Length != y.Length) return false;
+                for (int i = 0; i < x.Length; i++)
+                    if (x[i] != y[i]) return false;
+                return true;
+            }
+
+            public int GetHashCode(byte[] obj)
+            {
+                int hash = 0;
+                foreach (byte b in obj)
+                    hash = (hash << 8) ^ b;
+                return hash;
+            }
+        }
+
+        private struct FileSegmentInfo
         {
             public string SourceFilePath;
             public byte[] SegmentData;
             public int HeaderOffset;
+            public int AbsoluteOffset;
+            public string Type;
         }
 
-        private struct Dap1FileEntry
+        private struct DapFileEntry
         {
             public string Name;
-            public string RawName;
-            public byte[] NameBytes;
             public uint Offset;
             public uint CompressedSize;
             public uint UncompressedSize;
-            public ushort Unknown1;
-            public ushort Unknown2;
         }
     }
 }
