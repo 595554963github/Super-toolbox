@@ -213,7 +213,9 @@ namespace super_toolbox
                     if (bytesRead > 0)
                     {
                         string extension = isVoiceOrSe ? ".pcm" : ".bin";
-                        string outputFile = Path.Combine(outputDirectory, $"{baseName}_{i + 1:D4}{extension}");
+                        string outputFile = Path.Combine(outputDirectory, $"{baseName}_{localFileCounter + 1}{extension}");
+                        outputFile = MakeUniqueFilename(outputFile);
+
                         await File.WriteAllBytesAsync(outputFile, fileData, cancellationToken);
 
                         if (isVoiceOrSe)
@@ -251,6 +253,25 @@ namespace super_toolbox
             catch (Exception ex)
             {
                 ExtractionError?.Invoke(this, $"创建.txth配置文件时出错:{ex.Message}");
+            }
+        }
+
+        private string MakeUniqueFilename(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return filePath;
+
+            string directory = Path.GetDirectoryName(filePath) ?? "";
+            string fileName = Path.GetFileNameWithoutExtension(filePath);
+            string extension = Path.GetExtension(filePath);
+            int counter = 1;
+
+            while (true)
+            {
+                string newPath = Path.Combine(directory, $"{fileName}_{counter}{extension}");
+                if (!File.Exists(newPath))
+                    return newPath;
+                counter++;
             }
         }
 
