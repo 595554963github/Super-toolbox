@@ -15,7 +15,24 @@ namespace super_toolbox
         private const long MEMORY_MAP_BUFFER_SIZE = 256 * 1024 * 1024;
 
         private int fileCounter = 0;
+        public async Task<int> ProcessFileAsync(string filePath, string outputDir, CancellationToken cancellationToken = default)
+        {
+            List<string> extractedFiles = new List<string>();
+            int count = 0;
 
+            FileInfo fi = new FileInfo(filePath);
+            if (fi.Length < LARGE_FILE_THRESHOLD)
+            {
+                byte[] content = await File.ReadAllBytesAsync(filePath, cancellationToken);
+                count = ProcessBufferFast(content, 0, filePath, outputDir, extractedFiles);
+            }
+            else
+            {
+                count = await ProcessLargeFileWithMemoryMapAsync(filePath, outputDir, extractedFiles, cancellationToken);
+            }
+
+            return count;
+        }
         private async Task<int> ProcessLargeFileWithMemoryMapAsync(string filePath, string extractedDir, List<string> extractedFiles, CancellationToken cancellationToken)
         {
             int extractedCount = 0;
