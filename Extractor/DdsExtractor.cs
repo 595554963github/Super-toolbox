@@ -27,8 +27,10 @@ namespace super_toolbox
                 return;
             }
 
-            string extractedFolder = Path.Combine(directoryPath, "Extracted");
-            Directory.CreateDirectory(extractedFolder);
+            string sourceFolderName = new DirectoryInfo(directoryPath).Name;
+            string parentDirectory = Directory.GetParent(directoryPath)?.FullName ?? directoryPath;
+            string rootExtractedFolder = Path.Combine(parentDirectory, sourceFolderName);
+            Directory.CreateDirectory(rootExtractedFolder);
 
             var files = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
             TotalFilesToExtract = files.Length;
@@ -44,7 +46,7 @@ namespace super_toolbox
 
                 try
                 {
-                    int extractedFromFile = await ProcessFileAsync(file, extractedFolder, cancellationToken);
+                    int extractedFromFile = await ProcessFileAsync(file, rootExtractedFolder, cancellationToken);
                     totalExtractedFiles += extractedFromFile;
                 }
                 catch (OperationCanceledException)
@@ -64,12 +66,15 @@ namespace super_toolbox
             OnExtractionCompleted();
         }
 
-        private async Task<int> ProcessFileAsync(string filePath, string extractedFolder, CancellationToken cancellationToken)
+        private async Task<int> ProcessFileAsync(string filePath, string rootExtractedFolder, CancellationToken cancellationToken)
         {
             string fileName = Path.GetFileName(filePath);
             int filesExtractedFromThisFile = 0;
 
             ExtractionProgress?.Invoke(this, $"正在处理文件:{fileName}");
+            string fileBaseName = Path.GetFileNameWithoutExtension(filePath);
+            string fileSpecificFolder = Path.Combine(rootExtractedFolder, fileBaseName);
+            Directory.CreateDirectory(fileSpecificFolder);
 
             using FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
             var buffer = new byte[BufferSize];
@@ -103,7 +108,7 @@ namespace super_toolbox
                             if (currentData.Count - ddsPos >= totalSize)
                             {
                                 byte[] ddsData = currentData.GetRange(ddsPos, totalSize).ToArray();
-                                if (SaveDdsFile(ddsData, extractedFolder, fileName, filesExtractedFromThisFile))
+                                if (SaveDdsFile(ddsData, fileSpecificFolder, fileName, filesExtractedFromThisFile))
                                 {
                                     filesExtractedFromThisFile++;
                                 }
@@ -135,11 +140,11 @@ namespace super_toolbox
             return filesExtractedFromThisFile;
         }
 
-        private bool SaveDdsFile(byte[] ddsData, string extractedFolder, string sourceFileName, int fileCount)
+        private bool SaveDdsFile(byte[] ddsData, string fileSpecificFolder, string sourceFileName, int fileCount)
         {
             string baseName = Path.GetFileNameWithoutExtension(sourceFileName);
             string newFileName = $"{baseName}_{fileCount + 1}.dds";
-            string filePath = Path.Combine(extractedFolder, newFileName);
+            string filePath = Path.Combine(fileSpecificFolder, newFileName);
 
             try
             {
