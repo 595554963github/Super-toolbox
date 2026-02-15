@@ -66,7 +66,7 @@ namespace super_toolbox
             OnExtractionCompleted();
         }
 
-        private async Task<int> ProcessFileAsync(string filePath, string rootExtractedFolder, CancellationToken cancellationToken)
+        public async Task<int> ProcessFileAsync(string filePath, string rootExtractedFolder, CancellationToken cancellationToken)
         {
             string fileName = Path.GetFileName(filePath);
             int filesExtractedFromThisFile = 0;
