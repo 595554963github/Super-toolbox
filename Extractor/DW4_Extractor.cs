@@ -148,7 +148,10 @@ namespace super_toolbox
 
                 List<uint> offsets = new List<uint>();
                 List<uint> sizes = new List<uint>();
+
                 bool isVoiceOrSe = baseName == "LINKVOI" || baseName == "LINKSE";
+                bool isMovie = baseName == "LINKMOV";
+                bool isBgm = baseName == "LINKBGM";
 
                 for (int i = 0; i < files; i++)
                 {
@@ -212,7 +215,25 @@ namespace super_toolbox
 
                     if (bytesRead > 0)
                     {
-                        string extension = isVoiceOrSe ? ".pcm" : ".bin";
+                        string extension;
+
+                        if (isMovie)
+                        {
+                            extension = ".pss";
+                        }
+                        else if (isVoiceOrSe)
+                        {
+                            extension = ".pcm";
+                        }
+                        else if (isBgm)
+                        {
+                            extension = ".mic";
+                        }
+                        else
+                        {
+                            extension = ".bin";
+                        }
+
                         string outputFile = Path.Combine(outputDirectory, $"{baseName}_{localFileCounter + 1}{extension}");
                         outputFile = MakeUniqueFilename(outputFile);
 
