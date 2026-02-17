@@ -397,7 +397,18 @@ namespace super_toolbox
             try
             {
                 var classFile = _job.SourceFile;
-                var outputDirPath = _job.TargetPath;
+                
+                string outputDirPath;
+                
+                if (!string.IsNullOrEmpty(_job.RelativePath))
+                {
+                    outputDirPath = Path.Combine(_config.OutputPath, _job.RelativePath);
+                }
+                else
+                {
+                    outputDirPath = _job.TargetPath;
+                }
+                
                 var outputDir = new DirectoryInfo(outputDirPath);
 
                 if (!outputDir.Exists)
@@ -432,11 +443,22 @@ namespace super_toolbox
 
                 if (javaFiles.Length > 0)
                 {
+                    string finalOutputPath = javaFiles[0].FullName;
+                    
+                    string safeFileName = Path.GetFileNameWithoutExtension(finalOutputPath).Replace('$', '_') + Path.GetExtension(finalOutputPath);
+                    string safeFilePath = Path.Combine(Path.GetDirectoryName(finalOutputPath) ?? string.Empty, safeFileName);
+                    
+                    if (finalOutputPath != safeFilePath && File.Exists(finalOutputPath))
+                    {
+                        File.Move(finalOutputPath, safeFilePath, true);
+                        finalOutputPath = safeFilePath;
+                    }
+                    
                     if (_config.DeleteClassFiles)
                     {
                         classFile.Delete();
                     }
-                    return new DecompileResult(_job, true, null, javaFiles[0].FullName);
+                    return new DecompileResult(_job, true, null, finalOutputPath);
                 }
 
                 return new DecompileResult(_job, false, "未生成java文件", null);
@@ -467,12 +489,15 @@ namespace super_toolbox
                 return directory.GetFiles("*.java", SearchOption.AllDirectories)
                     .Where(f =>
                     {
-                        var javaBaseName = Path.GetFileNameWithoutExtension(f.Name);
-                        return javaBaseName.Equals(baseName) ||
-                               javaBaseName.Equals(baseNameWithoutNumber) ||
+                        var javaBaseName = Path.GetFileNameWithoutExtension(f.Name).Replace('$', '_');
+                        var cleanBaseName = baseName.Replace('$', '_');
+                        var cleanBaseNameWithoutNumber = baseNameWithoutNumber.Replace('$', '_');
+                        
+                        return javaBaseName.Equals(cleanBaseName) ||
+                               javaBaseName.Equals(cleanBaseNameWithoutNumber) ||
                                javaBaseName.Equals(baseName.Replace('$', '_')) ||
-                               javaBaseName.StartsWith(baseName + "$") ||
-                               javaBaseName.StartsWith(baseNameWithoutNumber + "$");
+                               javaBaseName.StartsWith(cleanBaseName + "_") ||
+                               javaBaseName.StartsWith(cleanBaseNameWithoutNumber + "_");
                     })
                     .ToArray();
             }
@@ -533,7 +558,8 @@ namespace super_toolbox
                         {
                             foreach (var classFile in jarClassFiles)
                             {
-                                jobs.Add(new DecompileJob(classFile, classFile.DirectoryName ?? string.Empty, null));
+                                string relativePath = GetRelativePath(extractDir.FullName, classFile.DirectoryName ?? string.Empty);
+                                jobs.Add(new DecompileJob(classFile, classFile.DirectoryName ?? string.Empty, relativePath));
                             }
                         }
                     }
@@ -548,16 +574,8 @@ namespace super_toolbox
 
             foreach (var classFile in classFiles)
             {
-                var relativePath = GetRelativePath(directory.FullName, classFile.DirectoryName ?? string.Empty);
-                var targetDir = new DirectoryInfo(Path.Combine(outputDir.FullName, relativePath));
-
-                if (!targetDir.Exists)
-                    targetDir.Create();
-
-                var targetFile = new FileInfo(Path.Combine(targetDir.FullName, classFile.Name));
-                File.Copy(classFile.FullName, targetFile.FullName, true);
-
-                jobs.Add(new DecompileJob(targetFile, targetDir.FullName, null));
+                string relativePath = GetRelativePath(directory.FullName, classFile.DirectoryName ?? string.Empty);
+                jobs.Add(new DecompileJob(classFile, outputDir.FullName, relativePath));
             }
 
             return jobs;
@@ -583,7 +601,8 @@ namespace super_toolbox
 
             foreach (var classFile in classFiles)
             {
-                jobs.Add(new DecompileJob(classFile, classFile.DirectoryName ?? string.Empty, null));
+                string relativePath = GetRelativePath(extractDir.FullName, classFile.DirectoryName ?? string.Empty);
+                jobs.Add(new DecompileJob(classFile, classFile.DirectoryName ?? string.Empty, relativePath));
             }
 
             return jobs;
@@ -598,12 +617,9 @@ namespace super_toolbox
             if (!outputDir.Exists)
                 outputDir.Create();
 
-            var targetFile = new FileInfo(Path.Combine(outputDir.FullName, classFile.Name));
-            File.Copy(classFile.FullName, targetFile.FullName, true);
-
             var jobs = new List<DecompileJob>
             {
-                new DecompileJob(targetFile, outputDir.FullName, null)
+                new DecompileJob(classFile, outputDir.FullName, null)
             };
 
             return await Task.FromResult(jobs);
@@ -611,13 +627,23 @@ namespace super_toolbox
 
         private static string GetRelativePath(string basePath, string fullPath)
         {
+            if (string.IsNullOrEmpty(basePath) || string.IsNullOrEmpty(fullPath))
+                return string.Empty;
+                
             if (!basePath.EndsWith(Path.DirectorySeparatorChar.ToString()))
                 basePath += Path.DirectorySeparatorChar;
 
-            var baseUri = new Uri(basePath);
-            var fullUri = new Uri(fullPath + Path.DirectorySeparatorChar);
-            var relativeUri = baseUri.MakeRelativeUri(fullUri);
-            return Uri.UnescapeDataString(relativeUri.ToString()).Replace('/', Path.DirectorySeparatorChar);
+            try
+            {
+                var baseUri = new Uri(basePath);
+                var fullUri = new Uri(fullPath + Path.DirectorySeparatorChar);
+                var relativeUri = baseUri.MakeRelativeUri(fullUri);
+                return Uri.UnescapeDataString(relativeUri.ToString()).Replace('/', Path.DirectorySeparatorChar);
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
     }
 
@@ -807,8 +833,8 @@ namespace super_toolbox
                 }
             }
 
-            sb.Append($" \"{inputFile}\"");
-            sb.Append($" \"{outputDir}\"");
+            sb.Append($" {inputFile}");
+            sb.Append($" {outputDir}");
 
             return sb.ToString();
         }
