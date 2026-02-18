@@ -36,7 +36,7 @@ namespace super_toolbox
 
             TotalFilesToExtract = archiveFiles.Count;
             ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
-            ExtractionProgress?.Invoke(this, $"找到{archiveFiles.Count}个归档文件，开始解包...");
+            ExtractionProgress?.Invoke(this, $"找到{archiveFiles.Count}个档案文件,开始解包...");
 
             int extractedArchiveCount = 0;
             int totalExtractedFiles = 0;
@@ -45,22 +45,34 @@ namespace super_toolbox
             {
                 await Task.Run(() =>
                 {
-                    foreach (var archiveFilePath in archiveFiles)
+                    foreach (var originalArchivePath in archiveFiles)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        string fileDirectory = Path.GetDirectoryName(archiveFilePath) ?? string.Empty;
-                        string fileName = Path.GetFileName(archiveFilePath);
+                        string fileDirectory = Path.GetDirectoryName(originalArchivePath) ?? string.Empty;
+                        string fileName = Path.GetFileName(originalArchivePath);
+                        string fileNameWithoutExt = Path.GetFileNameWithoutExtension(originalArchivePath);
 
-                        ExtractionProgress?.Invoke(this, $"正在解包:{fileName}");
+                        string outputDirectory = Path.Combine(fileDirectory, fileNameWithoutExt);
+
+                        if (!Directory.Exists(outputDirectory))
+                        {
+                            Directory.CreateDirectory(outputDirectory);
+                        }
+
+                        string tempArchivePath = Path.Combine(outputDirectory, fileName);
 
                         try
                         {
+                            ExtractionProgress?.Invoke(this, $"正在处理:{fileName}->{fileNameWithoutExt}文件夹");
+
+                            File.Copy(originalArchivePath, tempArchivePath, true);
+
                             var processStartInfo = new ProcessStartInfo
                             {
                                 FileName = _tempExePath,
-                                Arguments = $"extract \"{archiveFilePath}\"",
-                                WorkingDirectory = fileDirectory,
+                                Arguments = $"extract \"{tempArchivePath}\"",
+                                WorkingDirectory = outputDirectory,
                                 UseShellExecute = false,
                                 CreateNoWindow = true,
                                 RedirectStandardOutput = true,
@@ -80,7 +92,7 @@ namespace super_toolbox
                                 {
                                     if (!string.IsNullOrEmpty(e.Data))
                                     {
-                                        ExtractionProgress?.Invoke(this, e.Data);
+                                        ExtractionProgress?.Invoke(this, $"[{fileName}] {e.Data}");
 
                                         if (e.Data.Contains("Extracting") || e.Data.Contains("extracting"))
                                         {
@@ -94,7 +106,7 @@ namespace super_toolbox
                                 {
                                     if (!string.IsNullOrEmpty(e.Data))
                                     {
-                                        ExtractionError?.Invoke(this, $"错误:{e.Data}");
+                                        ExtractionError?.Invoke(this, $"[{fileName}] 错误:{e.Data}");
                                     }
                                 };
 
@@ -104,37 +116,45 @@ namespace super_toolbox
 
                                 if (process.ExitCode != 0)
                                 {
-                                    ExtractionError?.Invoke(this, $"{fileName}解包失败，错误代码:{process.ExitCode}");
-                                    OnExtractionFailed($"{fileName}解包失败，错误代码:{process.ExitCode}");
+                                    ExtractionError?.Invoke(this, $"{fileName}解包失败,错误代码:{process.ExitCode}");
+                                    OnExtractionFailed($"{fileName}解包失败,错误代码:{process.ExitCode}");
                                 }
                                 else
                                 {
-                                    ExtractionProgress?.Invoke(this, $"解包成功:{fileName}");
+                                    ExtractionProgress?.Invoke(this, $"解包成功:{fileName}->{fileNameWithoutExt}文件夹");
                                     extractedArchiveCount++;
 
-                                    string archiveFileNameWithoutExt = Path.GetFileNameWithoutExtension(archiveFilePath);
-                                    string extractDir = Path.Combine(fileDirectory, archiveFileNameWithoutExt);
-
-                                    if (Directory.Exists(extractDir))
+                                    if (Directory.Exists(outputDirectory))
                                     {
-                                        var extractedFiles = Directory.GetFiles(extractDir, "*", SearchOption.AllDirectories);
-                                        foreach (var extractedFile in extractedFiles)
-                                        {
-                                            string relativePath = Path.GetRelativePath(extractDir, extractedFile);
-                                            ExtractionProgress?.Invoke(this, $"已提取:{relativePath}");
-                                        }
+                                        var extractedFiles = Directory.GetFiles(outputDirectory, "*", SearchOption.AllDirectories)
+                                            .Where(f => !f.Equals(tempArchivePath, StringComparison.OrdinalIgnoreCase))
+                                            .ToList();
+                                        ExtractionProgress?.Invoke(this, $"[{fileName}]已提取{extractedFiles.Count}个文件到{fileNameWithoutExt} 文件夹");
                                     }
                                 }
+                            }
+
+                            if (File.Exists(tempArchivePath))
+                            {
+                                File.Delete(tempArchivePath);
+                                ExtractionProgress?.Invoke(this, $"[{fileName}]已清理临时备份文件");
                             }
                         }
                         catch (Exception ex)
                         {
-                            ExtractionError?.Invoke(this, $"解包异常:{ex.Message}");
+                            ExtractionError?.Invoke(this, $"[{fileName}] 处理异常:{ex.Message}");
                             OnExtractionFailed($"{fileName}处理错误:{ex.Message}");
+
+                            if (File.Exists(tempArchivePath))
+                            {
+                                try { File.Delete(tempArchivePath); } catch { }
+                            }
                         }
+
+                        ExtractionProgress?.Invoke(this, "----------------------------------------");
                     }
 
-                    ExtractionProgress?.Invoke(this, $"处理完成，成功解包{extractedArchiveCount}个归档文件，共提取出{totalExtractedFiles}个文件");
+                    ExtractionProgress?.Invoke(this, $"处理完成,成功解包{extractedArchiveCount}个档案文件,共提取出{totalExtractedFiles}个文件");
                     OnExtractionCompleted();
                 }, cancellationToken);
             }
