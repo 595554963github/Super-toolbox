@@ -34,7 +34,7 @@ namespace super_toolbox
             { "Xiph.Org - Ogg", ("音频", "从各种游戏中提取ogg格式的音频文件。ogg是广泛使用的音频格式,该工具能适配不同游戏的打包方式,高效提取其中的ogg音频") },
             { "Criware - hca", ("音频", "以二进制形式从cpk、awb、acb或者uexp等文件中提取打包的hca音频文件。若提取的是加密hca文件,会自带enc后缀名（如enc.hca）,方便用户识别处理") },
             { "任天堂 - libopus - lopus", ("音频", "任天堂switch平台专用音频提取器,代表作为月姬重制版。其提取的音频文件头为OPUS,实际是libopus编码的lopus格式,与普通opus不同,本工具可精准提取此类特殊格式") },
-            { "光荣特库摩 - kvs/ktss", ("音频", "提取光荣特库摩游戏的kvs和ktss音频格式,主要支持从switch平台提取kns、steam平台的kvs格式,同时兼容ps4平台的at3格式,适配多平台同类游戏音频提取") },
+            { "光荣特库摩 - kvs/ktss", ("音频", "提取光荣特库摩游戏的kvs和ktss音频格式,主要支持从switch平台提取kns、steam平台的kvs格式,同时兼容PS4平台的at3格式,适配多平台同类游戏音频提取") },
             { "RIFF - Google - webp", ("图片", "基于RIFF资源交换文件格式,提取Google开发的WebP格式图片") },
             { "联合图像专家组 - JPEG/JPG", ("图片", "以二进制形式从游戏文件中提取jpg图片,jpg是标准计算机文件,有固定文件头和文件尾") },
             { "便携式网络图形 - PNG", ("图片", "以二进制形式从游戏文件中提取png图片,png是标准计算机文件,具有固定文件头和文件尾") },
@@ -50,18 +50,18 @@ namespace super_toolbox
             { "Criware - cpk", ("其他档案", "用于解包CRIWARE的cpk格式档案,该格式应用广泛,可存储多种类型资源") },
             { "IdeaFactory - tid", ("图片", "地雷社海王星系列tid文件转换器,可将tid转换为dds格式,且支持BC7纹理的tid文件") },
             { "第七史诗 - sct", ("图片", "第七史诗的sct转换器,支持批量将sct格式转换为png格式") },
-            { "万代南梦宫 - bnsf", ("音频", "万代南梦宫的bnsf音频提取器,以二进制形式从TLFILE.TLDAT文件中提取。可解析情热传说和ps3平台的狂战传说中的音频,注意狂战传说steam版因加密无法提取") },
-            { "索尼 - gxt提取器", ("其他档案", "从索尼的psv、psp等平台游戏中提取gxt文件。许多游戏喜欢将多个gxt文件打包存储,该工具可有效提取这些gxt文件") },
+            { "万代南梦宫 - bnsf", ("音频", "万代南梦宫的bnsf音频提取器,以二进制形式从TLFILE.TLDAT文件中提取。可解析情热传说和PS3平台的狂战传说中的音频,注意狂战传说steam版因加密无法提取") },
+            { "索尼 - gxt提取器", ("图片", "从索尼的PSV、PSP等平台游戏中提取gxt文件") },
             { "直接绘制表面 - DDS", ("图片", "以二进制形式从游戏文件中提取dds图片,亲测适用于战场女武神4等游戏,支持一般的dds和DX10纹理的dds格式") },
-            { "Filename小端序 - pck/sdat", ("其他档案", "steam和switch平台的超女神信仰诺瓦露、steam和psv的约战凛绪轮回、steam白色相簿编缀的冬日回忆、\r\nsteam和psv传颂之物虚伪的假面、steam和psv和switch传颂之物致逝者的摇篮曲、steam和psv传颂之物二人的白皇的专用解包工具\r\nsteam和psv黑蝶幻境") },
-            { "Filename大端序 - pck", ("其他档案", "ps3约会大作战凛祢理想乡和约会大作战或守安装、白色相簿的专用解包工具") },
-            { "地雷社和AQUAPLUS纹理 - tex", ("图片", "超女神信仰诺瓦露、黑蝶幻境、白色相簿系列、约会大作战系列、传颂之物系列tex转换器,目前psv平台不完美支持,steam和switch正常") },
-            { "ps3苍翼默示录_刻之幻影 - bin", ("其他档案", "ps3平台的苍翼默示录_刻之幻影专用bin文件解包工具,可提取其中包含的所有pac文件") },
-            { "ps3苍翼默示录_刻之幻影 - pac", ("其他档案", "ps3平台的苍翼默示录_刻之幻影的专用解包工具,无法用于psv版和苍翼默示录_神观之梦") },
-            { "psv苍翼默示录_刻之幻影 - pac", ("其他档案", "psv平台的苍翼默示录_刻之幻影的专用解包工具,无法用于ps3版和苍翼默示录_神观之梦") },
-            { "psv苍翼默示录_连续变换 - pac", ("其他档案", "psv平台的苍翼默示录_连续变换的专用解包工具,无法用于苍翼默示录_刻之幻影和苍翼默示录_神观之梦") },
+            { "Filename小端序 - pck/sdat", ("其他档案", "steam和switch平台的超女神信仰诺瓦露、steam和PSV的约战凛绪轮回、steam白色相簿编缀的冬日回忆、\r\nsteam和PSV传颂之物虚伪的假面、steam和PSV和switch传颂之物致逝者的摇篮曲、steam和PSV传颂之物二人的白皇的专用解包工具\r\nsteam和PSV黑蝶幻境") },
+            { "Filename大端序 - pck", ("其他档案", "PS3约会大作战凛祢理想乡和约会大作战或守安装、白色相簿的专用解包工具") },
+            { "地雷社和AQUAPLUS纹理 - tex", ("图片", "超女神信仰诺瓦露、黑蝶幻境、白色相簿系列、约会大作战系列、传颂之物系列tex转换器,目前PSV平台不完美支持,steam和switch正常") },
+            { "PS3苍翼默示录_刻之幻影 - bin", ("其他档案", "PS3平台的苍翼默示录_刻之幻影专用bin文件解包工具,可提取其中包含的所有pac文件") },
+            { "PS3苍翼默示录_刻之幻影 - pac", ("其他档案", "PS3平台的苍翼默示录_刻之幻影的专用解包工具,无法用于PSV版和苍翼默示录_神观之梦") },
+            { "PSV苍翼默示录_刻之幻影 - pac", ("其他档案", "PSV平台的苍翼默示录_刻之幻影的专用解包工具,无法用于PS3版和苍翼默示录_神观之梦") },
+            { "PSV苍翼默示录_连续变换 - pac", ("其他档案", "PSV平台的苍翼默示录_连续变换的专用解包工具,无法用于苍翼默示录_刻之幻影和苍翼默示录_神观之梦") },
             { "苍翼默示录_神观之梦 - pac", ("其他档案", "苍翼默示录_神观之梦的专用解包工具,支持解包压缩的pac文件和普通pac文件") },
-            { "断罪的玛利亚 - dat", ("其他档案", "ps3游戏断罪的玛利亚专用提取器,可解包data.dat文件,提取其中的视频、音频和图片") },
+            { "断罪的玛利亚 - dat", ("其他档案", "PS3游戏断罪的玛利亚专用提取器,可解包data.dat文件,提取其中的视频、音频和图片") },
             { "进击的巨人_自由之翼 - bin", ("其他档案", "进击的巨人_自由之翼提取器,能从LINKDATA.bin文件中提取出g1t、g1m等文件") },
             { "PlayStation 4 bit ADPCM - vag", ("音频", "以二进制形式从PlayStation游戏文件中提取vag音频文件,vag是采用PlayStation 4 bit ADPCM编码的音频格式") },
             { "零_濡鸦之巫女 - fmsg", ("其他档案", "零濡鸦之巫女的fmsg转换器,可将fmsg文件转换为txt文本") },
@@ -89,7 +89,7 @@ namespace super_toolbox
             { "pvr2png", ("图片", "pvr纹理转换器,无需依赖Texturepacker的免费试用限制,可无限使用,将pvr纹理转换为png格式,适用于逆战upk文件提取的pvr") },
             { "逆战 - upk", ("其他档案", "逆战upk提取器,解决手动逐个解包的麻烦,支持批量解包,高效提取upk文件中的资源") },
             { "战争传说 - pak", ("其他档案", "战争传说的pak解包工具,基于bms脚本改写成c#语言,解决了原PAKTool易出现非法字符报错的问题,可彻底解包该游戏所有pak文件") },
-            { "IdeaFactory - cl3", ("其他档案", "地雷社游戏的CL3提取器,可从CL3文件中提取dat、tid等文件,代表作为妖精剑士F,解决了stcm-editor.exe工具使用不便的问题") },
+            { "IdeaFactory - cl3", ("其他档案", "地雷社游戏的CL3提取器,可从CL3文件中提取dat、tid等文件,已测试妖精剑士F,解决了stcm-editor.exe工具使用不便的问题") },
             { "5pb - LNK4档案 - dat", ("其他档案", "5pb的LNK4文件头的dat解包工具,可解xbox360游戏11只眼_交错的视线等采用该格式的文件") },
             { "情热传说 - dat", ("其他档案", "万代南梦宫的情热传说TLDAT解包工具,也可解狂战传说的相关文件,但仅支持PS3平台,不支持加密的steam平台版本") },
             { "Allz - allz_compress", ("压缩", "使用Allz算法批量压缩文件") },
@@ -151,9 +151,9 @@ namespace super_toolbox
             { "Nds - nds打包器", ("其他档案", "任天堂nds平台的rom打包器,能将解包的nds文件夹重新打包成nds rom文件") },
             { "3ds - darc", ("其他档案", "任天堂3ds平台的darc解包工具,代表作为美妙旋律七彩演唱会闪耀设计,可提取darc文件中的资源") },
             { "Nds - narc", ("其他档案", "任天堂nds平台的narc文件提取器,代表作为口袋妖怪(nds),可提取narc文件中的资源") },
-            { "PS3 - psarc提取器", ("其他档案", "索尼ps3平台的psarc解包工具,代表作为第二次超级机器人大战OG,也可解包无人深空的pak文件") },
-            { "PS3 - psarc打包器", ("其他档案", "索尼ps3平台的psarc打包器,能将一个文件夹重新打包成psarc文件") },
-            { "PS3 - sdat", ("其他档案", "索尼ps3平台的sdat加密文件破解器,已测试约会大作战或守安装、约会大作战凛弥理想乡") },
+            { "PS3 - psarc提取器", ("其他档案", "索尼PS3平台的psarc解包工具,代表作为第二次超级机器人大战OG,也可解包无人深空的pak文件") },
+            { "PS3 - psarc打包器", ("其他档案", "索尼PS3平台的psarc打包器,能将一个文件夹重新打包成psarc文件") },
+            { "PS3 - sdat", ("其他档案", "索尼PS3平台的sdat加密文件破解器,已测试约会大作战或守安装、约会大作战凛弥理想乡") },
             { "Criware - afs打包器", ("其他档案", "CRIware的afs档案打包器,可将一个文件夹及子文件夹里的所有文件重新打包成afs文件") },
             { "Mages - mpk提取器", ("其他档案", "Mages的mpk解包工具,代表作为命运石之门,可提取mpk文件中的各类资源") },
             { "Mages - mpk打包器", ("其他档案", "Mages的mpk打包器,能将一个文件夹及子文件夹里的所有文件重新打包成mpk文件") },
@@ -173,9 +173,9 @@ namespace super_toolbox
             { "PlayStation MultiStream File - msf", ("音频", "以二进制形式从索尼游戏中提取msf音频文件") },
             { "PlayStation - pssg", ("图片", "PlayStation pssg档案提取器,可提取该档案中的图片资源") },
             { "Terminal Reality - pod/epd", ("其他档案", "Terminal Reality工作室的pod档案提取器,代表作为星球大战原力释放2,可提取pod/epd档案中的资源") },
-            { "PlayStation - GPDA Header", ("其他档案", "索尼psp平台上常见的GPDA档案的专用提取器,例如我的妹妹不可能那么可爱、凉宫春日的追忆等游戏") },
+            { "PlayStation - GPDA Header", ("其他档案", "索尼PSP平台上常见的GPDA档案的专用提取器,例如我的妹妹不可能那么可爱、凉宫春日的追忆等游戏") },
             { "暗影狂奔 - data/toc档案", ("其他档案", "Xbox360游戏暗影狂奔和皇牌空战6解放之战火的专用提取器,可解data/toc这种组合打包的档案") },
-            { "ahx2wav", ("音频", "此工具可以将Criware的ahx文件转换成wav格式") },
+            { "ahx2wav", ("音频", "ahx到wav的音频转换器") },
             { "异度之刃2 - ard/arh档案", ("其他档案", "switch游戏异度之刃2的提取器,可解包ard/arh这种组合打包的档案") },
             { "异度之刃3 - ard/arh档案", ("其他档案", "switch游戏异度之刃3的提取器,可解包ard/arh这种组合打包的档案") },
             { "异度之刃 - LBIM2DDS", ("图片", "异度之刃系列的LBIM转换器,可将文件尾为LBIM的文件转换成dds图像,如果是wismda文件该工具会先拆分xbc1文件,如果是xbc1文件会先移除前48字节,随后zlib解压,然后转换成dds图片,一步到位") },
@@ -191,11 +191,11 @@ namespace super_toolbox
             { "异度之刃 - MXTX2DDS", ("图片", "异度之刃系列游戏的MTXT转换器,可以把MTXT纹理转换成dds图像") },
             { "异度之刃 - map.pkb", ("其他档案", "wii平台异度之刃的map.pkb专用器") },
             { "异度之刃 - sar", ("其他档案", "wiiu平台异度之刃x的sar解包器,可提取出里面的hkt文件,它也是switch平台异度之刃终极版的提取器,可提取mcapk和chr文件里面的数据") },
-            { "Fate Extella/Link - pk/pfs/pkb", ("其他档案", "psv平台的Fate Extella和Fate Extella Link专用提取器") },
-            { "白色相簿2 - dar", ("其他档案", "ps3平台的白色相簿2的data.dar专用提取器,voice.dar使用RIFF/RIFX提取器提取就可以了") },
-            { "白色相簿2 - pak", ("其他档案", "steam平台的白色相簿2的pak专用提取器,和ps3的dar完全不同") },
-            { "PlayStation - TRP奖杯文件", ("其他档案", "索尼Playstation平台的trp奖杯文件提取器,代表游戏如ps3的白色相簿、psv的SD高达G世纪-创世") },
-            { "奥特曼格斗进化3 - bin", ("其他档案", "ps2平台的奥特曼格斗进化3专用提取器,由quickbms脚本修改而来") },
+            { "Fate Extella/Link - pk/pfs/pkb", ("其他档案", "PSV平台的Fate Extella和Fate Extella Link专用提取器") },
+            { "白色相簿2 - dar", ("其他档案", "PS3平台的白色相簿2的data.dar专用提取器,voice.dar使用RIFF/RIFX提取器提取就可以了") },
+            { "白色相簿2 - pak", ("其他档案", "steam平台的白色相簿2的pak专用提取器,和PS3的dar完全不同") },
+            { "PlayStation - TRP奖杯文件", ("其他档案", "索尼Playstation平台的trp奖杯文件提取器,代表游戏如PS3的白色相簿、PSV的SD高达G世纪-创世") },
+            { "奥特曼格斗进化3 - bin", ("其他档案", "PS2平台的奥特曼格斗进化3专用提取器,由quickbms脚本修改而来") },
             { "混乱特工 - vpp_pc", ("其他档案", "混乱特工的专用提取器") },
             { "捍卫雄鹰2 - gtp", ("其他档案", "捍卫雄鹰IL-2斯大林格勒战役的gtp专用提取器") },
             { "DXBC - DirectX Bytecode", ("其他档案", "DirectX字节码文件专用提取器") },
@@ -207,9 +207,9 @@ namespace super_toolbox
             { "Xbox360 - iso提取器", ("其他档案", "xbox360 iso提取器,从iso镜像里把游戏文件全部提取出来") },
             { "Dreamcast - Bin_Cue2GDI", ("其他档案", "将Dreamcast游戏的Bin/Cue镜像文件转换为GDI格式") },
             { "猎天使魔女pc版", ("其他档案", "steam版猎天使魔女的专用提取器,可解包dat、wtb、wmb、mod、eff5种格式") },
-            { "SEGA女武神 - hmt提取器", ("其他档案", "从psv游戏苍蓝革命女武神的MLX文件里提取hmt文件") },
-            { "SEGA女武神 - MMF", ("其他档案", "从psv游戏苍蓝革命女武神和战场女武神4的MMF文件里提取bin、hmd、hcm、hmt等文件") },
-            { "东京幻都 - pkg", ("其他档案", "psv游戏东京幻都(台湾翻译为东京幻想乡)的专用pkg提取器") },
+            { "SEGA女武神 - hmt提取器", ("其他档案", "从PSV游戏苍蓝革命女武神的MLX文件里提取hmt文件") },
+            { "SEGA女武神 - MMF", ("其他档案", "从PSV游戏苍蓝革命女武神和战场女武神4的MMF文件里提取bin、hmd、hcm、hmt等文件") },
+            { "东京幻都 - pkg", ("其他档案", "PSV游戏东京幻都(台湾翻译为东京幻想乡)的专用pkg提取器") },
             { "东方红魔乡/东方妖妖梦 - dat", ("其他档案", "东方红魔乡、东方妖妖梦的专用dat提取器") },
             { "东方永夜抄/东方花映塚 - dat", ("其他档案", "东方永夜抄和东方花映塚的专用dat提取器,PBGZ头,比东方红魔乡和东方妖妖梦稍微困难些") },
             { "东方project系列 - Thbgm.dat", ("音频", "东方project系列的Thbgm.dat提取器,如东方红魔乡、东方妖妖梦、东方永夜抄、东方花映塚,要解包此文件必须得先从普通dat文件里提取出thbgm.fmt,把它放到Thbgm.dat所在目录") },
@@ -218,17 +218,20 @@ namespace super_toolbox
             { "东方project系列 - cv2", ("图片", "东方project系列的cv2纹理转换器") },
             { "东方project系列 - cv3", ("音频", "东方project系列的cv3音频转换器") },
             { "东方project系列 - pal", ("图片", "东方project系列的pal调色板转换器") },
+            { "东方新世界 - pak/dat", ("其他档案", "东方新世界的pak和dat提取器,已测试steam和switch两个平台,均可以正常解包") },
             { "yuris引擎 - ymv", ("其他档案", "yuris引擎的ymv解码器") },
             { "CMVS引擎 - CPZ6", ("其他档案", "紫社cmvs引擎的cpz解包器,已测试天津罪") },
             { "CMVS引擎 - CPZ7", ("其他档案", "紫社cmvs引擎的cpz解包器,已测试青鸟") },
             { "CMVS引擎 - pb3", ("图片", "紫社cmvs引擎的pb3转换器,已测试青鸟、天津罪") },
-            { "初音未来歌姬计划 - DIVAFILE", ("其他档案", "psv初音未来歌姬计划系列的DIVAFILE文件解包器") },
-            { "初音未来歌姬计划 - farc", ("其他档案", "psv初音未来歌姬计划系列的farc文件解包器,F2和X两个游戏都支持") },
+            { "CMVS引擎 - cmv", ("其他档案", "紫社cmvs引擎的视频文件提取器,已测试青鸟、天津罪") },
+            { "CMVS引擎 - jbpd", ("图片", "紫社cmv文件的png序列帧转换器,可以把cmv文件里提取出来的JBPD帧转换成png,虽然图片比较模糊,但起码比什么都提取不了强吧") },
+            { "初音未来歌姬计划 - DIVAFILE", ("其他档案", "PSV初音未来歌姬计划系列的DIVAFILE文件解包器") },
+            { "初音未来歌姬计划 - farc", ("其他档案", "PSV初音未来歌姬计划系列的farc文件解包器,F2和X两个游戏都支持") },
             { "创意赛车族摩登赛车 - hdr/dat", ("其他档案", "创意赛车族摩登赛车的专用dat提取器") },
-            { "psv无双大蛇2终极版 - bin/idx", ("其他档案", "psv无双大蛇2终极版的LINKDATA专用提取器") },
+            { "PSV无双大蛇2终极版 - bin/idx", ("其他档案", "PSV无双大蛇2终极版的LINKDATA专用提取器") },
             { "光荣特库摩 - rdb.bin", ("其他档案", "steam女神异闻录5对决:幽灵先锋、卧龙苍天陨落的rdb.bin专用提取器,不适用早期游戏的rdb.bin") },
-            { "psv弹丸论破 - pak", ("其他档案", "psv弹丸论破的专用pak提取器") },
-            { "索尼 - gim", ("图片", "psp平台的专用转换器,把gim转换成png") },
+            { "PSV弹丸论破系列 - pak", ("其他档案", "PSV弹丸论破1和2的专用pak提取器") },
+            { "索尼 - gim", ("图片", "PSP平台的专用转换器,把gim转换成png") },
             { "GBIX_PVRT - pvr", ("图片", "世嘉和索尼平台游戏的pvr转换器") },
             { "OKI ADPCM - pcm", ("音频", "OKI ADPCM的音频专用提取器") },
             { "CloneCD - ccd/img", ("其他档案", "CloneCD镜像专用转换器") },
@@ -240,6 +243,23 @@ namespace super_toolbox
             { "任天堂 - byml", ("其他档案", "wiiu平台的byml转换器,可将byml转换为yml") },
             { "任天堂 - tpl", ("图片", "wii平台的专用转换器,可将tpl转换为png") },
             { "SGGG - MRG/EFC", ("其他档案", "SEGA Dreamcast的MRG和EFC专用提取器,可提取mrg里面的所有文件") },
+            { "PS2真三国无双4猛将传 - bin/idx", ("其他档案", "PS2真三国无双4猛将传的LINKDATA专用提取器") },
+            { "索尼 - tm2", ("图片", "PlayStation平台的专用提取器,把tm2从文件里面提取出来") },
+            { "索尼 - tm2png", ("图片", "PlayStation平台的tm2到png的转换器") },
+            { "索尼 - gxp", ("其他档案", "PlayStation平台的gxp专用提取器,把gxp从文件里面提取出来,gxp是一种着色器格式") },
+            { "PS2多浪迪警官3 - vpk", ("其他档案", "PS2多浪迪警官3的vpk提取器") },
+            { "电击文库巅峰格斗 - pac", ("其他档案", "电击文库巅峰格斗的pac提取器") },
+            { "hca2adx", ("音频", "hca转换到adx的音频转换器") },
+            { "hca2wav", ("音频", "hca转换到wav的音频转换器") },
+            { "hca2dsp", ("音频", "hca转换到dsp的音频转换器") },
+            { "adx2hca", ("音频", "adx转换到hca的音频转换器") },
+            { "adx2dsp", ("音频", "adx转换到dsp的音频转换器") },
+            { "adx2wav", ("音频", "adx转换到wav的音频转换器") },
+            { "wav2idsp", ("音频", "wav转换到idsp的音频转换器") },
+            { "wav2mdsp", ("音频", "wav转换到mdsp的音频转换器") },
+            { "idsp2wav", ("音频", "idsp转换到wav的音频转换器") },
+            { "mdsp2wav", ("音频", "mdsp转换到wav的音频转换器") },
+            { "任天堂stream/wave", ("音频", "bcwav、bcstm、bfwav、bfstm、brwav、brstm到wav的转换器") },
         };
         public SuperToolbox()
         {
@@ -347,9 +367,9 @@ namespace super_toolbox
         }
         private readonly HashSet<string> _converters = new HashSet<string>
         {
-         "png2astc", "astc2png", "Gnf2Png", "pvr2png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl",
-         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rad game tools - rada转换器","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3",
-         "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml"
+         "png2astc", "astc2png", "Gnf2Png", "pvr2png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd",
+         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rad game tools - rada转换器","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav",
+         "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml","任天堂stream/wave","wav2idsp","wav2mdsp","idsp2wav","mdsp2wav",
         };
         private bool IsConverter(string formatName) => _converters.Contains(formatName);
         private async void btnExtract_Click(object sender, EventArgs e)
@@ -612,10 +632,10 @@ namespace super_toolbox
                 case "Filename小端序 - pck/sdat": return new Filename_Pck_LE_Extractor();
                 case "Filename大端序 - pck": return new Filename_Pck_BE_Extractor();
                 case "地雷社和AQUAPLUS纹理 - tex": return new StingTexConverter();
-                case "ps3苍翼默示录_刻之幻影 - bin": return new SEGS_BinExtractor();
-                case "ps3苍翼默示录_刻之幻影 - pac": return new FPAC_CP3_Extractor();
-                case "psv苍翼默示录_刻之幻影 - pac": return new FPAC_CPV_Extractor();
-                case "psv苍翼默示录_连续变换 - pac": return new FPAC_CS_Extractor();
+                case "PS3苍翼默示录_刻之幻影 - bin": return new SEGS_BinExtractor();
+                case "PS3苍翼默示录_刻之幻影 - pac": return new FPAC_CP3_Extractor();
+                case "PSV苍翼默示录_刻之幻影 - pac": return new FPAC_CPV_Extractor();
+                case "PSV苍翼默示录_连续变换 - pac": return new FPAC_CS_Extractor();
                 case "苍翼默示录_神观之梦 - pac": return new FPAC_CF_Extractor();
                 case "PlayStation 4 bit ADPCM - vag": return new VagExtractor();
                 case "断罪的玛利亚 - dat": return new DataDatExtractor();
@@ -775,18 +795,21 @@ namespace super_toolbox
                 case "东方project系列 - cv2": return new Cv2_Converter();
                 case "东方project系列 - cv3": return new Cv3_Converter();
                 case "东方project系列 - pal": return new Pal_Converter();
+                case "东方新世界 - pak/dat":return new TouhouNewWorld_Extractor();
                 case "yuris引擎 - ymv": return new YmvDecoder();
                 case "CMVS引擎 - CPZ6": return new CPZ6_Extractor();
                 case "CMVS引擎 - CPZ7": return new CPZ7_Extractor();
                 case "CMVS引擎 - pb3": return new PB3_Converter();
+                case "CMVS引擎 - cmv": return new CmvExtractor();
+                case "CMVS引擎 - jbpd": return new Jbpd2png_Converter();
                 case "初音未来歌姬计划 - DIVAFILE": return new DIVAFILE_Extractor();
                 case "初音未来歌姬计划 - farc": return new Farc_Extractor();
                 case "创意赛车族摩登赛车 - hdr/dat": return new ModNationRacers_Extractor();
-                case "psv无双大蛇2终极版 - bin/idx": return new MusouOrochi2Ultimate_Extractor();
+                case "PSV无双大蛇2终极版 - bin/idx": return new MusouOrochi2Ultimate_Extractor();
                 case "光荣特库摩 - rdb.bin": return new P5S_IDRK_Extractor();
-                case "psv弹丸论破 - pak": return new Danganronpa_Pak_Extractor();
+                case "PSV弹丸论破系列 - pak": return new Danganronpa_Pak_Extractor();
                 case "索尼 - gim": return new GIM2PNG_Converter();
-                case "索尼 - tim": return new TIM2PNG_Converter();
+                case "索尼 - tim": return new Tim2png_Converter();
                 case "GBIX_PVRT - pvr": return new PVRT2PNG_Converter();
                 case "OKI ADPCM - pcm": return new OKI_ADPCM_Extractor();
                 case "CloneCD - ccd/img": return new Ccdimg2isoConverter();
@@ -797,6 +820,23 @@ namespace super_toolbox
                 case "SGGG - MRG/EFC": return new SgggExtractor();
                 case "任天堂 - byml": return new Byml2yml_Converter();
                 case "任天堂 - tpl": return new Tpl2png_Converter();
+                case "PS2真三国无双4猛将传 - bin/idx": return new DW4_Extractor();
+                case "索尼 - tm2": return new Tm2_Extractor();
+                case "索尼 - tm2png": return new Tm2png_Converter();
+                case "索尼 - gxp": return new SonyGxpExtractor();
+                case "PS2多浪迪警官3 - vpk": return new Torrente3_VPK_Extractor();
+                case "电击文库巅峰格斗 - pac": return new UKArc_Extractor();
+                case "hca2adx": return new Hca2adx_Converter();
+                case "hca2wav": return new Hca2wav_Converter();
+                case "hca2dsp": return new Hca2dsp_Converter();
+                case "adx2hca": return new Adx2hca_Converter();
+                case "adx2dsp": return new Adx2dsp_Converter();
+                case "adx2wav": return new Adx2wav_Converter();
+                case "wav2idsp": return new Wav2idsp_Converter();
+                case "wav2mdsp": return new Wav2mdsp_Converter();
+                case "idsp2wav": return new Idsp2wav_Converter();
+                case "mdsp2wav": return new Mdsp2wav_Converter();
+                case "任天堂stream/wave": return new NintendoSound2wav_Converter();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
