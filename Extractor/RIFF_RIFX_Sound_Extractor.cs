@@ -138,11 +138,13 @@ namespace super_toolbox
             if (position + 12 >= buffer.Length)
                 return 0;
 
-            string format = "";
+            string? format = null;
 
             if (buffer[position + 8] == 0x57 && buffer[position + 9] == 0x41 && buffer[position + 10] == 0x56 && buffer[position + 11] == 0x45)
             {
                 format = IdentifyFormatFast(buffer, position);
+                if (format == null)
+                    return 0;
             }
             else if (buffer[position + 8] == 0x58 && buffer[position + 9] == 0x57 && buffer[position + 10] == 0x4D && buffer[position + 11] == 0x41)
             {
@@ -292,36 +294,52 @@ namespace super_toolbox
             }
         }
 
-        private string IdentifyFormatFast(byte[] buffer, int position)
+        private string? IdentifyFormatFast(byte[] buffer, int position)
         {
             if (buffer.Length - position < 0x18)
-                return "wav";
+                return null;
+
+            if (buffer[position + 0x10] == 0x20 && buffer[position + 0x11] == 0x00 &&
+                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
+                buffer[position + 0x14] == 0x70 && buffer[position + 0x15] == 0x02 &&
+                buffer[position + 0x16] == 0x02 && buffer[position + 0x17] == 0x00)
+                return "at3";
+
+            if (buffer[position + 0x10] == 0x34 && buffer[position + 0x11] == 0x00 &&
+                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
+                buffer[position + 0x14] == 0xFE && buffer[position + 0x15] == 0xFF)
+                return "at9";
+
+            if (buffer[position + 0x10] == 0x34 && buffer[position + 0x11] == 0x00 &&
+                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
+                buffer[position + 0x14] == 0x66 && buffer[position + 0x15] == 0x01 &&
+                buffer[position + 0x16] == 0x06 && buffer[position + 0x17] == 0x00)
+                return "xma";
+
+            if (buffer[position + 0x10] == 0x42 && buffer[position + 0x11] == 0x00 &&
+                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
+                buffer[position + 0x14] == 0xFF && buffer[position + 0x15] == 0xFF &&
+                buffer[position + 0x16] == 0x02 && buffer[position + 0x17] == 0x00)
+                return "wem";
 
             if (buffer[position + 0x10] == 0x18 && buffer[position + 0x11] == 0x00 &&
                 buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
                 buffer[position + 0x14] == 0x02 && buffer[position + 0x15] == 0x00)
-            {
                 return "wem";
-            }
-            else if (buffer[position + 0x10] == 0x10 && buffer[position + 0x11] == 0x00 &&
-                     buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
-                     buffer[position + 0x14] == 0x01 && buffer[position + 0x15] == 0x00 &&
-                     buffer[position + 0x16] == 0x02 && buffer[position + 0x17] == 0x00)
-            {
+
+            if (buffer[position + 0x10] == 0x18 && buffer[position + 0x11] == 0x00 &&
+                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
+                buffer[position + 0x14] == 0x11 && buffer[position + 0x15] == 0x83 &&
+                buffer[position + 0x16] == 0x02 && buffer[position + 0x17] == 0x00)
+                return "wem";
+
+            if (buffer[position + 0x10] == 0x10 && buffer[position + 0x11] == 0x00 &&
+                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
+                buffer[position + 0x14] == 0x01 && buffer[position + 0x15] == 0x00 &&
+                buffer[position + 0x16] == 0x02 && buffer[position + 0x17] == 0x00)
                 return "wav";
-            }
 
-            byte f = buffer[position + 0x10];
-            byte b14 = buffer[position + 0x14];
-            byte b15 = buffer[position + 0x15];
-
-            if (f == 0x20 && b14 == 0x70 && b15 == 0x02) return "at3";
-            if (f == 0x34 && b14 == 0xFE && b15 == 0xFF) return "at9";
-            if (f == 0x34 && b14 == 0x66 && b15 == 0x01) return "xma";
-            if (f == 0x42 && b14 == 0xFF && b15 == 0xFF) return "wem";
-            if (f == 0x10 && b14 == 0x01 && b15 == 0x00) return "wav";
-
-            return "wav";
+            return null;
         }
 
         public override void Extract(string directoryPath)
