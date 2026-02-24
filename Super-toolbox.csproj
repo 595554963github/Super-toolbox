@@ -21,6 +21,9 @@
 		<EmbeddedResource Include="plugins\csopak.dll">
 			<LogicalName>embedded.csopak.dll</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\jbpd2png.dll">
+			<LogicalName>embedded.jbpd2png.dll</LogicalName>
+		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\gust_ebm.exe">
 			<LogicalName>embedded.gust_ebm.exe</LogicalName>
 		</EmbeddedResource>
@@ -136,6 +139,7 @@
 		<PackageReference Include="Syroot.IO.BinaryData" Version="4.0.4" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+		<PackageReference Include="VGAudio" Version="2.2.1" />
 	</ItemGroup>
 	<ItemGroup>
 		<Reference Include="ByteSize">
