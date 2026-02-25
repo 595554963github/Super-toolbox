@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Text;
-
 namespace super_toolbox
 {
     public partial class SuperToolbox : Form
@@ -1319,6 +1318,12 @@ namespace super_toolbox
                     EnqueueMessage("错误:请拖放单个文件夹");
                 }
             }
+        }     
+        private void TxtFolderPath_DragLeave(object? sender, EventArgs e)
+        {
+            if (txtFolderPath == null) return;
+
+            txtFolderPath.BackColor = SystemColors.Window;
         }
         private void BtnAbout_Click(object? sender, EventArgs e)
         {
@@ -1327,7 +1332,7 @@ namespace super_toolbox
                 using (var aboutForm = new AboutForm())
                 {
                     aboutForm.StartPosition = FormStartPosition.CenterParent;
-                    aboutForm.ShowDialog();
+                    aboutForm.ShowDialog(this);
                 }
             }
             catch (Exception ex)
@@ -1335,12 +1340,6 @@ namespace super_toolbox
                 MessageBox.Show($"无法打开关于窗口:{ex.Message}", "错误",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-        private void TxtFolderPath_DragLeave(object? sender, EventArgs e)
-        {
-            if (txtFolderPath == null) return;
-
-            txtFolderPath.BackColor = SystemColors.Window;
         }
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
