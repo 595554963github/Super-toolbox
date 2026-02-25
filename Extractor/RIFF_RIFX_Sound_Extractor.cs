@@ -312,8 +312,13 @@ namespace super_toolbox
 
             if (buffer[position + 0x10] == 0x34 && buffer[position + 0x11] == 0x00 &&
                 buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
-                buffer[position + 0x14] == 0x66 && buffer[position + 0x15] == 0x01 &&
-                buffer[position + 0x16] == 0x06 && buffer[position + 0x17] == 0x00)
+                buffer[position + 0x14] == 0x66 && buffer[position + 0x15] == 0x01)
+                return "xma";
+
+            if (buffer[position + 0x10] == 0x20 && buffer[position + 0x11] == 0x00 &&
+                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
+                buffer[position + 0x14] == 0x65 && buffer[position + 0x15] == 0x01 &&
+                buffer[position + 0x16] == 0x10 && buffer[position + 0x17] == 0x00)
                 return "xma";
 
             if (buffer[position + 0x10] == 0x42 && buffer[position + 0x11] == 0x00 &&
