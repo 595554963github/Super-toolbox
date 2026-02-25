@@ -75,6 +75,9 @@
 		<EmbeddedResource Include="plugins\XWBTool.exe">
 			<LogicalName>embedded.XWBTool.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\xmaencode.exe">
+			<LogicalName>embedded.xmaencode.exe</LogicalName>
+		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\example1_x64.exe">
 			<LogicalName>embedded.example1_x64.exe</LogicalName>
 		</EmbeddedResource>
