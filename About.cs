@@ -10,12 +10,13 @@ namespace super_toolbox
         {
             InitializeComponent();
 
-            this.FormBorderStyle = FormBorderStyle.FixedSingle;
-            this.MaximizeBox = false;
-            this.MinimizeBox = true;
+            this.FormBorderStyle = FormBorderStyle.Sizable; 
+            this.MaximizeBox = true;  
+            this.MinimizeBox = true;   
             this.StartPosition = FormStartPosition.CenterParent;
             this.Text = "关于-超级工具箱";
-            this.Size = new Size(420, 350);
+            this.Size = new Size(420, 410);
+            this.MinimumSize = new Size(400, 380);
 
             SetupAboutContent();
         }
@@ -28,7 +29,8 @@ namespace super_toolbox
                 Font = new Font("微软雅黑", 16, FontStyle.Bold),
                 ForeColor = Color.DarkBlue,
                 Location = new Point(25, 15),
-                AutoSize = true
+                AutoSize = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left 
             };
             Controls.Add(lblTitle);
 
@@ -38,7 +40,8 @@ namespace super_toolbox
                 Font = new Font("微软雅黑", 9),
                 ForeColor = Color.Gray,
                 Location = new Point(25, 50),
-                AutoSize = true
+                AutoSize = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
             Controls.Add(lblVersion);
 
@@ -49,7 +52,8 @@ namespace super_toolbox
                 Font = new Font("微软雅黑", 9),
                 ForeColor = Color.Black,
                 Location = new Point(25, 80),
-                Size = new Size(350, 80)
+                Size = new Size(350, 80),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right 
             };
             Controls.Add(lblDescription);
 
@@ -62,7 +66,8 @@ namespace super_toolbox
                 Location = new Point(25, 170),
                 Size = new Size(150, 30),
                 FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
             btnBrowserSetting.FlatAppearance.BorderSize = 0;
             btnBrowserSetting.Click += BtnBrowserSetting_Click;
@@ -74,7 +79,8 @@ namespace super_toolbox
                 Font = new Font("微软雅黑", 8),
                 ForeColor = Color.Gray,
                 Location = new Point(180, 176),
-                AutoSize = true
+                AutoSize = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
             Controls.Add(lblBrowserInfo);
 
@@ -87,20 +93,54 @@ namespace super_toolbox
                 Location = new Point(25, 210),
                 Size = new Size(350, 40),
                 FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             btnDocs.FlatAppearance.BorderColor = Color.Blue;
             btnDocs.FlatAppearance.BorderSize = 1;
             btnDocs.Click += (s, e) => OpenUrlWithBrowser("https://www.bilibili.com/opus/1173419824498343952#reply46226415", "详细说明文档");
             Controls.Add(btnDocs);
 
+            var lblDonorsTitle = new Label
+            {
+                Text = "❤️感谢以下朋友的赞助支持,排名不分先后,有遗漏的请私信通知我\r\n❤️",
+                Font = new Font("微软雅黑", 9, FontStyle.Bold),
+                ForeColor = Color.FromArgb(255, 128, 0),
+                Location = new Point(25, 265),
+                AutoSize = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left
+            };
+            Controls.Add(lblDonorsTitle);
+
+            string[] donors = new string[]
+            {"御坂银蛇","azoa9","卡柯卡基","紅い瞳に","一年小舞","紧差菊I吴克","水落清秋","明天就不开始","次元狸","苏子瑜o","-梦幻的月夜-","木木木木木酱","叶子三分青",
+            };
+
+            var listDonors = new ListBox
+            {
+                Location = new Point(25, 290),
+                Size = new Size(350, 70),
+                Font = new Font("微软雅黑", 8),
+                BorderStyle = BorderStyle.FixedSingle,
+                BackColor = Color.FromArgb(250, 250, 250),
+                SelectionMode = SelectionMode.None,
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right 
+            };
+
+            foreach (var donor in donors)
+            {
+                listDonors.Items.Add("❤" + donor);
+            }
+            Controls.Add(listDonors);
+
             var lblAuthor = new Label
             {
                 Text = "超级工具箱-持续更新中",
                 Font = new Font("微软雅黑", 8),
                 ForeColor = Color.DarkGray,
-                Location = new Point(25, 270),
-                AutoSize = true
+                Location = new Point(25, 370),
+                AutoSize = true,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left
             };
             Controls.Add(lblAuthor);
         }
