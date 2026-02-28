@@ -103,7 +103,7 @@ namespace super_toolbox
 
             var lblDonorsTitle = new Label
             {
-                Text = "❤️感谢以下朋友的赞助支持,排名不分先后,有遗漏的请私信通知我\r\n❤️",
+                Text = "❤️感谢以下朋友的赞助支持,排名不分先后,有遗漏的请私信通知我❤️",
                 Font = new Font("微软雅黑", 9, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 128, 0),
                 Location = new Point(25, 265),
@@ -113,7 +113,7 @@ namespace super_toolbox
             Controls.Add(lblDonorsTitle);
 
             string[] donors = new string[]
-            {"御坂银蛇","azoa9","卡柯卡基","紅い瞳に","一年小舞","紧差菊I吴克","水落清秋","明天就不开始","次元狸","苏子瑜o","-梦幻的月夜-","木木木木木酱","叶子三分青",
+            {"御坂银蛇","azoa9","卡柯卡基","紅い瞳に","一年小舞","紧差菊I吴克","水落清秋","明天就不开始","次元狸","苏子瑜o","-梦幻的月夜-","木木木木木酱","叶子三分青","枝江与卿长存我心","苏格拉没UD","帅气逼人小鱼干","煤洋洋","紫林旧主","Encore_Requiem","春是哈鲁",
             };
 
             var listDonors = new ListBox
