@@ -179,17 +179,7 @@ namespace super_toolbox
                 return 0;
 
             string baseName = Path.GetFileNameWithoutExtension(sourceFilePath);
-            string fileName;
-
-            if (audioIndex == 0)
-            {
-                fileName = $"{baseName}.{format}";
-            }
-            else
-            {
-                fileName = $"{baseName}_{audioIndex + 1}.{format}";
-            }
-
+            string fileName = $"{baseName}_{audioIndex + 1}.{format}";
             string filePath = Path.Combine(outputDir, fileName);
 
             SaveAudioFileFast(buffer, position, totalSize, filePath, extractedFiles);
@@ -260,17 +250,7 @@ namespace super_toolbox
                 return 0;
 
             string baseName = Path.GetFileNameWithoutExtension(sourceFilePath);
-            string fileName;
-
-            if (audioIndex == 0)
-            {
-                fileName = $"{baseName}.wem";
-            }
-            else
-            {
-                fileName = $"{baseName}_{audioIndex + 1}.wem";
-            }
-
+            string fileName = $"{baseName}_{audioIndex + 1}.wem";
             string filePath = Path.Combine(outputDir, fileName);
 
             SaveAudioFileFast(buffer, position, totalSize, filePath, extractedFiles);
@@ -299,56 +279,38 @@ namespace super_toolbox
             if (buffer.Length - position < 0x18)
                 return null;
 
-            if (buffer[position + 0x10] == 0x20 && buffer[position + 0x11] == 0x00 &&
-                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
-                buffer[position + 0x14] == 0x70 && buffer[position + 0x15] == 0x02 &&
-                buffer[position + 0x16] == 0x02 && buffer[position + 0x17] == 0x00)
+            Span<byte> magic = new Span<byte>(buffer, position + 0x10, 8);
+
+            if (magic.SequenceEqual(new byte[] { 0x20, 0x00, 0x00, 0x00, 0x70, 0x02, 0x02, 0x00 }))
                 return "at3";
 
-            if (buffer[position + 0x10] == 0x34 && buffer[position + 0x11] == 0x00 &&
-                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
-                buffer[position + 0x14] == 0xFE && buffer[position + 0x15] == 0xFF)
+            if (magic[0] == 0x34 && magic[1] == 0x00 && magic[2] == 0x00 && magic[3] == 0x00 &&
+                magic[4] == 0xFE && magic[5] == 0xFF)
                 return "at9";
 
-            if (buffer[position + 0x10] == 0x34 && buffer[position + 0x11] == 0x00 &&
-                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
-                buffer[position + 0x14] == 0x66 && buffer[position + 0x15] == 0x01 &&
-                buffer[position + 0x16] == 0x06 && buffer[position + 0x17] == 0x00)
-                return "xma";//xmaencode不支持，foobar2000和vgmstream支持
+            if (magic.SequenceEqual(new byte[] { 0x34, 0x00, 0x00, 0x00, 0x66, 0x01, 0x06, 0x00 }))
+                return "xma";
 
-            if (buffer[position + 0x10] == 0x20 && buffer[position + 0x11] == 0x00 &&
-                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
-                buffer[position + 0x14] == 0x65 && buffer[position + 0x15] == 0x01 &&
-                buffer[position + 0x16] == 0x10 && buffer[position + 0x17] == 0x00)
-                return "xma";//xmaencode、foobar2000和vgmstream支持
+            if (magic.SequenceEqual(new byte[] { 0x20, 0x00, 0x00, 0x00, 0x65, 0x01, 0x10, 0x00 }))
+                return "xma";
 
-            if (buffer[position + 0x10] == 0x34 && buffer[position + 0x11] == 0x00 &&
-                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
-                buffer[position + 0x14] == 0x66 && buffer[position + 0x15] == 0x01 &&
-                buffer[position + 0x16] == 0x02 && buffer[position + 0x17] == 0x00)
-                return "xma";//xmaencode、foobar2000和vgmstream支持
+            if (magic.SequenceEqual(new byte[] { 0x34, 0x00, 0x00, 0x00, 0x66, 0x01, 0x02, 0x00 }))
+                return "xma";
 
-            if (buffer[position + 0x10] == 0x42 && buffer[position + 0x11] == 0x00 &&
-                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
-                buffer[position + 0x14] == 0xFF && buffer[position + 0x15] == 0xFF &&
-                buffer[position + 0x16] == 0x02 && buffer[position + 0x17] == 0x00)
+            if (magic.SequenceEqual(new byte[] { 0x42, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x02, 0x00 }))
                 return "wem";
 
-            if (buffer[position + 0x10] == 0x18 && buffer[position + 0x11] == 0x00 &&
-                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
-                buffer[position + 0x14] == 0x02 && buffer[position + 0x15] == 0x00)
+            if (magic[0] == 0x18 && magic[1] == 0x00 && magic[2] == 0x00 && magic[3] == 0x00 &&
+                magic[4] == 0x02 && magic[5] == 0x00)
                 return "wem";
 
-            if (buffer[position + 0x10] == 0x18 && buffer[position + 0x11] == 0x00 &&
-                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
-                buffer[position + 0x14] == 0x11 && buffer[position + 0x15] == 0x83 &&
-                buffer[position + 0x16] == 0x02 && buffer[position + 0x17] == 0x00)
+            if (magic.SequenceEqual(new byte[] { 0x18, 0x00, 0x00, 0x00, 0x11, 0x83, 0x02, 0x00 }))
                 return "wem";
 
-            if (buffer[position + 0x10] == 0x10 && buffer[position + 0x11] == 0x00 &&
-                buffer[position + 0x12] == 0x00 && buffer[position + 0x13] == 0x00 &&
-                buffer[position + 0x14] == 0x01 && buffer[position + 0x15] == 0x00 &&
-                buffer[position + 0x16] == 0x02 && buffer[position + 0x17] == 0x00)
+            if (magic.SequenceEqual(new byte[] { 0x18, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x02, 0x00 }))
+                return "wem";
+
+            if (magic.SequenceEqual(new byte[] { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00 }))
                 return "wav";
 
             return null;
@@ -362,8 +324,6 @@ namespace super_toolbox
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             List<string> extractedFiles = new List<string>();
-            string extractedDir = Path.Combine(directoryPath, "Extracted");
-            Directory.CreateDirectory(extractedDir);
 
             if (!Directory.Exists(directoryPath))
             {
@@ -374,9 +334,7 @@ namespace super_toolbox
 
             ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
-            var filePaths = Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories)
-                .Where(f => !f.StartsWith(extractedDir, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+            var filePaths = Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories).ToList();
 
             TotalFilesToExtract = filePaths.Count;
             int processed = 0;
@@ -392,17 +350,22 @@ namespace super_toolbox
 
                 try
                 {
+                    string fileNameWithoutExt = Path.GetFileNameWithoutExtension(fp);
+                    string fileDirectory = Path.GetDirectoryName(fp) ?? directoryPath;
+                    string outputDir = Path.Combine(fileDirectory, fileNameWithoutExt);
+                    Directory.CreateDirectory(outputDir);
+
                     FileInfo fi = new FileInfo(fp);
                     int cnt = 0;
 
                     if (fi.Length < LARGE_FILE_THRESHOLD)
                     {
                         byte[] content = await File.ReadAllBytesAsync(fp, cancellationToken);
-                        cnt = ProcessBufferFast(content, 0, fp, extractedDir, extractedFiles);
+                        cnt = ProcessBufferFast(content, 0, fp, outputDir, extractedFiles);
                     }
                     else
                     {
-                        cnt = await ProcessLargeFileWithMemoryMapAsync(fp, extractedDir, extractedFiles, cancellationToken);
+                        cnt = await ProcessLargeFileWithMemoryMapAsync(fp, outputDir, extractedFiles, cancellationToken);
                     }
                     total += cnt;
                 }
