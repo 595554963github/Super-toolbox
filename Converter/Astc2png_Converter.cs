@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace super_toolbox
 {
-    public class Astc2Png_Converter : BaseExtractor
+    public class Astc2png_Converter : BaseExtractor
     {
         private static string _tempExePath;
 
@@ -16,7 +16,7 @@ namespace super_toolbox
             "10x8", "10x10", "12x10", "12x12"
         };
 
-        static Astc2Png_Converter()
+        static Astc2png_Converter()
         {
             _tempExePath = LoadEmbeddedExe("embedded.astcenc-avx2.exe", "astcenc-avx2.exe");
         }
@@ -27,8 +27,8 @@ namespace super_toolbox
 
             if (!Directory.Exists(directoryPath))
             {
-                ConversionError?.Invoke(this, $"源文件夹 {directoryPath} 不存在");
-                OnConversionFailed($"源文件夹 {directoryPath} 不存在");
+                ConversionError?.Invoke(this, $"源文件夹{directoryPath}不存在");
+                OnConversionFailed($"源文件夹{directoryPath}不存在");
                 return;
             }
 
@@ -76,11 +76,11 @@ namespace super_toolbox
 
                 if (successCount > 0)
                 {
-                    ConversionProgress?.Invoke(this, $"转换完成，成功转换{successCount}/{TotalFilesToConvert}个文件");
+                    ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件");
                 }
                 else
                 {
-                    ConversionProgress?.Invoke(this, "转换完成，但未成功转换任何文件");
+                    ConversionProgress?.Invoke(this, "转换完成,但未成功转换任何文件");
                 }
 
                 OnConversionCompleted();
@@ -92,8 +92,8 @@ namespace super_toolbox
             }
             catch (Exception ex)
             {
-                ConversionError?.Invoke(this, $"严重错误: {ex.Message}");
-                OnConversionFailed($"严重错误: {ex.Message}");
+                ConversionError?.Invoke(this, $"严重错误:{ex.Message}");
+                OnConversionFailed($"严重错误:{ex.Message}");
             }
         }
 
@@ -117,11 +117,11 @@ namespace super_toolbox
                 return true;
             }
 
-            ConversionProgress?.Invoke(this, "自动检测失败，尝试常见块尺寸...");
+            ConversionProgress?.Invoke(this, "自动检测失败,尝试常见块尺寸...");
 
             foreach (string blockSize in CommonBlockSizes)
             {
-                ConversionProgress?.Invoke(this, $"尝试块尺寸: {blockSize}");
+                ConversionProgress?.Invoke(this, $"尝试块尺寸:{blockSize}");
 
                 success = await RunAstcEncoder(astcFilePath, pngFilePath, workingDirectory, "-ds", blockSize, cancellationToken);
                 if (success)
@@ -194,7 +194,7 @@ namespace super_toolbox
                     }
                     else
                     {
-                        ConversionError?.Invoke(this, $"转换失败，错误代码:{process.ExitCode} (模式:{decodeMode}, 块尺寸:{blockSize ?? "自动"})");
+                        ConversionError?.Invoke(this, $"转换失败,错误代码:{process.ExitCode} (模式:{decodeMode}, 块尺寸:{blockSize ?? "自动"})");
                         if (File.Exists(outputFile))
                         {
                             try { File.Delete(outputFile); } catch { }
