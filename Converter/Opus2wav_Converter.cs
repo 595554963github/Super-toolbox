@@ -43,12 +43,12 @@ namespace super_toolbox
                         string? resourceName = resourceNames.FirstOrDefault(n => n.EndsWith("opus_tool.dll"));
 
                         if (string.IsNullOrEmpty(resourceName))
-                            throw new Exception("未找到嵌入的 opus_tool.dll");
+                            throw new Exception("未找到嵌入的opus_tool.dll");
 
                         using (Stream? stream = assembly.GetManifestResourceStream(resourceName))
                         {
                             if (stream == null)
-                                throw new Exception("加载嵌入的 DLL 流失败");
+                                throw new Exception("加载嵌入的dll流失败");
 
                             byte[] buffer = new byte[stream.Length];
                             stream.Read(buffer, 0, buffer.Length);
@@ -60,7 +60,7 @@ namespace super_toolbox
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"提取 DLL 失败: {ex.Message}");
+                    throw new Exception($"提取dll失败:{ex.Message}");
                 }
             }
         }
@@ -69,12 +69,12 @@ namespace super_toolbox
         {
             if (!Directory.Exists(directoryPath))
             {
-                ConversionError?.Invoke(this, $"源文件夹 {directoryPath} 不存在");
-                OnConversionFailed($"源文件夹 {directoryPath} 不存在");
+                ConversionError?.Invoke(this, $"源文件夹{directoryPath}不存在");
+                OnConversionFailed($"源文件夹{directoryPath}不存在");
                 return;
             }
 
-            ConversionStarted?.Invoke(this, $"开始处理目录: {directoryPath}");
+            ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
             var opusFiles = Directory.GetFiles(directoryPath, "*.opus", SearchOption.AllDirectories)
                 .OrderBy(f =>
@@ -98,7 +98,7 @@ namespace super_toolbox
                     ThrowIfCancellationRequested(cancellationToken);
 
                     string fileName = Path.GetFileNameWithoutExtension(opusFilePath);
-                    ConversionProgress?.Invoke(this, $"正在处理: {fileName}.opus");
+                    ConversionProgress?.Invoke(this, $"正在处理:{fileName}.opus");
 
                     string fileDirectory = Path.GetDirectoryName(opusFilePath) ?? string.Empty;
                     string wavFilePath = Path.Combine(fileDirectory, $"{fileName}.wav");
@@ -111,23 +111,23 @@ namespace super_toolbox
                         if (result == 0 && File.Exists(wavFilePath))
                         {
                             successCount++;
-                            ConversionProgress?.Invoke(this, $"转换成功: {fileName}.wav");
+                            ConversionProgress?.Invoke(this, $"转换成功:{fileName}.wav");
                             OnFileConverted(wavFilePath);
                         }
                         else
                         {
-                            ConversionError?.Invoke(this, $"{fileName}.opus 转换失败: {errorMsg}");
-                            OnConversionFailed($"{fileName}.opus 转换失败");
+                            ConversionError?.Invoke(this, $"{fileName}.opus转换失败:{errorMsg}");
+                            OnConversionFailed($"{fileName}.opus转换失败");
                         }
                     }
                     catch (Exception ex)
                     {
-                        ConversionError?.Invoke(this, $"转换异常: {ex.Message}");
-                        OnConversionFailed($"{fileName}.opus 处理错误: {ex.Message}");
+                        ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
+                        OnConversionFailed($"{fileName}.opus处理错误:{ex.Message}");
                     }
                 }
 
-                ConversionProgress?.Invoke(this, $"转换完成, 成功转换 {successCount}/{TotalFilesToConvert} 个文件");
+                ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件");
                 OnConversionCompleted();
             }
             catch (OperationCanceledException)
