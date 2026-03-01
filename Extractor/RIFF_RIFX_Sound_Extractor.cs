@@ -297,6 +297,10 @@ namespace super_toolbox
             if (magic.SequenceEqual(new byte[] { 0x34, 0x00, 0x00, 0x00, 0x66, 0x01, 0x02, 0x00 }))
                 return "xma";
 
+            if (magic.SequenceEqual(new byte[] { 0x32, 0x00, 0x00, 0x00, 0x02, 0x00, 0x02, 0x00 }))
+                return "xwm";//暂时保存为xwm吧,这种文件无论是wav、xma、xwm还是xwma使用foobar2000都能识别和播放,官方的AdpcmEncode显示输入wav,输出还是wav,我尼玛...
+                             //微软你换个格式会死吗?
+
             if (magic.SequenceEqual(new byte[] { 0x42, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x02, 0x00 }))
                 return "wem";
 
