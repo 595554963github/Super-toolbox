@@ -120,6 +120,18 @@
 		<EmbeddedResource Include="plugins\opus_tool.dll">
 			<LogicalName>embedded.opus_tool.dll</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\PS3_at3tool.exe">
+			<LogicalName>embedded.PS3_at3tool.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\at9tool.exe">
+			<LogicalName>embedded.at9tool.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\xWMAEncode.exe">
+			<LogicalName>embedded.xWMAEncode.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\AdpcmEncode.exe">
+			<LogicalName>embedded.AdpcmEncode.exe</LogicalName>
+		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\libLZX.dll">
 			<LogicalName>embedded.libLZX.dll</LogicalName>
 		</EmbeddedResource>
