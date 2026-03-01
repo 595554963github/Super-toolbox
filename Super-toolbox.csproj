@@ -117,6 +117,9 @@
 		<EmbeddedResource Include="plugins\pactool.exe">
 			<LogicalName>embedded.pactool.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\opus_tool.dll">
+			<LogicalName>embedded.opus_tool.dll</LogicalName>
+		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\libLZX.dll">
 			<LogicalName>embedded.libLZX.dll</LogicalName>
 		</EmbeddedResource>
@@ -158,16 +161,16 @@
 			<HintPath>plugins\gdidrop.dll</HintPath>
 		</Reference>
 		<Reference Include="GNF2PNG">
-		  <HintPath>plugins\GNF2PNG.dll</HintPath>
+			<HintPath>plugins\GNF2PNG.dll</HintPath>
 		</Reference>
 		<Reference Include="GXTConvert">
 			<HintPath>plugins\GXTConvert.dll</HintPath>
 		</Reference>
 		<Reference Include="LzhamWrapper">
-		  <HintPath>plugins\LzhamWrapper.dll</HintPath>
+			<HintPath>plugins\LzhamWrapper.dll</HintPath>
 		</Reference>
 		<Reference Include="MikuMikuLibrary">
-		  <HintPath>plugins\MikuMikuLibrary.dll</HintPath>
+			<HintPath>plugins\MikuMikuLibrary.dll</HintPath>
 		</Reference>
 		<Reference Include="MiscUtil">
 			<HintPath>plugins\MiscUtil.dll</HintPath>
@@ -176,10 +179,10 @@
 			<HintPath>plugins\Narchive.dll</HintPath>
 		</Reference>
 		<Reference Include="NARToolLib">
-		  <HintPath>plugins\NARToolLib.dll</HintPath>
+			<HintPath>plugins\NARToolLib.dll</HintPath>
 		</Reference>
 		<Reference Include="PuyoTools.Core">
-		  <HintPath>plugins\PuyoTools.Core.dll</HintPath>
+			<HintPath>plugins\PuyoTools.Core.dll</HintPath>
 		</Reference>
 		<Reference Include="Shadowrun">
 			<HintPath>plugins\Shadowrun.dll</HintPath>
