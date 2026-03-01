@@ -253,7 +253,9 @@ namespace super_toolbox
             { "hca2dsp", ("音频", "hca转换到dsp的音频转换器") },
             { "adx2hca", ("音频", "adx转换到hca的音频转换器") },
             { "adx2dsp", ("音频", "adx转换到dsp的音频转换器") },
-            { "adx2wav", ("音频", "adx转换到wav的音频转换器") },        
+            { "adx2wav", ("音频", "adx转换到wav的音频转换器") },
+            { "at32wav", ("音频", "at3转换到wav的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
+            { "at92wav", ("音频", "at9转换到wav的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
             { "idsp2wav", ("音频", "idsp转换到wav的音频转换器") },
             { "mdsp2wav", ("音频", "mdsp转换到wav的音频转换器") },
             { "dsp2adx", ("音频", "dsp转换到adx的音频转换器") },
@@ -275,14 +277,20 @@ namespace super_toolbox
             { "wav2mdsp", ("音频", "wav转换到mdsp的音频转换器") },
             { "wav2hca", ("音频", "wav转换到hca的音频转换器") },
             { "wav2adx", ("音频", "wav转换到adx的音频转换器") },
+            { "wav2at3", ("音频", "wav转换到at3的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
+            { "wav2at9", ("音频", "wav转换到at9的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
             { "wav2opus", ("音频", "wav转换到opus的音频转换器,VGAudio不支持此格式,自主实现转换") },
             { "wav2vag", ("音频", "wav转换到vag的音频转换器,VGAudio不支持此格式,自主实现转换") },
-            { "wav2xma1", ("音频", "wav转换到xma的音频转换器,编码为xma1") },
-            { "wav2xma2", ("音频", "wav转换到xma的音频转换器,编码为xma2") },
+            { "wav2xma1", ("音频", "wav转换到xma的音频转换器,编码为xma1,VGAudio不支持此格式,使用微软官方工具实现转换") },
+            { "wav2xma2", ("音频", "wav转换到xma的音频转换器,编码为xma2,VGAudio不支持此格式,使用微软官方工具实现转换") },
+            { "wav2xwma", ("音频", "wav转换到xwma的音频转换器,VGAudio不支持此格式,使用微软官方工具实现转换") },
             { "wav2wem", ("音频", "wav转换到wem的音频转换器,当前仅支持16-bit小端序PCM") },
-            { "wem2wav", ("音频", "wem转换到wav的音频转换器") },
-            { "xma2wav", ("音频", "xma转换到wav的音频转换器") },
+            { "wem2wav", ("音频", "wem转换到wav的音频转换器,当前仅支持16-bit小端序PCM") },
+            { "xma2wav", ("音频", "xma转换到wav的音频转换器,VGAudio不支持此格式,使用微软官方工具实现转换") },
+            { "xwma2wav", ("音频", "xwma转换到wav的音频转换器,VGAudio不支持此格式,使用微软官方工具实现转换") },
             { "任天堂stream/wave", ("音频", "bcwav、bcstm、bfwav、bfstm、brwav、brstm到wav的转换器") },
+            { "MS_ADPCM编码", ("音频", "wav使用AdpcmEncode编码生成的音频文件保存为xma、xwm、xwma和wav都能被foobar2000识别和播放,VGAudio不支持此格式,使用微软官方工具实现转换") },
+            { "MS_ADPCM解码", ("音频", "对使用AdpcmEncode编码的音频文件解码为wav,VGAudio不支持此格式,使用微软官方工具实现转换") },
         };
         public SuperToolbox()
         {
@@ -390,9 +398,9 @@ namespace super_toolbox
         }
         private readonly HashSet<string> _converters = new HashSet<string>
         {
-         "png2astc", "astc2png", "Gnf2Png", "pvr2png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav", "bfstm2wav", "brstm2wav", "wav2bcstm", "wav2bfstm", "wav2brstm","wav2opus","opus2wav",
-         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rad game tools - rada转换器","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav","wav2hca", "wav2adx","dsp2adx","dsp2hca","dsp2wav","wav2dsp","wav2vag","vag2wav","wav2wem","wem2wav",
-         "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml","任天堂stream/wave","wav2idsp","wav2mdsp","idsp2wav","mdsp2wav","bcwav2wav","bfwav2wav","brwav2wav","wav2xma1","wav2xma2","xma2wav"
+         "png2astc", "astc2png", "Gnf2Png", "pvr2png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav", "bfstm2wav", "brstm2wav", "wav2bcstm", "wav2bfstm", "wav2brstm","wav2opus","opus2wav","wav2at3","at32wav","at92wav","wav2at9",
+         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rad game tools - rada转换器","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav","wav2hca", "wav2adx","dsp2adx","dsp2hca","dsp2wav","wav2dsp","wav2vag","vag2wav","wav2wem","wem2wav","xwma2wav","wav2xwma",
+         "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml","任天堂stream/wave","wav2idsp","wav2mdsp","idsp2wav","mdsp2wav","bcwav2wav","bfwav2wav","brwav2wav","wav2xma1","wav2xma2","xma2wav","MS_ADPCM编码","MS_ADPCM解码"
         };
         private bool IsConverter(string formatName) => _converters.Contains(formatName);
         private async void btnExtract_Click(object sender, EventArgs e)
@@ -854,7 +862,9 @@ namespace super_toolbox
                 case "hca2dsp": return new Hca2dsp_Converter();
                 case "adx2hca": return new Adx2hca_Converter();
                 case "adx2dsp": return new Adx2dsp_Converter();
-                case "adx2wav": return new Adx2wav_Converter();              
+                case "adx2wav": return new Adx2wav_Converter();
+                case "at32wav": return new At32wav_Converter();
+                case "at92wav": return new At92wav_Converter();
                 case "idsp2wav": return new Idsp2wav_Converter();
                 case "mdsp2wav": return new Mdsp2wav_Converter();
                 case "dsp2adx": return new Dsp2adx_Converter();
@@ -876,14 +886,20 @@ namespace super_toolbox
                 case "wav2mdsp": return new Wav2mdsp_Converter();
                 case "wav2hca": return new Wav2hca_Converter();
                 case "wav2adx": return new Wav2adx_Converter();
+                case "wav2at3": return new Wav2at3_Converter();
+                case "wav2at9": return new Wav2at9_Converter();
                 case "wav2opus": return new Wav2opus_Converter();
                 case "wav2vag": return new Wav2vag_Converter();
                 case "wav2xma1": return new Wav2xma1_Converter();
                 case "wav2xma2": return new Wav2xma2_Converter();
+                case "wav2xwma": return new Wav2xwma_Converter();
                 case "wav2wem": return new Wav2wem_Converter();
                 case "wem2wav": return new Wem2wav_Converter();
                 case "xma2wav": return new Xma2wav_Converter();
+                case "xwma2wav": return new Xwma2wav_Converter();
                 case "任天堂stream/wave": return new NintendoSound2wav_Converter();
+                case "MS_ADPCM编码": return new Msadpcm_Encoder();
+                case "MS_ADPCM解码": return new Msadpcm_Decoder();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
