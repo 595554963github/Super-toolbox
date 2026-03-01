@@ -135,10 +135,11 @@ namespace super_toolbox
             toolTip1.InitialDelay = 500;
             toolTip1.ReshowDelay = 100;
             toolTip1.ShowAlways = true;
-            // 
+            //
             // btnAbout
             //
             btnAbout = new Button();
+            btnAbout.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnAbout.ForeColor = Color.Blue;
             btnAbout.Location = new Point(579, 46);
             btnAbout.Name = "btnAbout";
