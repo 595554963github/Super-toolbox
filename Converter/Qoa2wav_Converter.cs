@@ -2,7 +2,7 @@ using QOALib;
 
 namespace super_toolbox
 {
-    public class Qoa2Wav_Converter : BaseExtractor
+    public class Qoa2wav_Converter : BaseExtractor
     {
         public new event EventHandler<string>? ConversionStarted;
         public new event EventHandler<string>? ConversionProgress;
