@@ -1,6 +1,6 @@
 namespace super_toolbox
 {
-    public class Wav2Qoa_Converter : BaseExtractor
+    public class Wav2qoa_Converter : BaseExtractor
     {
         public new event EventHandler<string>? ConversionStarted;
         public new event EventHandler<string>? ConversionProgress;
@@ -112,3 +112,4 @@ namespace super_toolbox
         }
     }
 }
+
