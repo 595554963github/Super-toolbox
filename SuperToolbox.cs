@@ -157,8 +157,8 @@ namespace super_toolbox
             { "Mages - mpk提取器", ("其他档案", "Mages的mpk解包工具,代表作为命运石之门,可提取mpk文件中的各类资源") },
             { "Mages - mpk打包器", ("其他档案", "Mages的mpk打包器,能将一个文件夹及子文件夹里的所有文件重新打包成mpk文件") },
             { "Gnf2Png", ("图片", "PS4平台的gnf到png的转换器,支持批量转换,解决了GFDstudio手动转换的繁琐问题") },
-            { "wav2qoa", ("音频", "wav到qoa的音频转换器") },
-            { "qoa2wav", ("音频", "qoa到wav的音频转换器") },
+            { "wav2qoa", ("音频", "wav到qoa的音频转换器,VGAudio不支持此格式,自主实现转换") },
+            { "qoa2wav", ("音频", "qoa到wav的音频转换器,VGAudio不支持此格式,自主实现转换") },
             { "SRPG_Studio - dts", ("其他档案", "SRPG Studio的dts提取器,代表作为刻印战记2_七圣英雄,可提取dts文件中的资源") },
             { "XACT Wave Bank - xwb打包器", ("其他档案", "XWB打包器,能将一个文件夹里的所有wav打包成xwb文件,为了打包成功建议使用pcm_s16le的wav文件,有些编码不支持") },
             { "png2astc", ("图片", "png到astc图像的转换器,支持批量转换,满足将png图片转换为astc格式的需求") },
@@ -265,7 +265,8 @@ namespace super_toolbox
             { "bcwav2wav", ("音频", "将任天堂3DS平台的bcwav音频文件转换为wav格式") },
             { "bfwav2wav", ("音频", "将任天堂WiiU平台的bfwav音频文件转换为wav格式") },
             { "brwav2wav", ("音频", "将任天堂Wii平台的brwav音频文件转换为wav格式") },
-            { "vag2wav", ("音频", "vag转换到wav的音频转换器") },
+            { "opus2wav", ("音频", "opus转换到wav的音频转换器,VGAudio不支持此格式,自主实现转换") },
+            { "vag2wav", ("音频", "vag转换到wav的音频转换器,VGAudio不支持此格式,自主实现转换") },
             { "wav2bcstm", ("音频", "wav转换到bcstm的音频转换器") },
             { "wav2bfstm", ("音频", "wav转换到bfstm的音频转换器") },
             { "wav2brstm", ("音频", "wav转换到brstm的音频转换器") },
@@ -274,9 +275,12 @@ namespace super_toolbox
             { "wav2mdsp", ("音频", "wav转换到mdsp的音频转换器") },
             { "wav2hca", ("音频", "wav转换到hca的音频转换器") },
             { "wav2adx", ("音频", "wav转换到adx的音频转换器") },
-            { "wav2vag", ("音频", "wav转换到vag的音频转换器") },
+            { "wav2opus", ("音频", "wav转换到opus的音频转换器,VGAudio不支持此格式,自主实现转换") },
+            { "wav2vag", ("音频", "wav转换到vag的音频转换器,VGAudio不支持此格式,自主实现转换") },
             { "wav2xma1", ("音频", "wav转换到xma的音频转换器,编码为xma1") },
             { "wav2xma2", ("音频", "wav转换到xma的音频转换器,编码为xma2") },
+            { "wav2wem", ("音频", "wav转换到wem的音频转换器,当前仅支持16-bit小端序PCM") },
+            { "wem2wav", ("音频", "wem转换到wav的音频转换器") },
             { "xma2wav", ("音频", "xma转换到wav的音频转换器") },
             { "任天堂stream/wave", ("音频", "bcwav、bcstm、bfwav、bfstm、brwav、brstm到wav的转换器") },
         };
@@ -386,8 +390,8 @@ namespace super_toolbox
         }
         private readonly HashSet<string> _converters = new HashSet<string>
         {
-         "png2astc", "astc2png", "Gnf2Png", "pvr2png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav", "bfstm2wav", "brstm2wav", "wav2bcstm", "wav2bfstm", "wav2brstm",
-         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rad game tools - rada转换器","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav","wav2hca", "wav2adx","dsp2adx","dsp2hca","dsp2wav","wav2dsp","wav2vag","vag2wav",
+         "png2astc", "astc2png", "Gnf2Png", "pvr2png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav", "bfstm2wav", "brstm2wav", "wav2bcstm", "wav2bfstm", "wav2brstm","wav2opus","opus2wav",
+         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rad game tools - rada转换器","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav","wav2hca", "wav2adx","dsp2adx","dsp2hca","dsp2wav","wav2dsp","wav2vag","vag2wav","wav2wem","wem2wav",
          "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml","任天堂stream/wave","wav2idsp","wav2mdsp","idsp2wav","mdsp2wav","bcwav2wav","bfwav2wav","brwav2wav","wav2xma1","wav2xma2","xma2wav"
         };
         private bool IsConverter(string formatName) => _converters.Contains(formatName);
@@ -754,12 +758,12 @@ namespace super_toolbox
                 case "Mages - mpk提取器": return new MagesMpkExtractor();
                 case "Mages - mpk打包器": return new MagesMpkRepacker();
                 case "Gnf2Png": return new GNF2PNG_Converter();
-                case "wav2qoa": return new Wav2Qoa_Converter();
-                case "qoa2wav": return new Qoa2Wav_Converter();
+                case "wav2qoa": return new Wav2qoa_Converter();
+                case "qoa2wav": return new Qoa2wav_Converter();
                 case "SRPG_Studio - dts": return new DtsExtractor();
                 case "XACT Wave Bank - xwb打包器": return new XWBPacker();
-                case "png2astc": return new Png2Astc_Converter();
-                case "astc2png": return new Astc2Png_Converter();
+                case "png2astc": return new Png2astc_Converter();
+                case "astc2png": return new Astc2png_Converter();
                 case "hip2png": return new Hip2Png_Converter();
                 case "双截龙彩虹 - pak": return new DoubleDragonNeon_PakExtractor();
                 case "CFSI - cfsi提取器": return new Cfsi_Extractor();
@@ -862,6 +866,7 @@ namespace super_toolbox
                 case "bcwav2wav": return new Bcwav2wav_Converter();
                 case "bfwav2wav": return new Bfwav2wav_Converter();
                 case "brwav2wav": return new Brwav2wav_Converter();
+                case "opus2wav": return new Opus2wav_Converter();
                 case "vag2wav": return new Vag2wav_Converter();
                 case "wav2bcstm": return new Wav2bcstm_Converter();
                 case "wav2bfstm": return new Wav2bfstm_Converter();
@@ -871,9 +876,12 @@ namespace super_toolbox
                 case "wav2mdsp": return new Wav2mdsp_Converter();
                 case "wav2hca": return new Wav2hca_Converter();
                 case "wav2adx": return new Wav2adx_Converter();
+                case "wav2opus": return new Wav2opus_Converter();
                 case "wav2vag": return new Wav2vag_Converter();
                 case "wav2xma1": return new Wav2xma1_Converter();
                 case "wav2xma2": return new Wav2xma2_Converter();
+                case "wav2wem": return new Wav2wem_Converter();
+                case "wem2wav": return new Wem2wav_Converter();
                 case "xma2wav": return new Xma2wav_Converter();
                 case "任天堂stream/wave": return new NintendoSound2wav_Converter();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
