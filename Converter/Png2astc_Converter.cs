@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace super_toolbox
 {
-    public class Png2Astc_Converter : BaseExtractor
+    public class Png2astc_Converter : BaseExtractor
     {
         private static string _tempExePath;
 
@@ -10,7 +10,7 @@ namespace super_toolbox
         public new event EventHandler<string>? ConversionProgress;
         public new event EventHandler<string>? ConversionError;
 
-        static Png2Astc_Converter()
+        static Png2astc_Converter()
         {
             _tempExePath = LoadEmbeddedExe("embedded.astcenc-avx2.exe", "astcenc-avx2.exe");
         }
@@ -22,11 +22,11 @@ namespace super_toolbox
             if (!Directory.Exists(directoryPath))
             {
                 ConversionError?.Invoke(this, $"源文件夹{directoryPath}不存在");
-                OnConversionFailed($"源文件夹 {directoryPath} 不存在");
+                OnConversionFailed($"源文件夹{directoryPath}不存在");
                 return;
             }
 
-            ConversionStarted?.Invoke(this, $"开始处理目录: {directoryPath}");
+            ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
             TotalFilesToConvert = Directory.GetFiles(directoryPath, "*.png", SearchOption.AllDirectories).Length;
 
             var pngFiles = Directory.EnumerateFiles(directoryPath, "*.png", SearchOption.AllDirectories);
@@ -37,7 +37,7 @@ namespace super_toolbox
                 foreach (var pngFilePath in pngFiles)
                 {
                     ThrowIfCancellationRequested(cancellationToken);
-                    ConversionProgress?.Invoke(this, $"正在处理: {Path.GetFileName(pngFilePath)}");
+                    ConversionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(pngFilePath)}");
 
                     string fileName = Path.GetFileNameWithoutExtension(pngFilePath);
                     string fileDirectory = Path.GetDirectoryName(pngFilePath) ?? string.Empty;
@@ -61,8 +61,8 @@ namespace super_toolbox
                         {
                             if (process == null)
                             {
-                                ConversionError?.Invoke(this, $"无法启动转换进程: {Path.GetFileName(pngFilePath)}");
-                                OnConversionFailed($"无法启动转换进程: {pngFilePath}");
+                                ConversionError?.Invoke(this, $"无法启动转换进程:{Path.GetFileName(pngFilePath)}");
+                                OnConversionFailed($"无法启动转换进程:{pngFilePath}");
                                 continue;
                             }
 
@@ -75,7 +75,7 @@ namespace super_toolbox
                             process.ErrorDataReceived += (sender, e) =>
                             {
                                 if (!string.IsNullOrEmpty(e.Data))
-                                    ConversionError?.Invoke(this, $"错误: {e.Data}");
+                                    ConversionError?.Invoke(this, $"错误:{e.Data}");
                             };
 
                             process.BeginOutputReadLine();
@@ -85,8 +85,8 @@ namespace super_toolbox
 
                             if (process.ExitCode != 0)
                             {
-                                ConversionError?.Invoke(this, $"{fileName}.png转换失败，错误代码: {process.ExitCode}");
-                                OnConversionFailed($"{fileName}.png 转换失败，错误代码: {process.ExitCode}");
+                                ConversionError?.Invoke(this, $"{fileName}.png转换失败,错误代码:{process.ExitCode}");
+                                OnConversionFailed($"{fileName}.png 转换失败,错误代码:{process.ExitCode}");
                                 continue;
                             }
                         }
@@ -100,24 +100,24 @@ namespace super_toolbox
                         }
                         else
                         {
-                            ConversionError?.Invoke(this, $"{fileName}.png转换成功，但未找到输出文件");
-                            OnConversionFailed($"{fileName}.png转换成功，但未找到输出文件");
+                            ConversionError?.Invoke(this, $"{fileName}.png转换成功,但未找到输出文件");
+                            OnConversionFailed($"{fileName}.png转换成功,但未找到输出文件");
                         }
                     }
                     catch (Exception ex)
                     {
-                        ConversionError?.Invoke(this, $"转换异常: {ex.Message}");
-                        OnConversionFailed($"{fileName}.png处理错误: {ex.Message}");
+                        ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
+                        OnConversionFailed($"{fileName}.png处理错误:{ex.Message}");
                     }
                 }
 
                 if (successCount > 0)
                 {
-                    ConversionProgress?.Invoke(this, $"转换完成，成功转换{successCount}/{TotalFilesToConvert}个文件");
+                    ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件");
                 }
                 else
                 {
-                    ConversionProgress?.Invoke(this, "转换完成，但未成功转换任何文件");
+                    ConversionProgress?.Invoke(this, "转换完成,但未成功转换任何文件");
                 }
 
                 OnConversionCompleted();
@@ -129,8 +129,8 @@ namespace super_toolbox
             }
             catch (Exception ex)
             {
-                ConversionError?.Invoke(this, $"严重错误: {ex.Message}");
-                OnConversionFailed($"严重错误: {ex.Message}");
+                ConversionError?.Invoke(this, $"严重错误:{ex.Message}");
+                OnConversionFailed($"严重错误:{ex.Message}");
             }
         }
     }
