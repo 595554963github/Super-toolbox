@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace super_toolbox
 {
     public class Wav2qoa_Converter : BaseExtractor
@@ -42,8 +44,19 @@ namespace super_toolbox
             }
 
             ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
-            var wavFiles = Directory.EnumerateFiles(directoryPath, "*.wav", SearchOption.AllDirectories).ToList();
-            TotalFilesToConvert = wavFiles.Count;
+            var wavFiles = Directory.GetFiles(directoryPath, "*.wav", SearchOption.AllDirectories)
+                .OrderBy(f =>
+                {
+                    string fileName = Path.GetFileNameWithoutExtension(f);
+                    var match = Regex.Match(fileName, @"_(\d+)$");
+                    if (match.Success && int.TryParse(match.Groups[1].Value, out int num))
+                        return num;
+                    return int.MaxValue;
+                })
+                .ThenBy(f => Path.GetFileNameWithoutExtension(f))
+                .ToArray();
+
+            TotalFilesToConvert = wavFiles.Length;
             int successCount = 0;
 
             try
@@ -112,4 +125,3 @@ namespace super_toolbox
         }
     }
 }
-
