@@ -146,10 +146,10 @@ namespace super_toolbox
             { "ZSTD - zstd_compress", ("压缩", "使用Zstd算法批量压缩文件") },
             { "ZSTD - zstd_decompress", ("解压", "使用Zstd算法批量解压文件") },
             { "Wiiu - h3/app", ("其他档案", "任天堂wiiu平台的rom解包器,能将wiiu平台的h3、app文件转换成loadiine格式,方便用户解包") },
-            { "Nds - nds提取器", ("其他档案", "任天堂nds平台的rom解包工具,可解包nds rom文件,提取其中的各类资源") },
-            { "Nds - nds打包器", ("其他档案", "任天堂nds平台的rom打包器,能将解包的nds文件夹重新打包成nds rom文件") },
+            { "nds - nds提取器", ("其他档案", "任天堂nds平台的rom解包工具,可解包nds rom文件,提取其中的各类资源") },
+            { "nds - nds打包器", ("其他档案", "任天堂nds平台的rom打包器,能将解包的nds文件夹重新打包成nds rom文件") },
             { "3ds - darc", ("其他档案", "任天堂3ds平台的darc解包工具,代表作为美妙旋律七彩演唱会闪耀设计,可提取darc文件中的资源") },
-            { "Nds - narc", ("其他档案", "任天堂nds平台的narc文件提取器,代表作为口袋妖怪(nds),可提取narc文件中的资源") },
+            { "nds - narc", ("其他档案", "任天堂nds平台的narc文件提取器,代表作为口袋妖怪(nds),可提取narc文件中的资源") },
             { "PS3 - psarc提取器", ("其他档案", "索尼PS3平台的psarc解包工具,代表作为第二次超级机器人大战OG,也可解包无人深空的pak文件") },
             { "PS3 - psarc打包器", ("其他档案", "索尼PS3平台的psarc打包器,能将一个文件夹重新打包成psarc文件") },
             { "PS3 - sdat", ("其他档案", "索尼PS3平台的sdat加密文件破解器,已测试约会大作战或守安装、约会大作战凛弥理想乡") },
@@ -268,6 +268,7 @@ namespace super_toolbox
             { "bfwav2wav", ("音频", "将任天堂WiiU平台的bfwav音频文件转换为wav格式") },
             { "brwav2wav", ("音频", "将任天堂Wii平台的brwav音频文件转换为wav格式") },
             { "opus2wav", ("音频", "opus转换到wav的音频转换器,VGAudio不支持此格式,自主实现转换") },
+            { "swav2wav", ("音频", "swav转换到wav的音频转换器,VGAudio不支持此格式,使用第三方工具实现转换") },
             { "vag2wav", ("音频", "vag转换到wav的音频转换器,VGAudio不支持此格式,自主实现转换") },
             { "wav2bcstm", ("音频", "wav转换到bcstm的音频转换器") },
             { "wav2bfstm", ("音频", "wav转换到bfstm的音频转换器") },
@@ -280,6 +281,7 @@ namespace super_toolbox
             { "wav2at3", ("音频", "wav转换到at3的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
             { "wav2at9", ("音频", "wav转换到at9的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
             { "wav2opus", ("音频", "wav转换到opus的音频转换器,VGAudio不支持此格式,自主实现转换") },
+            { "wav2swav", ("音频", "wav转换到swav的音频转换器,VGAudio不支持此格式,使用第三方工具实现转换") },
             { "wav2vag", ("音频", "wav转换到vag的音频转换器,VGAudio不支持此格式,自主实现转换") },
             { "wav2xma1", ("音频", "wav转换到xma的音频转换器,编码为xma1,VGAudio不支持此格式,使用微软官方工具实现转换") },
             { "wav2xma2", ("音频", "wav转换到xma的音频转换器,编码为xma2,VGAudio不支持此格式,使用微软官方工具实现转换") },
@@ -291,6 +293,8 @@ namespace super_toolbox
             { "任天堂stream/wave", ("音频", "bcwav、bcstm、bfwav、bfstm、brwav、brstm到wav的转换器") },
             { "MS_ADPCM编码", ("音频", "wav使用AdpcmEncode编码生成的音频文件保存为xma、xwm、xwma和wav都能被foobar2000识别和播放,VGAudio不支持此格式,使用微软官方工具实现转换") },
             { "MS_ADPCM解码", ("音频", "对使用AdpcmEncode编码的音频文件解码为wav,VGAudio不支持此格式,使用微软官方工具实现转换") },
+            { "Bethesda Archive - bsa", ("其他档案", "Bethesda Game Studios的bsa档案提取器,如上古卷轴5:天际重制版") },
+            { "nds - sdat", ("其他档案", "任天堂nds平台的sdat文件提取器") },
         };
         public SuperToolbox()
         {
@@ -398,7 +402,7 @@ namespace super_toolbox
         }
         private readonly HashSet<string> _converters = new HashSet<string>
         {
-         "png2astc", "astc2png", "Gnf2Png", "pvr2png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav", "bfstm2wav", "brstm2wav", "wav2bcstm", "wav2bfstm", "wav2brstm","wav2opus","opus2wav","wav2at3","at32wav","at92wav","wav2at9",
+         "png2astc", "astc2png", "Gnf2Png", "pvr2png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav", "bfstm2wav", "brstm2wav", "wav2bcstm", "wav2bfstm", "wav2brstm","wav2opus","opus2wav","wav2at3","at32wav","at92wav","wav2at9","wav2swav","swav2wav",
          "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rad game tools - rada转换器","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav","wav2hca", "wav2adx","dsp2adx","dsp2hca","dsp2wav","wav2dsp","wav2vag","vag2wav","wav2wem","wem2wav","xwma2wav","wav2xwma",
          "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml","任天堂stream/wave","wav2idsp","wav2mdsp","idsp2wav","mdsp2wav","bcwav2wav","bfwav2wav","brwav2wav","wav2xma1","wav2xma2","xma2wav","MS_ADPCM编码","MS_ADPCM解码"
         };
@@ -755,10 +759,10 @@ namespace super_toolbox
                 case "ZSTD - zstd_compress": return new Zstd_Compressor();
                 case "ZSTD - zstd_decompress": return new Zstd_Decompressor();
                 case "Wiiu - h3/app": return new Wiiu_h3appExtractor();
-                case "Nds - nds提取器": return new Nds_Extractor();
-                case "Nds - nds打包器": return new Nds_Repacker();
+                case "nds - nds提取器": return new Nds_Extractor();
+                case "nds - nds打包器": return new Nds_Repacker();
                 case "3ds - darc": return new Darc_Extractor();
-                case "Nds - narc": return new NarcExtractor();
+                case "nds - narc": return new NarcExtractor();
                 case "PS3 - psarc提取器": return new PsarcExtractor();
                 case "PS3 - psarc打包器": return new PsarcRepacker();
                 case "PS3 - sdat": return new NPD_Extractor();
@@ -877,6 +881,7 @@ namespace super_toolbox
                 case "bfwav2wav": return new Bfwav2wav_Converter();
                 case "brwav2wav": return new Brwav2wav_Converter();
                 case "opus2wav": return new Opus2wav_Converter();
+                case "swav2wav": return new Swav2wav_Converter();
                 case "vag2wav": return new Vag2wav_Converter();
                 case "wav2bcstm": return new Wav2bcstm_Converter();
                 case "wav2bfstm": return new Wav2bfstm_Converter();
@@ -889,6 +894,7 @@ namespace super_toolbox
                 case "wav2at3": return new Wav2at3_Converter();
                 case "wav2at9": return new Wav2at9_Converter();
                 case "wav2opus": return new Wav2opus_Converter();
+                case "wav2swav": return new Wav2swav_Converter();
                 case "wav2vag": return new Wav2vag_Converter();
                 case "wav2xma1": return new Wav2xma1_Converter();
                 case "wav2xma2": return new Wav2xma2_Converter();
@@ -900,6 +906,8 @@ namespace super_toolbox
                 case "任天堂stream/wave": return new NintendoSound2wav_Converter();
                 case "MS_ADPCM编码": return new Msadpcm_Encoder();
                 case "MS_ADPCM解码": return new Msadpcm_Decoder();
+                case "Bethesda Archive - bsa": return new Bsa_Extractor();
+                case "nds - sdat": return new Nds_Sdat_Extractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
