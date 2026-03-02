@@ -132,6 +132,12 @@
 		<EmbeddedResource Include="plugins\AdpcmEncode.exe">
 			<LogicalName>embedded.AdpcmEncode.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\wav2swav.exe">
+			<LogicalName>embedded.wav2swav.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\swav2wav.exe">
+			<LogicalName>embedded.swav2wav.exe</LogicalName>
+		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\libLZX.dll">
 			<LogicalName>embedded.libLZX.dll</LogicalName>
 		</EmbeddedResource>
@@ -152,6 +158,7 @@
 		<PackageReference Include="LibQOA" Version="0.9.1" />
 		<PackageReference Include="lz4net" Version="1.0.15.93" />
 		<PackageReference Include="LZMA-SDK" Version="22.1.1" />
+		<PackageReference Include="Sharp.BSA.BA2" Version="1.17.0" />
 		<PackageReference Include="SharpZipLib" Version="1.4.2" />
 		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
 		<PackageReference Include="Syroot.IO.BinaryData" Version="4.0.4" />
