@@ -214,10 +214,10 @@ namespace super_toolbox
                 }
             }
 
-            if (buffer[position + 0x10] != 0x00 || buffer[position + 0x11] != 0x00 ||
-                buffer[position + 0x12] != 0x00 || buffer[position + 0x13] != 0x28 ||
-                buffer[position + 0x14] != 0xFF || buffer[position + 0x15] != 0xFF ||
-                buffer[position + 0x16] != 0x00 || buffer[position + 0x17] != 0x01)
+            byte[] pattern3 = new byte[] { 0x00, 0x00, 0x00, 0x28, 0xFF, 0xFF, 0x00, 0x01 };
+            Span<byte> magic = new Span<byte>(buffer, position + 0x10, 8);
+
+            if (!magic.SequenceEqual(pattern3))
             {
                 isPattern3 = false;
             }
@@ -284,8 +284,7 @@ namespace super_toolbox
             if (magic.SequenceEqual(new byte[] { 0x20, 0x00, 0x00, 0x00, 0x70, 0x02, 0x02, 0x00 }))
                 return "at3";
 
-            if (magic[0] == 0x34 && magic[1] == 0x00 && magic[2] == 0x00 && magic[3] == 0x00 &&
-                magic[4] == 0xFE && magic[5] == 0xFF)
+            if (magic.Slice(0, 6).SequenceEqual(new byte[] { 0x34, 0x00, 0x00, 0x00, 0xFE, 0xFF }))
                 return "at9";
 
             if (magic.SequenceEqual(new byte[] { 0x34, 0x00, 0x00, 0x00, 0x66, 0x01, 0x06, 0x00 }))
@@ -300,12 +299,10 @@ namespace super_toolbox
             if (magic.SequenceEqual(new byte[] { 0x32, 0x00, 0x00, 0x00, 0x02, 0x00, 0x02, 0x00 }))
                 return "xwm";//暂时保存为xwm吧,这种文件无论是wav、xma、xwm还是xwma使用foobar2000都能识别和播放,官方的AdpcmEncode显示输入wav,输出还是wav,我尼玛...
                              //微软你换个格式会死吗?
-
             if (magic.SequenceEqual(new byte[] { 0x42, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x02, 0x00 }))
                 return "wem";
 
-            if (magic[0] == 0x18 && magic[1] == 0x00 && magic[2] == 0x00 && magic[3] == 0x00 &&
-                magic[4] == 0x02 && magic[5] == 0x00)
+            if (magic.Slice(0, 6).SequenceEqual(new byte[] { 0x18, 0x00, 0x00, 0x00, 0x02, 0x00 }))
                 return "wem";
 
             if (magic.SequenceEqual(new byte[] { 0x18, 0x00, 0x00, 0x00, 0x11, 0x83, 0x02, 0x00 }))
@@ -314,7 +311,7 @@ namespace super_toolbox
             if (magic.SequenceEqual(new byte[] { 0x18, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x02, 0x00 }))
                 return "wem";
 
-            if (magic.SequenceEqual(new byte[] { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00 }))
+            if (magic.Slice(0, 6).SequenceEqual(new byte[] { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00 }))
                 return "wav";
 
             return null;
