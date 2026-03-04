@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using VGAudio.Containers.Wave;
 using VGAudio.Formats;
@@ -12,54 +10,6 @@ namespace super_toolbox
         public new event EventHandler<string>? ConversionStarted;
         public new event EventHandler<string>? ConversionProgress;
         public new event EventHandler<string>? ConversionError;
-
-        private static string? _tempExePath;
-        private static bool _exeExtracted = false;
-        private static readonly object _lock = new object();
-
-        static Wav2swav_Converter()
-        {
-            ExtractEmbeddedExe();
-        }
-
-        private static void ExtractEmbeddedExe()
-        {
-            if (_exeExtracted) return;
-
-            lock (_lock)
-            {
-                if (_exeExtracted) return;
-
-                try
-                {
-                    string tempDir = Path.Combine(Path.GetTempPath(), "supertoolbox_temp");
-                    Directory.CreateDirectory(tempDir);
-                    _tempExePath = Path.Combine(tempDir, "wav2swav.exe");
-
-                    if (!File.Exists(_tempExePath))
-                    {
-                        Assembly assembly = Assembly.GetExecutingAssembly();
-                        string resourceName = "embedded.wav2swav.exe";
-
-                        using (var stream = assembly.GetManifestResourceStream(resourceName))
-                        {
-                            if (stream == null)
-                                throw new FileNotFoundException($"嵌入的wav2swav资源未找到:{resourceName}");
-
-                            byte[] buffer = new byte[stream.Length];
-                            stream.Read(buffer, 0, buffer.Length);
-                            File.WriteAllBytes(_tempExePath, buffer);
-                        }
-                    }
-
-                    _exeExtracted = true;
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception($"提取wav2swav.exe失败:{ex.Message}");
-                }
-            }
-        }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -171,58 +121,50 @@ namespace super_toolbox
 
                 short[] monoPcm = MixToMono(pcmFormat);
 
-                string tempWav = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".wav");
-                string tempSwav = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".swav");
+                return CreateSwavFromPcm16(monoPcm, sampleRate, swavFilePath);
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
-                try
+        private bool CreateSwavFromPcm16(short[] pcm16Data, int sampleRate, string swavFilePath)
+        {
+            try
+            {
+                byte[] pcm8Data = new byte[pcm16Data.Length];
+                for (int i = 0; i < pcm16Data.Length; i++)
                 {
-                    using (var tempStream = File.Create(tempWav))
-                    {
-                        var wavWriter = new WaveWriter();
-                        var monoFormat = new Pcm16Format(new short[][] { monoPcm }, sampleRate);
-                        wavWriter.WriteToStream(monoFormat, tempStream);
-                    }
-
-                    var process = new Process
-                    {
-                        StartInfo = new ProcessStartInfo
-                        {
-                            FileName = _tempExePath,
-                            Arguments = $"\"{tempWav}\"",
-                            UseShellExecute = false,
-                            CreateNoWindow = true,
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true
-                        }
-                    };
-
-                    process.Start();
-                    string output = process.StandardOutput.ReadToEnd();
-                    string error = process.StandardError.ReadToEnd();
-                    process.WaitForExit();
-
-                    string possibleSwav = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(tempWav) + ".swav");
-
-                    if (process.ExitCode == 0 && File.Exists(possibleSwav))
-                    {
-                        File.Copy(possibleSwav, swavFilePath, true);
-                        return true;
-                    }
-
-                    if (File.Exists(tempSwav))
-                    {
-                        File.Copy(tempSwav, swavFilePath, true);
-                        return true;
-                    }
-
-                    return false;
+                    pcm8Data[i] = (byte)((pcm16Data[i] >> 8) & 0xFF);
                 }
-                finally
+
+                uint dataSize = (uint)(pcm8Data.Length + 0x14);
+                uint fileSize = dataSize + 0x10;
+
+                using (var fs = new FileStream(swavFilePath, FileMode.Create))
+                using (var bw = new BinaryWriter(fs))
                 {
-                    try { File.Delete(tempWav); } catch { }
-                    try { File.Delete(tempSwav); } catch { }
-                    try { File.Delete(Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(tempWav) + ".swav")); } catch { }
+                    bw.Write(System.Text.Encoding.ASCII.GetBytes("SWAV"));
+                    bw.Write((uint)0x0100FEFF);
+                    bw.Write(fileSize);
+                    bw.Write((ushort)0x10);
+                    bw.Write((ushort)0x01);
+
+                    bw.Write(System.Text.Encoding.ASCII.GetBytes("DATA"));
+                    bw.Write(dataSize);
+
+                    bw.Write((byte)0);
+                    bw.Write((byte)0);
+                    bw.Write((ushort)sampleRate);
+                    bw.Write((ushort)(16756991 / sampleRate));
+                    bw.Write((ushort)0);
+                    bw.Write((uint)pcm8Data.Length);
+
+                    bw.Write(pcm8Data);
                 }
+
+                return File.Exists(swavFilePath);
             }
             catch
             {
