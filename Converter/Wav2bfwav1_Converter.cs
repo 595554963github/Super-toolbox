@@ -6,7 +6,7 @@ using VGAudio.Formats.Pcm16;
 
 namespace super_toolbox
 {
-    public class Wav2bfwav_Converter : BaseExtractor
+    public class Wav2bfwav1_Converter : BaseExtractor
     {
         public new event EventHandler<string>? ConversionStarted;
         public new event EventHandler<string>? ConversionProgress;
