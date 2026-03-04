@@ -1,6 +1,9 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using VGAudio.Containers.Wave;
+using VGAudio.Formats;
+using VGAudio.Formats.Pcm16;
 
 namespace super_toolbox
 {
@@ -88,12 +91,12 @@ namespace super_toolbox
 
                     if (wavFiles.Length == 0)
                     {
-                        ConversionError?.Invoke(this, "未找到需要转换的WAV文件");
-                        OnConversionFailed("未找到需要转换的WAV文件");
+                        ConversionError?.Invoke(this, "未找到需要转换的wav文件");
+                        OnConversionFailed("未找到需要转换的wav文件");
                         return;
                     }
 
-                    ConversionStarted?.Invoke(this, $"开始转换,共{TotalFilesToConvert}个WAV文件");
+                    ConversionStarted?.Invoke(this, $"开始转换,共{TotalFilesToConvert}个wav文件");
 
                     foreach (var wavFilePath in wavFiles)
                     {
@@ -110,7 +113,42 @@ namespace super_toolbox
                             if (File.Exists(at3FilePath))
                                 File.Delete(at3FilePath);
 
-                            if (ConvertWavToAt3(wavFilePath, at3FilePath) && File.Exists(at3FilePath))
+                            string tempWav = wavFilePath;
+                            bool needResample = false;
+
+                            using (var fs = File.OpenRead(wavFilePath))
+                            {
+                                fs.Seek(24, SeekOrigin.Begin);
+                                byte[] buffer = new byte[4];
+                                fs.Read(buffer, 0, 4);
+                                int sampleRate = BitConverter.ToInt32(buffer, 0);
+                                if (sampleRate != 48000)
+                                    needResample = true;
+                            }
+
+                            if (needResample)
+                            {
+                                ConversionProgress?.Invoke(this, $"采样率不是48kHz,正在重采样...");
+                                tempWav = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.wav");
+
+                                var wavReader = new WaveReader();
+                                AudioData audioData;
+                                using (var wavStream = File.OpenRead(wavFilePath))
+                                {
+                                    audioData = wavReader.Read(wavStream);
+                                }
+
+                                var pcmFormat = audioData.GetFormat<Pcm16Format>();
+                                var resampledFormat = ResampleTo48000(pcmFormat);
+
+                                var wavWriter = new WaveWriter();
+                                using (var outputStream = File.Create(tempWav))
+                                {
+                                    wavWriter.WriteToStream(resampledFormat, outputStream);
+                                }
+                            }
+
+                            if (ConvertWavToAt3(tempWav, at3FilePath) && File.Exists(at3FilePath))
                             {
                                 successCount++;
                                 ConversionProgress?.Invoke(this, $"已转换:{fileName}.at3");
@@ -121,6 +159,9 @@ namespace super_toolbox
                                 ConversionError?.Invoke(this, $"{fileName}.wav转换失败");
                                 OnConversionFailed($"{fileName}.wav转换失败");
                             }
+
+                            if (needResample && File.Exists(tempWav))
+                                File.Delete(tempWav);
                         }
                         catch (Exception ex)
                         {
@@ -187,6 +228,47 @@ namespace super_toolbox
                 ConversionError?.Invoke(this, $"转换过程异常:{ex.Message}");
                 return false;
             }
+        }
+
+        private Pcm16Format ResampleTo48000(Pcm16Format pcmFormat)
+        {
+            short[] samples = pcmFormat.Channels[0];
+            int channelCount = pcmFormat.ChannelCount;
+            int oldRate = pcmFormat.SampleRate;
+            int newRate = 48000;
+
+            double ratio = (double)newRate / oldRate;
+            int newLength = (int)(samples.Length * ratio);
+
+            short[][] resampledChannels = new short[channelCount][];
+
+            for (int ch = 0; ch < channelCount; ch++)
+            {
+                short[] channelSamples = pcmFormat.Channels[ch];
+                short[] resampled = new short[newLength];
+
+                for (int i = 0; i < newLength; i++)
+                {
+                    double pos = i / ratio;
+                    int index = (int)pos;
+                    double frac = pos - index;
+
+                    if (index >= channelSamples.Length - 1)
+                    {
+                        resampled[i] = channelSamples[channelSamples.Length - 1];
+                    }
+                    else
+                    {
+                        int s0 = channelSamples[index];
+                        int s1 = channelSamples[index + 1];
+                        resampled[i] = (short)(s0 + (s1 - s0) * frac);
+                    }
+                }
+
+                resampledChannels[ch] = resampled;
+            }
+
+            return new Pcm16Format(resampledChannels, newRate);
         }
     }
 }
