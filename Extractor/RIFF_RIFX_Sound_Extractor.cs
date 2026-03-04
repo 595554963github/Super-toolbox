@@ -132,7 +132,95 @@ namespace super_toolbox
             }
             return extractedCount;
         }
+        private int CountAudioInBuffer(byte[] buffer, string sourceFilePath)
+        {
+            int count = 0;
+            int position = 0;
 
+            while (position < buffer.Length - 8)
+            {
+                if (buffer[position] == 0x52 && buffer[position + 1] == 0x49 && buffer[position + 2] == 0x46)
+                {
+                    bool isRiff = buffer[position + 3] == 0x46;
+                    bool isRifx = buffer[position + 3] == 0x58;
+
+                    if (isRiff)
+                    {
+                        if (position + 12 < buffer.Length)
+                        {
+                            if (buffer[position + 8] == 0x57 && buffer[position + 9] == 0x41 &&
+                                buffer[position + 10] == 0x56 && buffer[position + 11] == 0x45)
+                            {
+                                string? format = IdentifyFormatFast(buffer, position);
+                                if (format != null)
+                                {
+                                    count++;
+                                }
+                            }
+                            else if (buffer[position + 8] == 0x58 && buffer[position + 9] == 0x57 &&
+                                     buffer[position + 10] == 0x4D && buffer[position + 11] == 0x41)
+                            {
+                                count++;
+                            }
+                        }
+                    }
+                    else if (isRifx)
+                    {
+                        if (position + 16 < buffer.Length)
+                        {
+                            bool isValid = true;
+                            for (int i = 0; i < RIFX_VALID_PATTERN_1.Length; i++)
+                            {
+                                if (position + 0x10 + i >= buffer.Length ||
+                                    buffer[position + 0x10 + i] != RIFX_VALID_PATTERN_1[i])
+                                {
+                                    isValid = false;
+                                    break;
+                                }
+                            }
+
+                            if (!isValid)
+                            {
+                                isValid = true;
+                                for (int i = 0; i < RIFX_VALID_PATTERN_2.Length; i++)
+                                {
+                                    if (position + 0x10 + i >= buffer.Length ||
+                                        buffer[position + 0x10 + i] != RIFX_VALID_PATTERN_2[i])
+                                    {
+                                        isValid = false;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (!isValid && position + 0x18 < buffer.Length)
+                            {
+                                byte[] pattern3 = new byte[] { 0x00, 0x00, 0x00, 0x28, 0xFF, 0xFF, 0x00, 0x01 };
+                                Span<byte> magic = new Span<byte>(buffer, position + 0x10, 8);
+                                if (magic.SequenceEqual(pattern3))
+                                {
+                                    isValid = true;
+                                }
+                            }
+
+                            if (isValid)
+                            {
+                                count++;
+                            }
+                        }
+                    }
+
+                    int chunkSize = BitConverter.ToInt32(buffer, position + 4);
+                    position += chunkSize + 8;
+                }
+                else
+                {
+                    position++;
+                }
+            }
+
+            return count;
+        }
         private int ProcessRiffHeaderFast(byte[] buffer, int position, long bufferOffset, string sourceFilePath, string outputDir, List<string> extractedFiles, int audioIndex)
         {
             if (position + 12 >= buffer.Length)
@@ -179,10 +267,10 @@ namespace super_toolbox
                 return 0;
 
             string baseName = Path.GetFileNameWithoutExtension(sourceFilePath);
-            string fileName = $"{baseName}_{audioIndex + 1}.{format}";
-            string filePath = Path.Combine(outputDir, fileName);
 
-            SaveAudioFileFast(buffer, position, totalSize, filePath, extractedFiles);
+            int totalAudioCount = CountAudioInBuffer(buffer, sourceFilePath);
+
+            SaveAudioFileFast(buffer, position, totalSize, sourceFilePath, outputDir, baseName, format, audioIndex, totalAudioCount, extractedFiles);
             return totalSize;
         }
 
@@ -250,18 +338,32 @@ namespace super_toolbox
                 return 0;
 
             string baseName = Path.GetFileNameWithoutExtension(sourceFilePath);
-            string fileName = $"{baseName}_{audioIndex + 1}.wem";
-            string filePath = Path.Combine(outputDir, fileName);
 
-            SaveAudioFileFast(buffer, position, totalSize, filePath, extractedFiles);
+            int totalAudioCount = CountAudioInBuffer(buffer, sourceFilePath);
+
+            SaveAudioFileFast(buffer, position, totalSize, sourceFilePath, outputDir, baseName, "wem", audioIndex, totalAudioCount, extractedFiles);
             return totalSize;
         }
 
-        private void SaveAudioFileFast(byte[] data, int offset, int length, string filePath, List<string> extractedFiles)
+        private void SaveAudioFileFast(byte[] data, int offset, int length, string sourceFilePath, string outputDir, string baseName, string format, int audioIndex, int totalExtractedCount, List<string> extractedFiles)
         {
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(filePath) ?? "");
+                Directory.CreateDirectory(outputDir);
+
+                string fileName;
+                if (totalExtractedCount == 1)
+                {
+                    fileName = $"{baseName}.{format}";
+                }
+                else
+                {
+
+                    fileName = $"{baseName}_{audioIndex + 1}.{format}";
+                }
+
+                string filePath = Path.Combine(outputDir, fileName);
+
                 using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, false);
                 fs.Write(data, offset, length);
                 extractedFiles.Add(filePath);
@@ -270,7 +372,7 @@ namespace super_toolbox
             }
             catch (Exception ex)
             {
-                ExtractionError?.Invoke(this, $"写入文件{filePath}时出错:{ex.Message}");
+                ExtractionError?.Invoke(this, $"写入文件时出错:{ex.Message}");
             }
         }
 
@@ -292,6 +394,9 @@ namespace super_toolbox
 
             if (magic.SequenceEqual(new byte[] { 0x20, 0x00, 0x00, 0x00, 0x65, 0x01, 0x10, 0x00 }))
                 return "xma";
+
+            if (magic.SequenceEqual(new byte[] { 0x14, 0x00, 0x00, 0x00, 0x11, 0x00, 0x02, 0x00 }))
+                return "pcm";//暂定，由于从未见过这种格式，尝试用pcm、adpcm、imaadpcm、wav、xma、xwma都能正常播放，一下子让我不知道用什么后缀名了，foobar2000显示IMA 4-bit ADPCM或者微软4-bit IMA ADPCM
 
             if (magic.SequenceEqual(new byte[] { 0x34, 0x00, 0x00, 0x00, 0x66, 0x01, 0x02, 0x00 }))
                 return "xma";
@@ -353,10 +458,20 @@ namespace super_toolbox
                 {
                     string fileNameWithoutExt = Path.GetFileNameWithoutExtension(fp);
                     string fileDirectory = Path.GetDirectoryName(fp) ?? directoryPath;
-                    string outputDir = Path.Combine(fileDirectory, fileNameWithoutExt);
-                    Directory.CreateDirectory(outputDir);
 
                     FileInfo fi = new FileInfo(fp);
+
+                    string outputDir;
+                    if (fi.Length > 10 * 1024 * 1024)
+                    {
+                        outputDir = Path.Combine(fileDirectory, fileNameWithoutExt);
+                        Directory.CreateDirectory(outputDir);
+                    }
+                    else
+                    {
+                        outputDir = fileDirectory;
+                    }
+
                     int cnt = 0;
 
                     if (fi.Length < LARGE_FILE_THRESHOLD)
