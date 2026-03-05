@@ -1,11 +1,13 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 namespace super_toolbox
 {
-    public class Bfwav2wav_Converter : BaseExtractor
+    public class Wav2bfwav3_Converter : BaseExtractor
     {
+        private const int BFWAV_ENCODING_DSP_ADPCM = 2;
         private static string? _tempDllPath;
         private static bool _dllLoaded;
 
@@ -13,11 +15,11 @@ namespace super_toolbox
         public new event EventHandler<string>? ConversionProgress;
         public new event EventHandler<string>? ConversionError;
 
-        static Bfwav2wav_Converter()
+        static Wav2bfwav3_Converter()
         {
             try
             {
-                _tempDllPath = LoadEmbeddedDll("embedded.bfwavtool.dll", "bfwavtool_decode.dll");
+                _tempDllPath = LoadEmbeddedDll("embedded.bfwavtool.dll", "bfwavtool_dsp.dll");
                 _dllLoaded = true;
             }
             catch (Exception ex)
@@ -50,12 +52,17 @@ namespace super_toolbox
             return tempPath;
         }
 
-        [DllImport("bfwavtool_decode.dll", CallingConvention = CallingConvention.Cdecl)]
-        private static extern int BFWAV_Decode(
+        [DllImport("bfwavtool_dsp.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int BFWAV_Encode(
             string inputFile,
-            string outputFile);
+            string outputFile,
+            int encoding,
+            bool loop,
+            uint loopStart,
+            uint loopEnd,
+            uint originalLoopStart);
 
-        [DllImport("bfwavtool_decode.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("bfwavtool_dsp.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern void BFWAV_GetLastError(IntPtr buffer, int bufferSize);
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
@@ -74,58 +81,69 @@ namespace super_toolbox
                 return;
             }
 
-            ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
+            ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}(DSP-ADPCM编码)");
 
-            var bfwavFiles = Directory.GetFiles(directoryPath, "*.bfwav", SearchOption.AllDirectories);
-            TotalFilesToConvert = bfwavFiles.Length;
+            var wavFiles = Directory.GetFiles(directoryPath, "*.wav", SearchOption.AllDirectories)
+                .OrderBy(f =>
+                {
+                    string fileName = Path.GetFileNameWithoutExtension(f);
+                    var match = Regex.Match(fileName, @"_(\d+)$");
+                    if (match.Success && int.TryParse(match.Groups[1].Value, out int num))
+                        return num;
+                    return int.MaxValue;
+                })
+                .ThenBy(f => Path.GetFileNameWithoutExtension(f))
+                .ToArray();
+
+            TotalFilesToConvert = wavFiles.Length;
             int successCount = 0;
 
             try
             {
-                foreach (var bfwavFilePath in bfwavFiles)
+                foreach (var wavFilePath in wavFiles)
                 {
                     ThrowIfCancellationRequested(cancellationToken);
 
-                    string fileName = Path.GetFileNameWithoutExtension(bfwavFilePath);
-                    ConversionProgress?.Invoke(this, $"正在处理:{fileName}.bfwav");
+                    string fileName = Path.GetFileNameWithoutExtension(wavFilePath);
+                    ConversionProgress?.Invoke(this, $"正在处理:{fileName}.wav");
 
-                    string fileDirectory = Path.GetDirectoryName(bfwavFilePath) ?? string.Empty;
-                    string wavFile = Path.Combine(fileDirectory, $"{fileName}.wav");
+                    string fileDirectory = Path.GetDirectoryName(wavFilePath) ?? string.Empty;
+                    string bfwavFile = Path.Combine(fileDirectory, $"{fileName}.bfwav");
 
                     try
                     {
-                        if (File.Exists(wavFile))
-                            File.Delete(wavFile);
+                        if (File.Exists(bfwavFile))
+                            File.Delete(bfwavFile);
 
                         bool conversionSuccess = await Task.Run(() =>
-                            ConvertBfwavToWav(bfwavFilePath, wavFile, cancellationToken));
+                            ConvertWavToBfwav(wavFilePath, bfwavFile, cancellationToken));
 
-                        if (conversionSuccess && File.Exists(wavFile))
+                        if (conversionSuccess && File.Exists(bfwavFile))
                         {
                             successCount++;
-                            ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(wavFile)}");
-                            OnFileConverted(wavFile);
+                            ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(bfwavFile)}(DSP-ADPCM)");
+                            OnFileConverted(bfwavFile);
                         }
                         else
                         {
-                            ConversionError?.Invoke(this, $"{fileName}.bfwav转换失败");
-                            OnConversionFailed($"{fileName}.bfwav转换失败");
+                            ConversionError?.Invoke(this, $"{fileName}.wav转换失败");
+                            OnConversionFailed($"{fileName}.wav转换失败");
                         }
                     }
                     catch (Exception ex)
                     {
                         ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
-                        OnConversionFailed($"{fileName}.bfwav处理错误:{ex.Message}");
+                        OnConversionFailed($"{fileName}.wav处理错误:{ex.Message}");
                     }
                 }
 
                 if (successCount > 0)
                 {
-                    ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件");
+                    ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件(DSP-ADPCM)");
                 }
                 else
                 {
-                    ConversionProgress?.Invoke(this, "转换完成,但未成功转换任何文件");
+                    ConversionProgress?.Invoke(this, "转换完成,但未成功转换任何文件(DSP-ADPCM)");
                 }
 
                 OnConversionCompleted();
@@ -142,18 +160,18 @@ namespace super_toolbox
             }
         }
 
-        private bool ConvertBfwavToWav(string bfwavFilePath, string wavFilePath, CancellationToken cancellationToken)
+        private bool ConvertWavToBfwav(string wavFilePath, string bfwavFilePath, CancellationToken cancellationToken)
         {
             try
             {
-                ConversionProgress?.Invoke(this, $"解码BFWAV文件:{Path.GetFileName(bfwavFilePath)}");
+                ConversionProgress?.Invoke(this, $"读取wav文件:{Path.GetFileName(wavFilePath)}");
 
-                int result = BFWAV_Decode(bfwavFilePath, wavFilePath);
+                int result = BFWAV_Encode(wavFilePath, bfwavFilePath, BFWAV_ENCODING_DSP_ADPCM, false, 0, 0, 0);
 
                 if (result != 0)
                 {
                     string errorMsg = GetLastError();
-                    throw new Exception($"解码失败:{errorMsg}");
+                    throw new Exception($"编码失败:{errorMsg}");
                 }
 
                 return true;

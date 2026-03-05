@@ -1,115 +1,79 @@
+using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using VGAudio.Containers.Wave;
-using VGAudio.Formats;
-using VGAudio.Formats.Pcm16;
 
 namespace super_toolbox
 {
     public class Wav2bfwav2_Converter : BaseExtractor
     {
+        private const int BFWAV_ENCODING_PCM16 = 1;
+        private static string? _tempDllPath;
+        private static bool _dllLoaded;
+
         public new event EventHandler<string>? ConversionStarted;
         public new event EventHandler<string>? ConversionProgress;
         public new event EventHandler<string>? ConversionError;
 
-        private const uint FWAV_ENCODING_PCM8 = 0;
-
-        private const uint FWAV_REF_SAMPLE_DATA = 0x1F00;
-        private const uint FWAV_REF_INFO_BLOCK = 0x7000;
-        private const uint FWAV_REF_DATA_BLOCK = 0x7001;
-        private const uint FWAV_REF_CHANNEL_INFO = 0x7100;
-
-        private const string FWAV_MAGIC = "FWAV";
-        private const ushort FWAV_ENDIANNESS_BIG = 0xFEFF;
-        private const uint FWAV_VERSION = 0x00010100;
-        private const string FWAV_BLOCK_MAGIC_INFO = "INFO";
-        private const string FWAV_BLOCK_MAGIC_DATA = "DATA";
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct FWAVReference
+        static Wav2bfwav2_Converter()
         {
-            public ushort typeId;
-            public ushort padding;
-            public uint offset;
+            try
+            {
+                _tempDllPath = LoadEmbeddedDll("embedded.bfwavtool.dll", "bfwavtool_pcm16.dll");
+                _dllLoaded = true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"加载DLL失败:{ex.Message}");
+                _dllLoaded = false;
+            }
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct FWAVSizedReference
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr LoadLibrary(string lpFileName);
+
+        private new static string LoadEmbeddedDll(string resourceName, string outputFileName)
         {
-            public FWAVReference ref_;
-            public uint size;
+            var assembly = Assembly.GetExecutingAssembly();
+            string tempPath = Path.Combine(Path.GetTempPath(), outputFileName);
+
+            using (var stream = assembly.GetManifestResourceStream(resourceName))
+            {
+                if (stream == null)
+                    throw new InvalidOperationException($"嵌入式资源{resourceName}未找到");
+
+                using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
+                {
+                    stream.CopyTo(fileStream);
+                }
+            }
+
+            LoadLibrary(tempPath);
+            return tempPath;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct FWAVReferenceTable
-        {
-            public uint count;
-        }
+        [DllImport("bfwavtool_pcm16.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int BFWAV_Encode(
+            string inputFile,
+            string outputFile,
+            int encoding,
+            bool loop,
+            uint loopStart,
+            uint loopEnd,
+            uint originalLoopStart);
 
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct FWAVHeader
-        {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
-            public byte[] magic;
-            public ushort endianness;
-            public ushort headerSize;
-            public uint version;
-            public uint fileSize;
-            public ushort numBlocks;
-            public ushort reserved;
-            public FWAVSizedReference infoBlock;
-            public FWAVSizedReference dataBlock;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct FWAVBlockHeader
-        {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
-            public byte[] magic;
-            public uint size;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct FWAVInfoBlockHeader
-        {
-            public FWAVBlockHeader header;
-            public byte encoding;
-            public byte loop;
-            public ushort padding;
-            public uint sampleRate;
-            public uint loopStartFrame;
-            public uint loopEndFrame;
-            public uint reserved;
-            public uint channelCount;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
-            public FWAVReference[] channelRefs;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct FWAVChannelInfo
-        {
-            public FWAVReference samples;
-            public FWAVReference adpcmInfo;
-            public uint reserved;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct FWAVDataBlock
-        {
-            public FWAVBlockHeader header;
-        }
-
-        private class FWAV
-        {
-            public uint channels;
-            public uint sampleRate;
-            public uint loopEndFrame;
-            public uint dataSize;
-            public byte[]? data;
-        }
+        [DllImport("bfwavtool_pcm16.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern void BFWAV_GetLastError(IntPtr buffer, int bufferSize);
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
+            if (!_dllLoaded)
+            {
+                ConversionError?.Invoke(this, "无法加载bfwavtool.dll");
+                OnConversionFailed("无法加载bfwavtool.dll");
+                return;
+            }
+
             if (!Directory.Exists(directoryPath))
             {
                 ConversionError?.Invoke(this, $"源文件夹{directoryPath}不存在");
@@ -117,7 +81,7 @@ namespace super_toolbox
                 return;
             }
 
-            ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
+            ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}(PCM16编码)");
 
             var wavFiles = Directory.GetFiles(directoryPath, "*.wav", SearchOption.AllDirectories)
                 .OrderBy(f =>
@@ -144,11 +108,10 @@ namespace super_toolbox
                     ConversionProgress?.Invoke(this, $"正在处理:{fileName}.wav");
 
                     string fileDirectory = Path.GetDirectoryName(wavFilePath) ?? string.Empty;
+                    string bfwavFile = Path.Combine(fileDirectory, $"{fileName}.bfwav");
 
                     try
                     {
-                        string bfwavFile = Path.Combine(fileDirectory, $"{fileName}.bfwav");
-
                         if (File.Exists(bfwavFile))
                             File.Delete(bfwavFile);
 
@@ -158,7 +121,7 @@ namespace super_toolbox
                         if (conversionSuccess && File.Exists(bfwavFile))
                         {
                             successCount++;
-                            ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(bfwavFile)}");
+                            ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(bfwavFile)}(PCM16)");
                             OnFileConverted(bfwavFile);
                         }
                         else
@@ -176,11 +139,11 @@ namespace super_toolbox
 
                 if (successCount > 0)
                 {
-                    ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件");
+                    ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件(PCM16)");
                 }
                 else
                 {
-                    ConversionProgress?.Invoke(this, "转换完成,但未成功转换任何文件");
+                    ConversionProgress?.Invoke(this, "转换完成,但未成功转换任何文件(PCM16)");
                 }
 
                 OnConversionCompleted();
@@ -203,47 +166,13 @@ namespace super_toolbox
             {
                 ConversionProgress?.Invoke(this, $"读取wav文件:{Path.GetFileName(wavFilePath)}");
 
-                var waveReader = new WaveReader();
-                AudioData audioData;
+                int result = BFWAV_Encode(wavFilePath, bfwavFilePath, BFWAV_ENCODING_PCM16, false, 0, 0, 0);
 
-                using (var wavStream = File.OpenRead(wavFilePath))
+                if (result != 0)
                 {
-                    audioData = waveReader.Read(wavStream);
+                    string errorMsg = GetLastError();
+                    throw new Exception($"编码失败:{errorMsg}");
                 }
-
-                if (audioData == null)
-                {
-                    throw new InvalidOperationException("无法读取wav音频数据");
-                }
-
-                ConversionProgress?.Invoke(this, $"转换为bfwav格式:{Path.GetFileName(bfwavFilePath)}");
-
-                var pcm16 = audioData.GetFormat<Pcm16Format>();
-                var channelCount = pcm16.ChannelCount;
-                var sampleCount = pcm16.SampleCount;
-                var audioChannels = pcm16.Channels;
-
-                FWAV fwav = new FWAV();
-                fwav.channels = (uint)channelCount;
-                fwav.sampleRate = (uint)pcm16.SampleRate;
-                fwav.loopEndFrame = (uint)sampleCount;
-
-                fwav.dataSize = (uint)(sampleCount * fwav.channels * 1);
-                fwav.data = new byte[fwav.dataSize];
-
-                for (int ch = 0; ch < channelCount; ch++)
-                {
-                    short[] channelData = audioChannels[ch];
-                    for (int i = 0; i < sampleCount; i++)
-                    {
-                        int dstIdx = (ch * sampleCount + i) * 1;
-                        short sample = channelData[i];
-                        fwav.data[dstIdx] = (byte)((sample >> 8) & 0xFF);
-                    }
-                }
-
-                byte[] bfwavData = BuildBfwav(fwav);
-                File.WriteAllBytes(bfwavFilePath, bfwavData);
 
                 return true;
             }
@@ -258,151 +187,18 @@ namespace super_toolbox
             }
         }
 
-        private byte[] BuildBfwav(FWAV fwav)
+        private string GetLastError()
         {
-            uint headerSize = (uint)((Marshal.SizeOf<FWAVHeader>() + 0x1F) & ~0x1F);
-
-            uint infoBaseSize = (uint)Marshal.SizeOf<FWAVInfoBlockHeader>();
-            uint refTableSize = (uint)(Marshal.SizeOf<FWAVReference>() * fwav.channels);
-            uint channelInfoSize = (uint)(Marshal.SizeOf<FWAVChannelInfo>() * fwav.channels);
-
-            uint infoSize = infoBaseSize + refTableSize + channelInfoSize;
-            infoSize = (uint)((infoSize + 0x1F) & ~0x1F);
-
-            uint dataBlockHeaderSize = (uint)Marshal.SizeOf<FWAVDataBlock>();
-            uint dataBlockAlignedSize = (uint)((dataBlockHeaderSize + 0x1F) & ~0x1F);
-            uint dataStartOffset = dataBlockAlignedSize - dataBlockHeaderSize;
-
-            uint dataBlockTotalSize = dataBlockAlignedSize + fwav.dataSize;
-
-            uint outputSize = headerSize + infoSize + dataBlockTotalSize;
-
-            byte[] output = new byte[outputSize];
-            int offset = 0;
-
-            FWAVHeader header = new FWAVHeader();
-            header.magic = System.Text.Encoding.ASCII.GetBytes(FWAV_MAGIC);
-            header.endianness = FWAV_ENDIANNESS_BIG;
-            header.headerSize = (ushort)headerSize;
-            header.version = FWAV_VERSION;
-            header.fileSize = outputSize;
-            header.numBlocks = 2;
-            header.reserved = 0;
-
-            header.infoBlock = new FWAVSizedReference();
-            header.infoBlock.ref_ = new FWAVReference();
-            header.infoBlock.ref_.typeId = (ushort)FWAV_REF_INFO_BLOCK;
-            header.infoBlock.ref_.padding = 0;
-            header.infoBlock.ref_.offset = headerSize;
-            header.infoBlock.size = infoSize;
-
-            header.dataBlock = new FWAVSizedReference();
-            header.dataBlock.ref_ = new FWAVReference();
-            header.dataBlock.ref_.typeId = (ushort)FWAV_REF_DATA_BLOCK;
-            header.dataBlock.ref_.padding = 0;
-            header.dataBlock.ref_.offset = headerSize + infoSize;
-            header.dataBlock.size = dataBlockTotalSize;
-
-            offset += WriteStructure(output, offset, header);
-            offset = (int)headerSize;
-
-            FWAVBlockHeader infoBlockHeader = new FWAVBlockHeader();
-            infoBlockHeader.magic = System.Text.Encoding.ASCII.GetBytes(FWAV_BLOCK_MAGIC_INFO);
-            infoBlockHeader.size = infoSize;
-            offset += WriteStructure(output, offset, infoBlockHeader);
-
-            offset += WriteValue(output, offset, (byte)FWAV_ENCODING_PCM8);
-            offset += WriteValue(output, offset, (byte)0);
-            offset += WriteValue(output, offset, (ushort)0);
-            offset += WriteValue(output, offset, fwav.sampleRate);
-            offset += WriteValue(output, offset, 0u);
-            offset += WriteValue(output, offset, fwav.loopEndFrame);
-            offset += WriteValue(output, offset, 0u);
-            offset += WriteValue(output, offset, fwav.channels);
-
-            uint channelRefBaseOffset = (uint)(Marshal.SizeOf<FWAVReferenceTable>() +
-                                              (fwav.channels * Marshal.SizeOf<FWAVReference>()));
-
-            for (uint c = 0; c < fwav.channels; c++)
-            {
-                FWAVReference channelRef = new FWAVReference();
-                channelRef.typeId = (ushort)FWAV_REF_CHANNEL_INFO;
-                channelRef.padding = 0;
-                channelRef.offset = channelRefBaseOffset + (c * (uint)Marshal.SizeOf<FWAVChannelInfo>());
-                offset += WriteStructure(output, offset, channelRef);
-            }
-
-            for (uint c = 0; c < fwav.channels; c++)
-            {
-                FWAVChannelInfo channelInfo = new FWAVChannelInfo();
-
-                channelInfo.samples = new FWAVReference();
-                channelInfo.samples.typeId = (ushort)FWAV_REF_SAMPLE_DATA;
-                channelInfo.samples.padding = 0;
-                channelInfo.samples.offset = dataStartOffset + (c * (fwav.dataSize / fwav.channels));
-
-                channelInfo.adpcmInfo = new FWAVReference();
-                channelInfo.adpcmInfo.typeId = 0;
-                channelInfo.adpcmInfo.padding = 0;
-                channelInfo.adpcmInfo.offset = 0xFFFFFFFF;
-
-                channelInfo.reserved = 0;
-
-                offset += WriteStructure(output, offset, channelInfo);
-            }
-
-            while ((offset % 0x20) != 0)
-            {
-                offset += WriteValue(output, offset, (byte)0);
-            }
-
-            offset = (int)(headerSize + infoSize);
-
-            FWAVBlockHeader dataBlockHeader = new FWAVBlockHeader();
-            dataBlockHeader.magic = System.Text.Encoding.ASCII.GetBytes(FWAV_BLOCK_MAGIC_DATA);
-            dataBlockHeader.size = dataBlockTotalSize;
-            offset += WriteStructure(output, offset, dataBlockHeader);
-
-            offset = (int)(headerSize + infoSize + dataBlockAlignedSize);
-
-            if (fwav.data != null)
-            {
-                Array.Copy(fwav.data, 0, output, offset, (int)fwav.dataSize);
-            }
-
-            return output;
-        }
-
-        private int WriteStructure<T>(byte[] buffer, int offset, T structure) where T : struct
-        {
-            int size = Marshal.SizeOf<T>();
-            IntPtr ptr = Marshal.AllocHGlobal(size);
+            IntPtr ptr = Marshal.AllocHGlobal(512);
             try
             {
-                Marshal.StructureToPtr(structure, ptr, false);
-                Marshal.Copy(ptr, buffer, offset, size);
+                BFWAV_GetLastError(ptr, 512);
+                return Marshal.PtrToStringAnsi(ptr) ?? "未知错误";
             }
             finally
             {
                 Marshal.FreeHGlobal(ptr);
             }
-            return size;
-        }
-
-        private int WriteValue<T>(byte[] buffer, int offset, T value) where T : unmanaged
-        {
-            int size = Marshal.SizeOf<T>();
-            IntPtr ptr = Marshal.AllocHGlobal(size);
-            try
-            {
-                Marshal.StructureToPtr(value, ptr, false);
-                Marshal.Copy(ptr, buffer, offset, size);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(ptr);
-            }
-            return size;
         }
     }
 }
