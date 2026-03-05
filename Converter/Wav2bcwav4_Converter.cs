@@ -5,9 +5,9 @@ using System.Text.RegularExpressions;
 
 namespace super_toolbox
 {
-    public class Wav2bcwav2_Converter : BaseExtractor
+    public class Wav2bcwav4_Converter : BaseExtractor
     {
-        private const int CWAV_ENCODING_PCM16 = 1;
+        private const int CWAV_ENCODING_IMA_ADPCM = 3;
         private static string? _tempDllPath;
         private static bool _dllLoaded;
 
@@ -15,11 +15,11 @@ namespace super_toolbox
         public new event EventHandler<string>? ConversionProgress;
         public new event EventHandler<string>? ConversionError;
 
-        static Wav2bcwav2_Converter()
+        static Wav2bcwav4_Converter()
         {
             try
             {
-                _tempDllPath = LoadEmbeddedDll("embedded.bcwavtool.dll", "bcwavtool_pcm16.dll");
+                _tempDllPath = LoadEmbeddedDll("embedded.bcwavtool.dll", "bcwavtool_ima.dll");
                 _dllLoaded = true;
             }
             catch (Exception ex)
@@ -52,7 +52,7 @@ namespace super_toolbox
             return tempPath;
         }
 
-        [DllImport("bcwavtool_pcm16.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("bcwavtool_ima.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern int BCWAV_Encode(
             string inputFile,
             string outputFile,
@@ -61,7 +61,7 @@ namespace super_toolbox
             uint loopStart,
             uint loopEnd);
 
-        [DllImport("bcwavtool_pcm16.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("bcwavtool_ima.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern void BCWAV_GetLastError(IntPtr buffer, int bufferSize);
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
@@ -80,7 +80,7 @@ namespace super_toolbox
                 return;
             }
 
-            ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}(PCM16编码)");
+            ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}(IMA-ADPCM编码)");
 
             var wavFiles = Directory.GetFiles(directoryPath, "*.wav", SearchOption.AllDirectories)
                 .OrderBy(f =>
@@ -120,7 +120,7 @@ namespace super_toolbox
                         if (conversionSuccess && File.Exists(bcwavFile))
                         {
                             successCount++;
-                            ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(bcwavFile)}(PCM16)");
+                            ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(bcwavFile)}(IMA-ADPCM)");
                             OnFileConverted(bcwavFile);
                         }
                         else
@@ -138,11 +138,11 @@ namespace super_toolbox
 
                 if (successCount > 0)
                 {
-                    ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件(PCM16)");
+                    ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件(IMA-ADPCM)");
                 }
                 else
                 {
-                    ConversionProgress?.Invoke(this, "转换完成,但未成功转换任何文件(PCM16)");
+                    ConversionProgress?.Invoke(this, "转换完成,但未成功转换任何文件(IMA-ADPCM)");
                 }
 
                 OnConversionCompleted();
@@ -165,7 +165,7 @@ namespace super_toolbox
             {
                 ConversionProgress?.Invoke(this, $"读取wav文件:{Path.GetFileName(wavFilePath)}");
 
-                int result = BCWAV_Encode(wavFilePath, bcwavFilePath, CWAV_ENCODING_PCM16, false, 0, 0);
+                int result = BCWAV_Encode(wavFilePath, bcwavFilePath, CWAV_ENCODING_IMA_ADPCM, false, 0, 0);
 
                 if (result != 0)
                 {
