@@ -1,17 +1,72 @@
-using VGAudio.Containers.NintendoWare;
-using VGAudio.Containers.Wave;
-using VGAudio.Formats;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace super_toolbox
 {
     public class Bcwav2wav_Converter : BaseExtractor
     {
+        private static string? _tempDllPath;
+        private static bool _dllLoaded;
+
         public new event EventHandler<string>? ConversionStarted;
         public new event EventHandler<string>? ConversionProgress;
         public new event EventHandler<string>? ConversionError;
 
+        static Bcwav2wav_Converter()
+        {
+            try
+            {
+                _tempDllPath = LoadEmbeddedDll("embedded.bcwavtool.dll", "bcwavtool_decode.dll");
+                _dllLoaded = true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"加载DLL失败:{ex.Message}");
+                _dllLoaded = false;
+            }
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr LoadLibrary(string lpFileName);
+
+        private new static string LoadEmbeddedDll(string resourceName, string outputFileName)
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            string tempPath = Path.Combine(Path.GetTempPath(), outputFileName);
+
+            using (var stream = assembly.GetManifestResourceStream(resourceName))
+            {
+                if (stream == null)
+                    throw new InvalidOperationException($"嵌入式资源{resourceName}未找到");
+
+                using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
+                {
+                    stream.CopyTo(fileStream);
+                }
+            }
+
+            LoadLibrary(tempPath);
+            return tempPath;
+        }
+
+        [DllImport("bcwavtool_decode.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int BCWAV_Decode(
+            string inputFile,
+            string outputFile);
+
+        [DllImport("bcwavtool_decode.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern void BCWAV_GetLastError(IntPtr buffer, int bufferSize);
+
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
+            if (!_dllLoaded)
+            {
+                ConversionError?.Invoke(this, "无法加载bcwavtool.dll");
+                OnConversionFailed("无法加载bcwavtool.dll");
+                return;
+            }
+
             if (!Directory.Exists(directoryPath))
             {
                 ConversionError?.Invoke(this, $"源文件夹{directoryPath}不存在");
@@ -35,11 +90,10 @@ namespace super_toolbox
                     ConversionProgress?.Invoke(this, $"正在处理:{fileName}.bcwav");
 
                     string fileDirectory = Path.GetDirectoryName(bcwavFilePath) ?? string.Empty;
+                    string wavFile = Path.Combine(fileDirectory, $"{fileName}.wav");
 
                     try
                     {
-                        string wavFile = Path.Combine(fileDirectory, $"{fileName}.wav");
-
                         if (File.Exists(wavFile))
                             File.Delete(wavFile);
 
@@ -92,33 +146,14 @@ namespace super_toolbox
         {
             try
             {
-                ConversionProgress?.Invoke(this, $"读取BCWAV文件:{Path.GetFileName(bcwavFilePath)}");
+                ConversionProgress?.Invoke(this, $"解码BCWAV文件:{Path.GetFileName(bcwavFilePath)}");
 
-                var bcwavReader = new BCFstmReader();
-                AudioData audioData;
+                int result = BCWAV_Decode(bcwavFilePath, wavFilePath);
 
-                using (var bcwavStream = File.OpenRead(bcwavFilePath))
+                if (result != 0)
                 {
-                    audioData = bcwavReader.Read(bcwavStream);
-                }
-
-                if (audioData == null)
-                {
-                    throw new InvalidOperationException("无法读取BCWAV音频数据");
-                }
-
-                ConversionProgress?.Invoke(this, $"转换为WAV格式:{Path.GetFileName(wavFilePath)}");
-
-                var waveConfig = new WaveConfiguration
-                {
-                    Codec = WaveCodec.Pcm16Bit
-                };
-
-                var waveWriter = new WaveWriter();
-
-                using (var waveStream = File.Create(wavFilePath))
-                {
-                    waveWriter.WriteToStream(audioData, waveStream, waveConfig);
+                    string errorMsg = GetLastError();
+                    throw new Exception($"解码失败:{errorMsg}");
                 }
 
                 return true;
@@ -131,6 +166,20 @@ namespace super_toolbox
             {
                 ConversionError?.Invoke(this, $"转换错误:{ex.Message}");
                 return false;
+            }
+        }
+
+        private string GetLastError()
+        {
+            IntPtr ptr = Marshal.AllocHGlobal(512);
+            try
+            {
+                BCWAV_GetLastError(ptr, 512);
+                return Marshal.PtrToStringAnsi(ptr) ?? "未知错误";
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
             }
         }
     }
