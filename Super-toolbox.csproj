@@ -10,6 +10,7 @@
 		<NoWarn>MSB3270;MSB3277;MSB3026</NoWarn>
 		<GenerateDependencyFile>false</GenerateDependencyFile>
 		<Configurations>Release</Configurations>
+		<Platforms>AnyCPU</Platforms>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
 		<DebugType>embedded</DebugType>
@@ -132,14 +133,14 @@
 		<EmbeddedResource Include="plugins\AdpcmEncode.exe">
 			<LogicalName>embedded.AdpcmEncode.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\wav2swav.exe">
-			<LogicalName>embedded.wav2swav.exe</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\swav2wav.exe">
-			<LogicalName>embedded.swav2wav.exe</LogicalName>
-		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\libLZX.dll">
 			<LogicalName>embedded.libLZX.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\lopus_tools.dll">
+			<LogicalName>embedded.lopus_tools.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\bcwavtool.dll">
+			<LogicalName>embedded.bcwavtool.dll</LogicalName>
 		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
