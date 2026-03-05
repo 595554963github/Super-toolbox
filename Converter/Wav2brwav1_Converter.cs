@@ -11,7 +11,7 @@ namespace super_toolbox
         public new event EventHandler<string>? ConversionStarted;
         public new event EventHandler<string>? ConversionProgress;
         public new event EventHandler<string>? ConversionError;
-        private const byte RWAV_ENCODING_PCM16 = 1;
+        private const byte RWAV_ENCODING_PCM8 = 0;
         private const string RWAV_MAGIC = "RWAV";
         private const ushort RWAV_ENDIANNESS_BIG = 0xFEFF;
         private const ushort RWAV_VERSION = 0x0102;
@@ -195,7 +195,7 @@ namespace super_toolbox
                 rwav.sampleRate = (uint)pcm16.SampleRate;
                 rwav.sampleCount = (uint)sampleCount;
 
-                rwav.dataSize = (uint)(sampleCount * rwav.channels * 2);
+                rwav.dataSize = (uint)(sampleCount * rwav.channels * 1);
                 rwav.data = new byte[rwav.dataSize];
 
                 for (int ch = 0; ch < channelCount; ch++)
@@ -203,10 +203,9 @@ namespace super_toolbox
                     short[] channelData = audioChannels[ch];
                     for (int i = 0; i < sampleCount; i++)
                     {
-                        int dstIdx = (ch * sampleCount + i) * 2;
+                        int dstIdx = (ch * sampleCount + i);
                         short sample = channelData[i];
-                        rwav.data[dstIdx] = (byte)(sample & 0xFF);
-                        rwav.data[dstIdx + 1] = (byte)((sample >> 8) & 0xFF);
+                        rwav.data[dstIdx] = (byte)((sample >> 8) & 0xFF);
                     }
                 }
 
@@ -266,7 +265,7 @@ namespace super_toolbox
             WriteBytes(output, ref offset, System.Text.Encoding.ASCII.GetBytes("INFO"));
             WriteUInt32BE(output, ref offset, (uint)infoBlockSize);
 
-            WriteByte(output, ref offset, RWAV_ENCODING_PCM16);
+            WriteByte(output, ref offset, RWAV_ENCODING_PCM8);
             WriteByte(output, ref offset, 0);
             WriteByte(output, ref offset, (byte)rwav.channels);
             WriteByte(output, ref offset, 0);
