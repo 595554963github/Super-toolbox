@@ -7,10 +7,6 @@ namespace super_toolbox
         public new event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] VAG_START_MARKER = { 0x56, 0x41, 0x47, 0x70 };
-        private static readonly byte[] VAG_END_MARKER = {
-            0x00, 0x07, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77,
-            0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77
-        };
 
         private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
@@ -52,9 +48,9 @@ namespace super_toolbox
             ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
             var filePaths = Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories)
-                .Where(file => !file.StartsWith(extractedDir, StringComparison.OrdinalIgnoreCase) &&
-                              !Path.GetExtension(file).Equals(".vag", StringComparison.OrdinalIgnoreCase))
-                .ToList();
+            .Where(file => !file.StartsWith(extractedDir, StringComparison.OrdinalIgnoreCase) &&
+            !Path.GetExtension(file).Equals(".vag", StringComparison.OrdinalIgnoreCase))
+            .ToList();
 
             int totalSourceFiles = filePaths.Count;
             int processedSourceFiles = 0;
@@ -85,7 +81,7 @@ namespace super_toolbox
                             if (currentVagStart.HasValue)
                             {
                                 if (ProcessVagSegment(content, currentVagStart.Value, content.Length,
-                                                    filePath, vagCount, extractedDir, extractedFiles))
+                                filePath, vagCount, extractedDir, extractedFiles))
                                 {
                                     totalExtractedFiles++;
                                 }
@@ -103,7 +99,7 @@ namespace super_toolbox
                             else
                             {
                                 if (ProcessVagSegment(content, currentVagStart.Value, vagStartIndex,
-                                                    filePath, vagCount, extractedDir, extractedFiles))
+                                filePath, vagCount, extractedDir, extractedFiles))
                                 {
                                     totalExtractedFiles++;
                                 }
@@ -117,7 +113,7 @@ namespace super_toolbox
                     if (currentVagStart.HasValue)
                     {
                         if (ProcessVagSegment(content, currentVagStart.Value, content.Length,
-                                            filePath, vagCount, extractedDir, extractedFiles))
+                        filePath, vagCount, extractedDir, extractedFiles))
                         {
                             totalExtractedFiles++;
                         }
@@ -143,11 +139,11 @@ namespace super_toolbox
 
             if (totalExtractedFiles > 0)
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，共处理{totalSourceFiles}个源文件，提取出{totalExtractedFiles}个VAG文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,共处理{totalSourceFiles}个源文件,提取出{totalExtractedFiles}个VAG文件");
             }
             else
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，共处理{totalSourceFiles}个源文件，未找到VAG文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,共处理{totalSourceFiles}个源文件,未找到VAG文件");
             }
 
             OnExtractionCompleted();
@@ -161,20 +157,24 @@ namespace super_toolbox
         }
 
         private bool ProcessVagSegment(byte[] content, int start, int end, string filePath, int vagCount,
-                                     string extractedDir, List<string> extractedFiles)
+        string extractedDir, List<string> extractedFiles)
         {
-            int length = end - start;
-            if (length <= VAG_START_MARKER.Length)
+            int defaultLength = end - start;
+            if (defaultLength <= VAG_START_MARKER.Length)
                 return false;
 
-            int actualEnd = FindVagEndPosition(content, start, Math.Min(start + 1024 * 1024, content.Length));
-            if (actualEnd > start)
+            int vagDataSize = GetVagSizeFromHeader(content, start);
+            if (vagDataSize > 0)
             {
-                length = actualEnd - start;
+                int calculatedEnd = start + vagDataSize;
+                if (calculatedEnd <= content.Length)
+                {
+                    defaultLength = vagDataSize;
+                }
             }
 
-            byte[] vagData = new byte[length];
-            Array.Copy(content, start, vagData, 0, length);
+            byte[] vagData = new byte[defaultLength];
+            Array.Copy(content, start, vagData, 0, defaultLength);
 
             string baseFileName = Path.GetFileNameWithoutExtension(filePath);
             string outputFileName = $"{baseFileName}_{vagCount}.vag";
@@ -211,14 +211,22 @@ namespace super_toolbox
             return false;
         }
 
-        private int FindVagEndPosition(byte[] content, int start, int maxEnd)
+        private int GetVagSizeFromHeader(byte[] data, int startIndex)
         {
-            int endMarkerIndex = IndexOf(content, VAG_END_MARKER, start);
-            if (endMarkerIndex != -1)
+            if (startIndex + 16 > data.Length)
+                return -1;
+
+            int size = (data[startIndex + 0x0C] << 24) |
+            (data[startIndex + 0x0D] << 16) |
+            (data[startIndex + 0x0E] << 8) |
+            (data[startIndex + 0x0F]);
+
+            if (size > 0)
             {
-                return endMarkerIndex + VAG_END_MARKER.Length;
+                return size + 48;
             }
-            return Math.Min(maxEnd, content.Length);
+
+            return -1;
         }
     }
 }
