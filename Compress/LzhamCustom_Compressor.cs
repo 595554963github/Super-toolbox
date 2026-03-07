@@ -54,7 +54,7 @@ namespace super_toolbox
                     Directory.CreateDirectory(compressedDir);
 
                     TotalFilesToCompress = filesToProcess.Length;
-                    CompressionStarted?.Invoke(this, $"开始压缩，共{TotalFilesToCompress}个文件");
+                    CompressionStarted?.Invoke(this, $"开始压缩,共{TotalFilesToCompress}个文件");
 
                     foreach (var filePath in filesToProcess)
                     {
@@ -67,7 +67,7 @@ namespace super_toolbox
                         }
                     }
                     OnCompressionCompleted();
-                    CompressionProgress?.Invoke(this, $"压缩完成，共压缩{TotalFilesToCompress}个文件");
+                    CompressionProgress?.Invoke(this, $"压缩完成,共压缩{TotalFilesToCompress}个文件");
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -78,8 +78,8 @@ namespace super_toolbox
             }
             catch (Exception ex)
             {
-                CompressionError?.Invoke(this, $"压缩失败: {ex.Message}");
-                OnCompressionFailed($"压缩失败: {ex.Message}");
+                CompressionError?.Invoke(this, $"压缩失败:{ex.Message}");
+                OnCompressionFailed($"压缩失败:{ex.Message}");
             }
         }
         private bool IsNotLzhamFile(string filePath)
