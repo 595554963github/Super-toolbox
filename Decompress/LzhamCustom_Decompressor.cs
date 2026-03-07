@@ -53,7 +53,7 @@ namespace super_toolbox
                     string decompressedDir = Path.Combine(directoryPath, "Decompressed");
                     Directory.CreateDirectory(decompressedDir);
                     TotalFilesToDecompress = filesToProcess.Length;
-                    DecompressionStarted?.Invoke(this, $"开始解压，共{TotalFilesToDecompress}个文件");
+                    DecompressionStarted?.Invoke(this, $"开始解压,共{TotalFilesToDecompress}个文件");
                     foreach (var filePath in filesToProcess)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
@@ -65,7 +65,7 @@ namespace super_toolbox
                         }
                     }
                     OnDecompressionCompleted();
-                    DecompressionProgress?.Invoke(this, $"解压完成，共解压{TotalFilesToDecompress}个文件");
+                    DecompressionProgress?.Invoke(this, $"解压完成,共解压{TotalFilesToDecompress}个文件");
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
