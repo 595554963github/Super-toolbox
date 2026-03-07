@@ -1,6 +1,5 @@
-using System.Diagnostics;
 using System.Reflection;
-using System.Text;
+using System.Runtime.InteropServices;
 
 namespace super_toolbox
 {
@@ -10,24 +9,38 @@ namespace super_toolbox
         public new event EventHandler<string>? ExtractionProgress;
         public new event EventHandler<string>? ExtractionError;
 
-        private static string _tempExePath;
+        private static string _tempDllPath;
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate void ProgressCallback(int current, int total, string filename);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr LoadLibrary(string lpFileName);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool FreeLibrary(IntPtr hModule);
+
+        private delegate int DecryptWiiUFilesDelegate(string inputDir, string outputDir, ProgressCallback callback);
 
         static Wiiu_h3appExtractor()
         {
             string tempDir = Path.Combine(Path.GetTempPath(), "supertoolbox_temp");
             Directory.CreateDirectory(tempDir);
-            _tempExePath = Path.Combine(tempDir, "cdecrypt.exe");
+            _tempDllPath = Path.Combine(tempDir, "cdecrypt.dll");
 
-            if (!File.Exists(_tempExePath))
+            if (!File.Exists(_tempDllPath))
             {
-                using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("embedded.cdecrypt.exe"))
+                using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("embedded.cdecrypt.dll"))
                 {
                     if (stream == null)
-                        throw new FileNotFoundException("嵌入的EXE资源未找到");
+                        throw new FileNotFoundException("嵌入的DLL资源未找到");
 
                     byte[] buffer = new byte[stream.Length];
                     stream.Read(buffer, 0, buffer.Length);
-                    File.WriteAllBytes(_tempExePath, buffer);
+                    File.WriteAllBytes(_tempDllPath, buffer);
                 }
             }
         }
@@ -45,115 +58,95 @@ namespace super_toolbox
                 OnExtractionFailed($"源文件夹{directoryPath}不存在");
                 return;
             }
-            ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
-            var originalFiles = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories).ToList();
-            var sourceFiles = originalFiles
-                .Where(file => file.EndsWith(".app", StringComparison.OrdinalIgnoreCase) ||
-                              file.EndsWith(".h3", StringComparison.OrdinalIgnoreCase) ||
-                              file.EndsWith(".tik", StringComparison.OrdinalIgnoreCase) ||
-                              file.EndsWith(".tmd", StringComparison.OrdinalIgnoreCase) ||
-                              file.EndsWith(".cert", StringComparison.OrdinalIgnoreCase))
-                .ToList();
-            int totalSourceFiles = sourceFiles.Count;
-            if (totalSourceFiles == 0)
-            {
-                ExtractionError?.Invoke(this, "目录不包含有效的Wii U游戏文件(缺少.app/.h3/.tik/.tmd/.cert文件)");
-                OnExtractionFailed("目录不包含有效的Wii U游戏文件(缺少.app/.h3/.tik/.tmd/.cert文件)");
-                return;
-            }
-            ExtractionProgress?.Invoke(this, $"找到{totalSourceFiles}个游戏源文件");
-            var extractedFiles = new List<string>();
-            var fileWatcher = new FileSystemWatcher
-            {
-                Path = directoryPath,
-                IncludeSubdirectories = true,
-                EnableRaisingEvents = true,
-                NotifyFilter = NotifyFilters.FileName | NotifyFilters.CreationTime
-            };
-            fileWatcher.Created += (sender, e) =>
-            {
-                if (!originalFiles.Contains(e.FullPath) &&
-                    !e.FullPath.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase) &&
-                    !e.FullPath.Contains("\\temp\\"))
-                {
-                    lock (extractedFiles)
-                    {
-                        if (!extractedFiles.Contains(e.FullPath))
-                        {
-                            extractedFiles.Add(e.FullPath);
-                            TotalFilesToExtract = extractedFiles.Count;
-                            ExtractionProgress?.Invoke(this, $"检测到新文件({extractedFiles.Count}): {Path.GetFileName(e.FullPath)}");
-                            OnFileExtracted(e.FullPath);
-                        }
-                    }
-                }
-            };
+
+            IntPtr hModule = IntPtr.Zero;
+            FileSystemWatcher? fileWatcher = null;
+            List<string> extractedFiles = new List<string>();
 
             try
             {
-                ExtractionProgress?.Invoke(this, "正在使用 cdecrypt.exe 处理游戏文件...");
-                var process = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = _tempExePath,
-                        Arguments = $"\"{directoryPath}\"",
-                        WorkingDirectory = directoryPath,
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    }
-                };
-                StringBuilder output = new StringBuilder();
-                StringBuilder error = new StringBuilder();
-                process.OutputDataReceived += (sender, e) => {
-                    if (!string.IsNullOrEmpty(e.Data))
-                    {
-                        output.AppendLine(e.Data);
-                        ExtractionProgress?.Invoke(this, $"cdecrypt:{e.Data}");
-                    }
-                };
-                process.ErrorDataReceived += (sender, e) => {
-                    if (!string.IsNullOrEmpty(e.Data))
-                    {
-                        error.AppendLine(e.Data);
-                        ExtractionError?.Invoke(this, $"cdecrypt错误:{e.Data}");
-                    }
-                };
-                process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-                await Task.Run(() =>
-                {
-                    while (!process.HasExited)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        Thread.Sleep(100);
-                    }
-                }, cancellationToken);
+                ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
-                if (process.ExitCode != 0)
+                var originalFiles = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories).ToList();
+
+                fileWatcher = new FileSystemWatcher
                 {
-                    ExtractionError?.Invoke(this, $"cdecrypt.exe处理失败，退出代码:{process.ExitCode}");
-                    OnExtractionFailed($"cdecrypt.exe处理失败，退出代码:{process.ExitCode}");
+                    Path = directoryPath,
+                    IncludeSubdirectories = true,
+                    EnableRaisingEvents = true,
+                    NotifyFilter = NotifyFilters.FileName | NotifyFilters.CreationTime
+                };
+
+                fileWatcher.Created += (sender, e) =>
+                {
+                    if (!originalFiles.Contains(e.FullPath) &&
+                        !e.FullPath.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase))
+                    {
+                        lock (extractedFiles)
+                        {
+                            if (!extractedFiles.Contains(e.FullPath))
+                            {
+                                extractedFiles.Add(e.FullPath);
+                                TotalFilesToExtract = extractedFiles.Count;
+                                ExtractionProgress?.Invoke(this, $"检测到新文件({extractedFiles.Count}): {Path.GetFileName(e.FullPath)}");
+                                OnFileExtracted(e.FullPath);
+                            }
+                        }
+                    }
+                };
+
+                hModule = LoadLibrary(_tempDllPath);
+                if (hModule == IntPtr.Zero)
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    ExtractionError?.Invoke(this, $"加载DLL失败,错误码:{error}");
+                    OnExtractionFailed($"加载DLL失败,错误码:{error}");
                     return;
                 }
+
+                IntPtr pProc = GetProcAddress(hModule, "DecryptWiiUFiles");
+                if (pProc == IntPtr.Zero)
+                {
+                    ExtractionError?.Invoke(this, "找不到函数入口DecryptWiiUFiles");
+                    OnExtractionFailed("找不到函数入口DecryptWiiUFiles");
+                    return;
+                }
+
+                var decryptFunc = (DecryptWiiUFilesDelegate)Marshal.GetDelegateForFunctionPointer(pProc, typeof(DecryptWiiUFilesDelegate));
+
+                ProgressCallback callback = (current, total, filename) =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    ExtractionProgress?.Invoke(this, $"进度:{current}/{total}");
+                };
+
+                int result = await Task.Run(() => decryptFunc(directoryPath, directoryPath, callback), cancellationToken);
+
+                if (result != 0)
+                {
+                    ExtractionError?.Invoke(this, $"解密处理失败,返回码:{result}");
+                    OnExtractionFailed($"解密处理失败,返回码:{result}");
+                    return;
+                }
+
                 await Task.Delay(1000, cancellationToken);
-                var allFilesAfterExtraction = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories).ToList();
-                var finalExtractedFiles = allFilesAfterExtraction.Except(originalFiles).ToList();
+
+                var finalFiles = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories)
+                    .Except(originalFiles)
+                    .ToList();
+
                 lock (extractedFiles)
                 {
-                    foreach (var file in finalExtractedFiles)
+                    foreach (var file in finalFiles)
                     {
                         if (!extractedFiles.Contains(file))
                         {
                             extractedFiles.Add(file);
-                            ExtractionProgress?.Invoke(this, $"添加遗漏文件:{Path.GetFileName(file)}");
                         }
                     }
                 }
-                ExtractionProgress?.Invoke(this, $"处理完成，共处理{totalSourceFiles}个游戏源文件，提取出{extractedFiles.Count}个文件");
+
+                ExtractionProgress?.Invoke(this, $"处理完成,提取出{extractedFiles.Count}个文件");
                 OnExtractionCompleted();
             }
             catch (OperationCanceledException)
@@ -169,8 +162,16 @@ namespace super_toolbox
             }
             finally
             {
-                fileWatcher.EnableRaisingEvents = false;
-                fileWatcher.Dispose();
+                if (fileWatcher != null)
+                {
+                    fileWatcher.EnableRaisingEvents = false;
+                    fileWatcher.Dispose();
+                }
+
+                if (hModule != IntPtr.Zero)
+                {
+                    FreeLibrary(hModule);
+                }
             }
         }
     }
