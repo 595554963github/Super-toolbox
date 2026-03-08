@@ -9,12 +9,11 @@ namespace super_toolbox
         public new event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] XWMA_PATTERN = { 0x12, 0x00, 0x00, 0x00, 0x61, 0x01 };
-        private static readonly byte[] RIFX_VALID_PATTERN_1 = { 0x00, 0x00, 0x00, 0x20, 0x01, 0x65, 0x00, 0x10 };
-        private static readonly byte[] RIFX_VALID_PATTERN_2 = { 0x00, 0x00, 0x00, 0x40, 0x01, 0x66, 0x00, 0x01 };
         private const long LARGE_FILE_THRESHOLD = 2L * 1024 * 1024 * 1024;
         private const long MEMORY_MAP_BUFFER_SIZE = 256 * 1024 * 1024;
 
         private int fileCounter = 0;
+
         public async Task<int> ProcessFileAsync(string filePath, string outputDir, CancellationToken cancellationToken = default)
         {
             List<string> extractedFiles = new List<string>();
@@ -33,6 +32,7 @@ namespace super_toolbox
 
             return count;
         }
+
         private async Task<int> ProcessLargeFileWithMemoryMapAsync(string filePath, string extractedDir, List<string> extractedFiles, CancellationToken cancellationToken)
         {
             int extractedCount = 0;
@@ -132,95 +132,7 @@ namespace super_toolbox
             }
             return extractedCount;
         }
-        private int CountAudioInBuffer(byte[] buffer, string sourceFilePath)
-        {
-            int count = 0;
-            int position = 0;
 
-            while (position < buffer.Length - 8)
-            {
-                if (buffer[position] == 0x52 && buffer[position + 1] == 0x49 && buffer[position + 2] == 0x46)
-                {
-                    bool isRiff = buffer[position + 3] == 0x46;
-                    bool isRifx = buffer[position + 3] == 0x58;
-
-                    if (isRiff)
-                    {
-                        if (position + 12 < buffer.Length)
-                        {
-                            if (buffer[position + 8] == 0x57 && buffer[position + 9] == 0x41 &&
-                                buffer[position + 10] == 0x56 && buffer[position + 11] == 0x45)
-                            {
-                                string? format = IdentifyFormatFast(buffer, position);
-                                if (format != null)
-                                {
-                                    count++;
-                                }
-                            }
-                            else if (buffer[position + 8] == 0x58 && buffer[position + 9] == 0x57 &&
-                                     buffer[position + 10] == 0x4D && buffer[position + 11] == 0x41)
-                            {
-                                count++;
-                            }
-                        }
-                    }
-                    else if (isRifx)
-                    {
-                        if (position + 16 < buffer.Length)
-                        {
-                            bool isValid = true;
-                            for (int i = 0; i < RIFX_VALID_PATTERN_1.Length; i++)
-                            {
-                                if (position + 0x10 + i >= buffer.Length ||
-                                    buffer[position + 0x10 + i] != RIFX_VALID_PATTERN_1[i])
-                                {
-                                    isValid = false;
-                                    break;
-                                }
-                            }
-
-                            if (!isValid)
-                            {
-                                isValid = true;
-                                for (int i = 0; i < RIFX_VALID_PATTERN_2.Length; i++)
-                                {
-                                    if (position + 0x10 + i >= buffer.Length ||
-                                        buffer[position + 0x10 + i] != RIFX_VALID_PATTERN_2[i])
-                                    {
-                                        isValid = false;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (!isValid && position + 0x18 < buffer.Length)
-                            {
-                                byte[] pattern3 = new byte[] { 0x00, 0x00, 0x00, 0x28, 0xFF, 0xFF, 0x00, 0x01 };
-                                Span<byte> magic = new Span<byte>(buffer, position + 0x10, 8);
-                                if (magic.SequenceEqual(pattern3))
-                                {
-                                    isValid = true;
-                                }
-                            }
-
-                            if (isValid)
-                            {
-                                count++;
-                            }
-                        }
-                    }
-
-                    int chunkSize = BitConverter.ToInt32(buffer, position + 4);
-                    position += chunkSize + 8;
-                }
-                else
-                {
-                    position++;
-                }
-            }
-
-            return count;
-        }
         private int ProcessRiffHeaderFast(byte[] buffer, int position, long bufferOffset, string sourceFilePath, string outputDir, List<string> extractedFiles, int audioIndex)
         {
             if (position + 12 >= buffer.Length)
@@ -267,10 +179,13 @@ namespace super_toolbox
                 return 0;
 
             string baseName = Path.GetFileNameWithoutExtension(sourceFilePath);
+            string fileName = extractedFiles.Count == 0
+                ? $"{baseName}.{format}"
+                : $"{baseName}_{audioIndex + 1}.{format}";
 
-            int totalAudioCount = CountAudioInBuffer(buffer, sourceFilePath);
+            string filePath = Path.Combine(outputDir, fileName);
 
-            SaveAudioFileFast(buffer, position, totalSize, sourceFilePath, outputDir, baseName, format, audioIndex, totalAudioCount, extractedFiles);
+            SaveAudioFileFast(buffer, position, totalSize, filePath, extractedFiles);
             return totalSize;
         }
 
@@ -279,56 +194,27 @@ namespace super_toolbox
             if (position + 16 > buffer.Length)
                 return 0;
 
+            Span<byte> magic = new Span<byte>(buffer, position + 0x10, 6);
             int totalSize = 0;
-            bool isPattern1 = true;
-            bool isPattern2 = true;
-            bool isPattern3 = true;
 
-            for (int i = 0; i < RIFX_VALID_PATTERN_1.Length; i++)
+            if (magic.SequenceEqual(new byte[] { 0x00, 0x00, 0x00, 0x20, 0x01, 0x65 }))
             {
-                if (buffer[position + 0x10 + i] != RIFX_VALID_PATTERN_1[i])
-                {
-                    isPattern1 = false;
-                    break;
-                }
+                totalSize = (buffer[position + 7] << 24) | (buffer[position + 6] << 16) |
+                            (buffer[position + 5] << 8) | buffer[position + 4];
             }
-
-            for (int i = 0; i < RIFX_VALID_PATTERN_2.Length; i++)
+            else if (magic.SequenceEqual(new byte[] { 0x00, 0x00, 0x00, 0x40, 0x01, 0x66 }))
             {
-                if (buffer[position + 0x10 + i] != RIFX_VALID_PATTERN_2[i])
-                {
-                    isPattern2 = false;
-                    break;
-                }
+                totalSize = (buffer[position + 7] << 24) | (buffer[position + 6] << 16) |
+                            (buffer[position + 5] << 8) | buffer[position + 4];
             }
-
-            byte[] pattern3 = new byte[] { 0x00, 0x00, 0x00, 0x28, 0xFF, 0xFF, 0x00, 0x01 };
-            Span<byte> magic = new Span<byte>(buffer, position + 0x10, 8);
-
-            if (!magic.SequenceEqual(pattern3))
+            else if (magic.SequenceEqual(new byte[] { 0x00, 0x00, 0x00, 0x28, 0xFF, 0xFF }))
             {
-                isPattern3 = false;
-            }
-
-            if (!isPattern1 && !isPattern2 && !isPattern3)
-                return 0;
-
-            if (isPattern3)
-            {
-                totalSize =
-                    (buffer[position + 4] << 24) |
-                    (buffer[position + 5] << 16) |
-                    (buffer[position + 6] << 8) |
-                    buffer[position + 7];
-                totalSize += 8;
+                totalSize = ((buffer[position + 4] << 24) | (buffer[position + 5] << 16) |
+                            (buffer[position + 6] << 8) | buffer[position + 7]) + 8;
             }
             else
             {
-                totalSize =
-                    (buffer[position + 7] << 24) |
-                    (buffer[position + 6] << 16) |
-                    (buffer[position + 5] << 8) |
-                    buffer[position + 4];
+                return 0;
             }
 
             if (totalSize <= 0)
@@ -338,31 +224,31 @@ namespace super_toolbox
                 return 0;
 
             string baseName = Path.GetFileNameWithoutExtension(sourceFilePath);
+            string fileName = extractedFiles.Count == 0
+                ? $"{baseName}.wem"
+                : $"{baseName}_{audioIndex + 1}.wem";
 
-            int totalAudioCount = CountAudioInBuffer(buffer, sourceFilePath);
+            string filePath = Path.Combine(outputDir, fileName);
 
-            SaveAudioFileFast(buffer, position, totalSize, sourceFilePath, outputDir, baseName, "wem", audioIndex, totalAudioCount, extractedFiles);
+            SaveAudioFileFast(buffer, position, totalSize, filePath, extractedFiles);
             return totalSize;
         }
 
-        private void SaveAudioFileFast(byte[] data, int offset, int length, string sourceFilePath, string outputDir, string baseName, string format, int audioIndex, int totalExtractedCount, List<string> extractedFiles)
+        private void SaveAudioFileFast(byte[] data, int offset, int length, string filePath, List<string> extractedFiles)
         {
             try
             {
-                Directory.CreateDirectory(outputDir);
-
-                string fileName;
-                if (totalExtractedCount == 1)
+                if (string.IsNullOrEmpty(filePath))
                 {
-                    fileName = $"{baseName}.{format}";
-                }
-                else
-                {
-
-                    fileName = $"{baseName}_{audioIndex + 1}.{format}";
+                    ExtractionError?.Invoke(this, "保存文件时路径为空");
+                    return;
                 }
 
-                string filePath = Path.Combine(outputDir, fileName);
+                string? directory = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
 
                 using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, false);
                 fs.Write(data, offset, length);
@@ -372,7 +258,7 @@ namespace super_toolbox
             }
             catch (Exception ex)
             {
-                ExtractionError?.Invoke(this, $"写入文件时出错:{ex.Message}");
+                ExtractionError?.Invoke(this, $"写入文件{filePath}时出错:{ex.Message}");
             }
         }
 
@@ -381,42 +267,42 @@ namespace super_toolbox
             if (buffer.Length - position < 0x18)
                 return null;
 
-            Span<byte> magic = new Span<byte>(buffer, position + 0x10, 8);
+            Span<byte> magic = new Span<byte>(buffer, position + 0x10, 6);
 
-            if (magic.SequenceEqual(new byte[] { 0x20, 0x00, 0x00, 0x00, 0x70, 0x02, 0x02, 0x00 }))
+            if (magic.SequenceEqual(new byte[] { 0x20, 0x00, 0x00, 0x00, 0x70, 0x02 }))
                 return "at3";
 
-            if (magic.Slice(0, 6).SequenceEqual(new byte[] { 0x34, 0x00, 0x00, 0x00, 0xFE, 0xFF }))
+            if (magic.SequenceEqual(new byte[] { 0x34, 0x00, 0x00, 0x00, 0xFE, 0xFF }))
                 return "at9";
 
-            if (magic.SequenceEqual(new byte[] { 0x34, 0x00, 0x00, 0x00, 0x66, 0x01, 0x06, 0x00 }))
+            if (magic.SequenceEqual(new byte[] { 0x34, 0x00, 0x00, 0x00, 0x66, 0x01 }))
                 return "xma";
 
-            if (magic.SequenceEqual(new byte[] { 0x20, 0x00, 0x00, 0x00, 0x65, 0x01, 0x10, 0x00 }))
+            if (magic.SequenceEqual(new byte[] { 0x14, 0x00, 0x00, 0x00, 0x69, 0x00 }))
                 return "xma";
 
-            if (magic.SequenceEqual(new byte[] { 0x14, 0x00, 0x00, 0x00, 0x11, 0x00, 0x02, 0x00 }))
-                return "pcm";//暂定，由于从未见过这种格式，尝试用pcm、adpcm、imaadpcm、wav、xma、xwma都能正常播放，一下子让我不知道用什么后缀名了，foobar2000显示IMA 4-bit ADPCM或者微软4-bit IMA ADPCM
-
-            if (magic.SequenceEqual(new byte[] { 0x34, 0x00, 0x00, 0x00, 0x66, 0x01, 0x02, 0x00 }))
+            if (magic.SequenceEqual(new byte[] { 0x20, 0x00, 0x00, 0x00, 0x65, 0x01 }))
                 return "xma";
 
-            if (magic.SequenceEqual(new byte[] { 0x32, 0x00, 0x00, 0x00, 0x02, 0x00, 0x02, 0x00 }))
-                return "xwm";//暂时保存为xwm吧,这种文件无论是wav、xma、xwm还是xwma使用foobar2000都能识别和播放,官方的AdpcmEncode显示输入wav,输出还是wav,我尼玛...
-                             //微软你换个格式会死吗?
-            if (magic.SequenceEqual(new byte[] { 0x42, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x02, 0x00 }))
+            if (magic.SequenceEqual(new byte[] { 0x14, 0x00, 0x00, 0x00, 0x11, 0x00 }))
+                return "pcm";
+
+            if (magic.SequenceEqual(new byte[] { 0x32, 0x00, 0x00, 0x00, 0x02, 0x00 }))
+                return "xwm";
+
+            if (magic.SequenceEqual(new byte[] { 0x42, 0x00, 0x00, 0x00, 0xFF, 0xFF }))
                 return "wem";
 
-            if (magic.Slice(0, 6).SequenceEqual(new byte[] { 0x18, 0x00, 0x00, 0x00, 0x02, 0x00 }))
+            if (magic.SequenceEqual(new byte[] { 0x18, 0x00, 0x00, 0x00, 0x02, 0x00 }))
                 return "wem";
 
-            if (magic.SequenceEqual(new byte[] { 0x18, 0x00, 0x00, 0x00, 0x11, 0x83, 0x02, 0x00 }))
+            if (magic.SequenceEqual(new byte[] { 0x18, 0x00, 0x00, 0x00, 0x11, 0x83 }))
                 return "wem";
 
-            if (magic.SequenceEqual(new byte[] { 0x18, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x02, 0x00 }))
+            if (magic.SequenceEqual(new byte[] { 0x18, 0x00, 0x00, 0x00, 0xFE, 0xFF }))
                 return "wem";
 
-            if (magic.Slice(0, 6).SequenceEqual(new byte[] { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00 }))
+            if (magic.SequenceEqual(new byte[] { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00 }))
                 return "wav";
 
             return null;
@@ -458,32 +344,22 @@ namespace super_toolbox
                 {
                     string fileNameWithoutExt = Path.GetFileNameWithoutExtension(fp);
                     string fileDirectory = Path.GetDirectoryName(fp) ?? directoryPath;
+                    string outputDir = Path.Combine(fileDirectory, fileNameWithoutExt);
 
+                    int extractCount = 0;
                     FileInfo fi = new FileInfo(fp);
-
-                    string outputDir;
-                    if (fi.Length > 10 * 1024 * 1024)
-                    {
-                        outputDir = Path.Combine(fileDirectory, fileNameWithoutExt);
-                        Directory.CreateDirectory(outputDir);
-                    }
-                    else
-                    {
-                        outputDir = fileDirectory;
-                    }
-
-                    int cnt = 0;
 
                     if (fi.Length < LARGE_FILE_THRESHOLD)
                     {
                         byte[] content = await File.ReadAllBytesAsync(fp, cancellationToken);
-                        cnt = ProcessBufferFast(content, 0, fp, outputDir, extractedFiles);
+                        extractCount = ProcessBufferFast(content, 0, fp, outputDir, extractedFiles);
                     }
                     else
                     {
-                        cnt = await ProcessLargeFileWithMemoryMapAsync(fp, outputDir, extractedFiles, cancellationToken);
+                        extractCount = await ProcessLargeFileWithMemoryMapAsync(fp, outputDir, extractedFiles, cancellationToken);
                     }
-                    total += cnt;
+
+                    total += extractCount;
                 }
                 catch (OperationCanceledException)
                 {
