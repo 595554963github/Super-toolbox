@@ -116,7 +116,7 @@ namespace super_toolbox
 
                 var waveWriter = new WaveWriter();
 
-                using (var waveStream = File.Create(wavFilePath))
+                using (var waveStream = File.Create(wavFilePath, 4096))
                 {
                     waveWriter.WriteToStream(audioData, waveStream, waveConfig);
                 }
@@ -133,5 +133,6 @@ namespace super_toolbox
                 return false;
             }
         }
+
     }
 }

@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using VGAudio.Codecs.CriHca;
 using VGAudio.Containers.Dsp;
 using VGAudio.Containers.Hca;
@@ -22,7 +23,18 @@ namespace super_toolbox
 
             ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
-            var dspFiles = Directory.GetFiles(directoryPath, "*.dsp", SearchOption.AllDirectories);
+            var dspFiles = Directory.GetFiles(directoryPath, "*.dsp", SearchOption.AllDirectories)
+                    .OrderBy(f =>
+                    {
+                        string fileName = Path.GetFileNameWithoutExtension(f);
+                        var match = Regex.Match(fileName, @"_(\d+)$");
+                        if (match.Success && int.TryParse(match.Groups[1].Value, out int num))
+                            return num;
+                        return int.MaxValue;
+                    })
+                    .ThenBy(f => Path.GetFileNameWithoutExtension(f))
+                    .ToArray();
+
             TotalFilesToConvert = dspFiles.Length;
             int successCount = 0;
 

@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace super_toolbox
 {
-    public class Wav2brwav1_Converter : BaseExtractor
+    public class Wav2brwav3_Converter : BaseExtractor
     {
         public new event EventHandler<string>? ConversionStarted;
         public new event EventHandler<string>? ConversionProgress;
@@ -12,9 +12,9 @@ namespace super_toolbox
         private static string _tempExePath;
         private static string _tempDllPath;
 
-        static Wav2brwav1_Converter()
+        static Wav2brwav3_Converter()
         {
-            _tempExePath = LoadEmbeddedExe("embedded.nw4r_waveconv.exe", "nw4r_waveconv_pcm8.exe");
+            _tempExePath = LoadEmbeddedExe("embedded.nw4r_waveconv.exe", "nw4r_waveconv_dsp.exe");
             _tempDllPath = LoadEmbeddedExe("embedded.dsptool.dll", "dsptool.dll");
         }
 
@@ -62,7 +62,7 @@ namespace super_toolbox
                         if (File.Exists(brwavFile))
                             File.Delete(brwavFile);
 
-                        bool conversionSuccess = await ConvertWavToBrwav(wavFilePath, brwavFile, "pcm8", cancellationToken);
+                        bool conversionSuccess = await ConvertWavToBrwav(wavFilePath, brwavFile, "dsp", cancellationToken);
 
                         if (conversionSuccess && File.Exists(brwavFile))
                         {
@@ -113,7 +113,7 @@ namespace super_toolbox
                 var processStartInfo = new ProcessStartInfo
                 {
                     FileName = _tempExePath,
-                    Arguments = $"--pcm8 \"{wavFilePath}\"",
+                    Arguments = $"--adpcm \"{wavFilePath}\"",
                     WorkingDirectory = Path.GetTempPath(),
                     UseShellExecute = false,
                     CreateNoWindow = true,

@@ -13,7 +13,7 @@ namespace super_toolbox
 
         static Xma2wav_Converter()
         {
-            _tempExePath = LoadEmbeddedExe("embedded.xmaencode.exe", "xmaencode.exe");//按偏移0x10-0x17区分xma：xma1编码20 00 00 00 65 01 10 00和xma2编码34 00 00 00 66 01 02 00支持转换，xma2编码34 00 00 00 66 01 06 00不支持转换wav，别问我为啥，这是人家的官方工具我能知道吗？其实你可以直接使用vgmstream + foobar2000的方式转换任何一种xma
+            _tempExePath = LoadEmbeddedExe("embedded.xmaencode.exe", "xmaencode.exe");//按偏移0x10-0x17区分xma：xma1编码20 00 00 00 65 01 02 00和xma2编码34 00 00 00 66 01 02 00支持转换，xma2编码34 00 00 00 66 01 06 00不支持转换wav，别问我为啥，这是人家的官方工具我能知道吗？其实你可以直接使用vgmstream + foobar2000的方式转换任何一种xma
         }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)

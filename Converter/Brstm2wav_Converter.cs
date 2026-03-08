@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using VGAudio.Containers.NintendoWare;
 using VGAudio.Containers.Wave;
 using VGAudio.Formats;
@@ -21,7 +22,18 @@ namespace super_toolbox
 
             ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
-            var brstmFiles = Directory.GetFiles(directoryPath, "*.brstm", SearchOption.AllDirectories);
+            var brstmFiles = Directory.GetFiles(directoryPath, "*.brstm", SearchOption.AllDirectories)
+                    .OrderBy(f =>
+                    {
+                        string fileName = Path.GetFileNameWithoutExtension(f);
+                        var match = Regex.Match(fileName, @"_(\d+)$");
+                        if (match.Success && int.TryParse(match.Groups[1].Value, out int num))
+                            return num;
+                        return int.MaxValue;
+                    })
+                    .ThenBy(f => Path.GetFileNameWithoutExtension(f))
+                    .ToArray();
+
             TotalFilesToConvert = brstmFiles.Length;
             int successCount = 0;
 

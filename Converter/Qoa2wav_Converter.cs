@@ -1,4 +1,5 @@
 using QOALib;
+using System.Text.RegularExpressions;
 
 namespace super_toolbox
 {
@@ -38,8 +39,19 @@ namespace super_toolbox
             }
 
             ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
-            var qoaFiles = Directory.EnumerateFiles(directoryPath, "*.qoa", SearchOption.AllDirectories).ToList();
-            TotalFilesToConvert = qoaFiles.Count;
+            var qoaFiles = Directory.GetFiles(directoryPath, "*.qoa", SearchOption.AllDirectories)
+                    .OrderBy(f =>
+                    {
+                        string fileName = Path.GetFileNameWithoutExtension(f);
+                        var match = Regex.Match(fileName, @"_(\d+)$");
+                        if (match.Success && int.TryParse(match.Groups[1].Value, out int num))
+                            return num;
+                        return int.MaxValue;
+                    })
+                    .ThenBy(f => Path.GetFileNameWithoutExtension(f))
+                    .ToArray();
+
+            TotalFilesToConvert = qoaFiles.Length;
             int successCount = 0;
 
             try

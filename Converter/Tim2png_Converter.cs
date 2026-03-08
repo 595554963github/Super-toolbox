@@ -1,4 +1,5 @@
 using System.Drawing.Imaging;
+using System.Text.RegularExpressions;
 
 namespace super_toolbox
 {
@@ -21,9 +22,19 @@ namespace super_toolbox
 
             ConversionStarted?.Invoke(this, $"开始处理目录: {directoryPath}");
 
-            var timFiles = Directory.EnumerateFiles(directoryPath, "*.tim", SearchOption.AllDirectories).ToList();
+            var timFiles = Directory.GetFiles(directoryPath, "*.tim", SearchOption.AllDirectories)
+                    .OrderBy(f =>
+                    {
+                        string fileName = Path.GetFileNameWithoutExtension(f);
+                        var match = Regex.Match(fileName, @"_(\d+)$");
+                        if (match.Success && int.TryParse(match.Groups[1].Value, out int num))
+                            return num;
+                        return int.MaxValue;
+                    })
+                    .ThenBy(f => Path.GetFileNameWithoutExtension(f))
+                    .ToArray();
 
-            TotalFilesToConvert = timFiles.Count;
+            TotalFilesToConvert = timFiles.Length;
             int successCount = 0;
 
             try

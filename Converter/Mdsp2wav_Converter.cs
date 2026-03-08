@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using VGAudio.Containers.Dsp;
 using VGAudio.Containers.Wave;
 using VGAudio.Formats;
@@ -21,7 +22,18 @@ namespace super_toolbox
 
             ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
-            var mdspFiles = Directory.GetFiles(directoryPath, "*.mdsp", SearchOption.AllDirectories);
+            var mdspFiles = Directory.GetFiles(directoryPath, "*.mdsp", SearchOption.AllDirectories)
+                    .OrderBy(f =>
+                    {
+                        string fileName = Path.GetFileNameWithoutExtension(f);
+                        var match = Regex.Match(fileName, @"_(\d+)$");
+                        if (match.Success && int.TryParse(match.Groups[1].Value, out int num))
+                            return num;
+                        return int.MaxValue;
+                    })
+                    .ThenBy(f => Path.GetFileNameWithoutExtension(f))
+                    .ToArray();
+
             TotalFilesToConvert = mdspFiles.Length;
             int successCount = 0;
 
