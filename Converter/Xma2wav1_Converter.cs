@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace super_toolbox
 {
-    public class Xma2wav_Converter : BaseExtractor
+    public class Xma2wav1_Converter : BaseExtractor
     {
         public new event EventHandler<string>? ConversionStarted;
         public new event EventHandler<string>? ConversionProgress;
@@ -11,7 +11,7 @@ namespace super_toolbox
 
         private static string _tempExePath;
 
-        static Xma2wav_Converter()
+        static Xma2wav1_Converter()
         {
             _tempExePath = LoadEmbeddedExe("embedded.xmaencode.exe", "xmaencode.exe");//按偏移0x10-0x17区分xma：xma1编码20 00 00 00 65 01 02 00和xma2编码34 00 00 00 66 01 02 00支持转换，xma2编码34 00 00 00 66 01 06 00不支持转换wav，别问我为啥，这是人家的官方工具我能知道吗？其实你可以直接使用vgmstream + foobar2000的方式转换任何一种xma
         }
