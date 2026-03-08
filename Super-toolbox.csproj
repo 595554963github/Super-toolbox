@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net8.0-windows</TargetFramework>
@@ -46,8 +46,8 @@
 		<EmbeddedResource Include="plugins\ToBTools.exe">
 			<LogicalName>embedded.ToBTools.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\cdecrypt.exe">
-			<LogicalName>embedded.cdecrypt.exe</LogicalName>
+		<EmbeddedResource Include="plugins\cdecrypt.dll">
+			<LogicalName>embedded.cdecrypt.dll</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\ndstool.exe">
 			<LogicalName>embedded.ndstool.exe</LogicalName>
@@ -109,8 +109,8 @@
 		<EmbeddedResource Include="plugins\radadec.exe">
 			<LogicalName>embedded.radadec.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\exiso.exe">
-			<LogicalName>embedded.exiso.exe</LogicalName>
+		<EmbeddedResource Include="plugins\exiso.dll">
+			<LogicalName>embedded.exiso.dll</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\thdat.exe">
 			<LogicalName>embedded.thdat.exe</LogicalName>
@@ -142,6 +142,18 @@
 		<EmbeddedResource Include="plugins\bcwavtool.dll">
 			<LogicalName>embedded.bcwavtool.dll</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\bfwavtool.dll">
+			<LogicalName>embedded.bfwavtool.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\dsptool.dll">
+			<LogicalName>embedded.dsptool.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\nw4r_waveconv.exe">
+			<LogicalName>embedded.nw4r_waveconv.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\xboxcompress.dll">
+			<LogicalName>embedded.xboxcompress.dll</LogicalName>
+		</EmbeddedResource>		
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="AuroraLib.Compression" Version="1.5.4" />
