@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace super_toolbox
 {
-    public class Msadpcm_Encoder : BaseExtractor
+    public class Wav2xma5_Converter : BaseExtractor
     {
         public new event EventHandler<string>? ConversionStarted;
         public new event EventHandler<string>? ConversionProgress;
@@ -14,7 +14,7 @@ namespace super_toolbox
         private static bool _exeExtracted = false;
         private static readonly object _lock = new object();
 
-        static Msadpcm_Encoder()
+        static Wav2xma5_Converter()
         {
             ExtractEmbeddedExe();
         }
