@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net8.0-windows</TargetFramework>
@@ -73,8 +73,8 @@
 		<EmbeddedResource Include="plugins\SRPG_Unpacker.exe">
 			<LogicalName>embedded.SRPG_Unpacker.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\XWBTool.exe">
-			<LogicalName>embedded.XWBTool.exe</LogicalName>
+		<EmbeddedResource Include="plugins\XWBTool.dll">
+			<LogicalName>embedded.XWBTool.dll</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\xmaencode.exe">
 			<LogicalName>embedded.xmaencode.exe</LogicalName>
@@ -103,8 +103,8 @@
 		<EmbeddedResource Include="plugins\xenoTextureConvert.exe">
 			<LogicalName>embedded.xenoTextureConvert.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\CMD_Decompiler.exe">
-			<LogicalName>embedded.CMD_Decompiler.exe</LogicalName>
+		<EmbeddedResource Include="plugins\HLSLDecompiler.dll">
+			<LogicalName>embedded.HLSLDecompiler.dll</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\radadec.exe">
 			<LogicalName>embedded.radadec.exe</LogicalName>
@@ -153,7 +153,13 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\xboxcompress.dll">
 			<LogicalName>embedded.xboxcompress.dll</LogicalName>
-		</EmbeddedResource>		
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\IMA_codec.dll">
+			<LogicalName>embedded.IMA_codec.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\EA_XA-ADPCM.dll">
+			<LogicalName>embedded.EA_XA-ADPCM.dll</LogicalName>
+		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="AuroraLib.Compression" Version="1.5.4" />
