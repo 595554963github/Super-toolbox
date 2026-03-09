@@ -84,7 +84,6 @@ namespace super_toolbox
             { "光荣特库摩 - gepk", ("其他档案", "光荣特库摩的gepk文件提取器,适用于零系列的濡鸦之巫女等游戏") },
             { "光荣特库摩 - gspk", ("其他档案", "光荣特库摩的gspk和trd文件提取器,适用于零系列的濡鸦之巫女等游戏,提取出来的g2s文件里面包含DXBC着色器文件") },
             { "光荣特库摩 - pak", ("其他档案", "光荣特库摩的pak文件提取器,适用于蓝色反射_帝、幻舞少女之剑、苏菲的炼金工房2等游戏") },
-            { "pvr2png", ("图片", "pvr纹理转换器,无需依赖Texturepacker的免费试用限制,可无限使用,将pvr纹理转换为png格式,适用于逆战upk文件提取的pvr") },
             { "逆战 - upk", ("其他档案", "逆战upk提取器,解决手动逐个解包的麻烦,支持批量解包,高效提取upk文件中的资源") },
             { "战争传说 - pak", ("其他档案", "战争传说的pak解包工具,基于bms脚本改写成c#语言,解决了原PAKTool易出现非法字符报错的问题,可彻底解包该游戏所有pak文件") },
             { "IdeaFactory - cl3", ("其他档案", "地雷社游戏的CL3提取器,可从CL3文件中提取dat、tid等文件,已测试妖精剑士F,解决了stcm-editor.exe工具使用不便的问题") },
@@ -172,8 +171,6 @@ namespace super_toolbox
             { "qoa2wav", ("音频", "qoa到wav的音频转换器,VGAudio不支持此格式,自主实现转换") },
             { "SRPG_Studio - dts", ("其他档案", "SRPG Studio的dts提取器,代表作为刻印战记2_七圣英雄,可提取dts文件中的资源") },
             { "XACT Wave Bank - xwb打包器", ("其他档案", "XWB打包器,能将一个文件夹里的所有wav打包成xwb文件,为了打包成功建议使用pcm_s16le的wav文件,有些编码不支持") },
-            { "png2astc", ("图片", "png到astc图像的转换器,支持批量转换,满足将png图片转换为astc格式的需求") },
-            { "astc2png", ("图片", "astc图像到png的转换器,支持批量转换,方便查看和使用astc格式的图片") },
             { "hip2png", ("图片", "hip到png的转换器,代表作为switch平台的赛马娘,可批量处理该格式转换成png") },
             { "双截龙彩虹 - pak", ("其他档案", "双截龙彩虹的专用pak提取器") },
             { "CFSI - cfsi提取器", ("其他档案", "cfsi文件专用提取器,适用于极限脱出3_零时困境和Re_从零开始的异世界生活虚假的王选候补等游戏") },
@@ -433,7 +430,7 @@ namespace super_toolbox
         }
         private readonly HashSet<string> _converters = new HashSet<string>
         {
-         "png2astc", "astc2png", "Gnf2Png", "pvr2png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav", "bfstm2wav", "brstm2wav", "wav2bcstm", "wav2bfstm", "wav2brstm","wav2opus","opus2wav","wav2at3","at32wav","at92wav","wav2at9","wav2swav_8-bit有符号PCM","wav2swav_16-bit小端序PCM","wav2swav_IMA 4-bit ADPCM","swav2wav","wav2asf1","wav2asf2",
+         "Gnf2Png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav", "bfstm2wav", "brstm2wav", "wav2bcstm", "wav2bfstm", "wav2brstm","wav2opus","opus2wav","wav2at3","at32wav","at92wav","wav2at9","wav2swav_8-bit有符号PCM","wav2swav_16-bit小端序PCM","wav2swav_IMA 4-bit ADPCM","swav2wav","wav2asf1","wav2asf2",
          "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rad game tools - rada转换器","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav","wav2hca", "wav2adx","dsp2adx","dsp2hca","dsp2wav","wav2dsp","wav2vag","vag2wav","wav2wem","wem2wav","xwma2wav","wav2xwma","wav2lopus","lopus2wav","wav2bcwav_16-bit小端序PCM","wav2bcwav_8-bit有符号PCM","wav2bfwav_16-bit小端序PCM","wav2bfwav_8-bit有符号PCM","wav2brwav_16-bit大端序PCM","wav2brwav_8-bit有符号PCM","wav2bcwav_任天堂DSP ADPCM","wav2bcwav_IMA 4-bit ADPCM","wav2bfwav_任天堂DSP ADPCM","wav2brwav_任天堂DSP ADPCM",
          "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml","任天堂stream/wave","wav2idsp","wav2mdsp","idsp2wav","mdsp2wav","bcwav2wav","bfwav2wav","brwav2wav","wav2xma1","wav2xma2","wav2xma3","wav2xma4","xma2wav1","xma2wav2","xma2wav3","wav2xma5","xma2wav4"
         };
@@ -727,7 +724,6 @@ namespace super_toolbox
                 case "光荣特库摩 - gepk": return new GustGepk_Extractor();
                 case "光荣特库摩 - gspk": return new GustGspk_Extractor();
                 case "光荣特库摩 - pak": return new GustPak_Extractor();
-                case "pvr2png": return new PVR2PNG_Converter();
                 case "逆战 - upk": return new AFUpkExtractor();
                 case "战争传说 - pak": return new WarTales_PakExtractor();
                 case "IdeaFactory - cl3": return new IdeaFactory_CL3Extractor();
@@ -815,8 +811,6 @@ namespace super_toolbox
                 case "qoa2wav": return new Qoa2wav_Converter();
                 case "SRPG_Studio - dts": return new DtsExtractor();
                 case "XACT Wave Bank - xwb打包器": return new XWBPacker();
-                case "png2astc": return new Png2astc_Converter();
-                case "astc2png": return new Astc2png_Converter();
                 case "hip2png": return new Hip2png_Converter();
                 case "双截龙彩虹 - pak": return new DoubleDragonNeon_PakExtractor();
                 case "CFSI - cfsi提取器": return new Cfsi_Extractor();

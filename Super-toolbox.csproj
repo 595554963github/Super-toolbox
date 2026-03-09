@@ -34,9 +34,6 @@
 		<EmbeddedResource Include="plugins\gust_pak.dll">
 			<LogicalName>embedded.gust_pak.dll</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\PVRTexToolCLI.exe">
-			<LogicalName>embedded.PVRTexToolCLI.exe</LogicalName>
-		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\AFUpkExtractor.exe">
 			<LogicalName>embedded.AFUpkExtractor.exe</LogicalName>
 		</EmbeddedResource>
@@ -84,9 +81,6 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\lzham_x64.dll">
 			<LogicalName>embedded.lzham_x64.dll</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\astcenc-avx2.exe">
-			<LogicalName>embedded.astcenc-avx2.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\exah3pac.exe">
 			<LogicalName>embedded.exah3pac.exe</LogicalName>
@@ -162,6 +156,7 @@
 		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
+		<PackageReference Include="AstcSharp" Version="0.9.8" />
 		<PackageReference Include="AuroraLib.Compression" Version="1.5.4" />
 		<PackageReference Include="BymlLibrary" Version="2.1.18" />
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
