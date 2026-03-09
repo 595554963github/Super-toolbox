@@ -137,37 +137,47 @@ namespace super_toolbox
         {
             if (position + 12 >= buffer.Length)
                 return 0;
-
             string? format = null;
-
-            if (buffer[position + 8] == 0x57 && buffer[position + 9] == 0x41 && buffer[position + 10] == 0x56 && buffer[position + 11] == 0x45)
+            if (position + 22 < buffer.Length)
             {
-                format = IdentifyFormatFast(buffer, position);
-                if (format == null)
-                    return 0;
-            }
-            else if (buffer[position + 8] == 0x58 && buffer[position + 9] == 0x57 && buffer[position + 10] == 0x4D && buffer[position + 11] == 0x41)
-            {
-                if (position + 22 >= buffer.Length)
-                    return 0;
-
-                bool matchesXwmaPattern = true;
-                for (int i = 0; i < 6; i++)
+                if (buffer[position + 16] == 0x08 && buffer[position + 17] == 0x00 &&
+                    buffer[position + 18] == 0x00 && buffer[position + 19] == 0x00 &&
+                    buffer[position + 20] == 0x64 && buffer[position + 21] == 0x00)
                 {
-                    if (buffer[position + 16 + i] != XWMA_PATTERN[i])
-                    {
-                        matchesXwmaPattern = false;
-                        break;
-                    }
+                    format = "bank";
                 }
-                if (!matchesXwmaPattern)
-                    return 0;
-
-                format = "xwma";
             }
-            else
+            if (format == null)
             {
-                return 0;
+                if (buffer[position + 8] == 0x57 && buffer[position + 9] == 0x41 && buffer[position + 10] == 0x56 && buffer[position + 11] == 0x45)
+                {
+                    format = IdentifyFormatFast(buffer, position);
+                    if (format == null)
+                        return 0;
+                }
+                else if (buffer[position + 8] == 0x58 && buffer[position + 9] == 0x57 && buffer[position + 10] == 0x4D && buffer[position + 11] == 0x41)
+                {
+                    if (position + 22 >= buffer.Length)
+                        return 0;
+
+                    bool matchesXwmaPattern = true;
+                    for (int i = 0; i < 6; i++)
+                    {
+                        if (buffer[position + 16 + i] != XWMA_PATTERN[i])
+                        {
+                            matchesXwmaPattern = false;
+                            break;
+                        }
+                    }
+                    if (!matchesXwmaPattern)
+                        return 0;
+
+                    format = "xwma";
+                }
+                else
+                {
+                    return 0;
+                }
             }
 
             int chunkSize = BitConverter.ToInt32(buffer, position + 4);
@@ -269,6 +279,9 @@ namespace super_toolbox
 
             Span<byte> magic = new Span<byte>(buffer, position + 0x10, 6);
 
+            if (magic.SequenceEqual(new byte[] { 0x08, 0x00, 0x00, 0x00, 0x64, 0x00 }))
+                return "bank";
+
             if (magic.SequenceEqual(new byte[] { 0x20, 0x00, 0x00, 0x00, 0x70, 0x02 }))
                 return "at3";
 
@@ -282,6 +295,9 @@ namespace super_toolbox
                 return "xma";
 
             if (magic.SequenceEqual(new byte[] { 0x20, 0x00, 0x00, 0x00, 0x65, 0x01 }))
+                return "xma";
+
+            if (magic.SequenceEqual(new byte[] { 0x00, 0x90, 0x01, 0x00, 0x2C, 0x00 }))
                 return "xma";
 
             if (magic.SequenceEqual(new byte[] { 0x14, 0x00, 0x00, 0x00, 0x11, 0x00 }))
