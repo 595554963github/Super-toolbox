@@ -323,6 +323,10 @@ namespace super_toolbox
             { "nds - sdat", ("其他档案", "任天堂nds平台的sdat文件提取器") },
             { "wav2asf1", ("音频", "wav转换到asf的音频转换器,电子艺界EA-XA 4-bit ADPCM v1") },
             { "wav2asf2", ("音频", "wav转换到asf的音频转换器,电子艺界EA-XA 4-bit ADPCM v2") },
+            { "Artemis - pfs", ("其他档案", "阿尔特弥斯引擎游戏的pfs文件提取器,测试游戏虚之少女") },
+            { "NekoPack - dat", ("其他档案", "NekoPack引擎游戏的dat文件提取器,测试游戏Really Really!") },
+            { "Innocent Grey - dat", ("其他档案", "Innocent Grey游戏的dat文件提取器,测试游戏恋狱月狂病") },
+            { "PSV欲望之拳 - lzs", ("其他档案", "PSV欲望之拳的lzs专用提取器,参考quickbms源码修改而来") },
         };
         public SuperToolbox()
         {
@@ -963,6 +967,10 @@ namespace super_toolbox
                 case "nds - sdat": return new Nds_Sdat_Extractor();
                 case "wav2asf1": return new Wav2asf1_Converter();
                 case "wav2asf2": return new Wav2asf2_Converter();
+                case "Artemis - pfs": return new Artemis_pfs_Extractor();
+                case "NekoPack - dat": return new NekoPack_dat_Extractor();
+                case "Innocent Grey - dat": return new PACKDAT_Extractor();
+                case "PSV欲望之拳 - lzs": return new Lzs_Extractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
