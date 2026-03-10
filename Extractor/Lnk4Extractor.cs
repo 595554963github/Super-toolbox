@@ -48,14 +48,12 @@ namespace super_toolbox
                         ThrowIfCancellationRequested(cancellationToken);
                         processedCount++;
                         ExtractionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(filePath)} ({processedCount}/{datFiles.Length})");
+
                         try
                         {
                             string? parentDir = Path.GetDirectoryName(filePath);
-                            if (string.IsNullOrEmpty(parentDir))
-                            {
-                                ExtractionError?.Invoke(this, $"无法获取文件目录:{filePath}");
-                                continue;
-                            }
+                            if (string.IsNullOrEmpty(parentDir)) continue;
+
                             var beforeSnapshot = GetDirectorySnapshotRecursive(parentDir);
 
                             var process = new Process
@@ -69,36 +67,41 @@ namespace super_toolbox
                                     CreateNoWindow = true
                                 }
                             };
+
                             process.Start();
-                            process.WaitForExit();
-                            if (process.ExitCode == 0)
+
+                            var extractedInThisFile = 0;
+                            while (!process.HasExited)
                             {
-                                var afterSnapshot = GetDirectorySnapshotRecursive(parentDir);
-                                var newFiles = afterSnapshot.Except(beforeSnapshot)
-                                    .Where(f => !f.EndsWith(".dat", StringComparison.OrdinalIgnoreCase))
-                                    .ToList();
+                                Thread.Sleep(50);
+                                var currentSnapshot = GetDirectorySnapshotRecursive(parentDir);
+                                var newFiles = currentSnapshot.Except(beforeSnapshot).ToList();
+
                                 foreach (var newFile in newFiles)
                                 {
-                                    string fullPath = Path.Combine(parentDir, newFile);
-                                    OnFileExtracted(fullPath);
+                                    beforeSnapshot.Add(newFile);
+                                    extractedInThisFile++;
                                     totalExtractedFiles++;
+                                    OnFileExtracted(Path.Combine(parentDir, newFile));
                                     ExtractionProgress?.Invoke(this, $"已提取:{newFile}");
                                 }
-                                if (newFiles.Count > 0)
-                                {
-                                    ExtractionProgress?.Invoke(this, $"完成处理:{Path.GetFileName(filePath)} -> {newFiles.Count}个文件");
-                                }
                             }
-                            else
+
+                            if (extractedInThisFile > 0)
                             {
-                                ExtractionError?.Invoke(this, $"处理文件{Path.GetFileName(filePath)}失败，退出代码:{process.ExitCode}");
+                                ExtractionProgress?.Invoke(this, $"完成处理:{Path.GetFileName(filePath)} -> {extractedInThisFile}个文件");
+                            }
+                            else if (process.ExitCode != 0)
+                            {
+                                ExtractionError?.Invoke(this, $"处理失败:{Path.GetFileName(filePath)}，退出代码:{process.ExitCode}");
                             }
                         }
                         catch (Exception ex)
                         {
-                            ExtractionError?.Invoke(this, $"文件{Path.GetFileName(filePath)}处理错误: {ex.Message}");
+                            ExtractionError?.Invoke(this, $"处理错误:{Path.GetFileName(filePath)} - {ex.Message}");
                         }
                     }
+
                     ExtractionProgress?.Invoke(this, $"提取完成，总共提取了{totalExtractedFiles}个文件");
                     OnExtractionCompleted();
                 }, cancellationToken);
@@ -114,23 +117,23 @@ namespace super_toolbox
                 OnExtractionFailed($"提取失败:{ex.Message}");
             }
         }
+
         private HashSet<string> GetDirectorySnapshotRecursive(string directory)
         {
             var snapshot = new HashSet<string>();
+
             try
             {
                 var files = Directory.GetFiles(directory, "*", SearchOption.AllDirectories)
-                    .Select(f => f.Substring(directory.Length + 1))
-                    .Where(f => !f.EndsWith(".dat", StringComparison.OrdinalIgnoreCase));
+                    .Select(f => f.Substring(directory.Length + 1).Replace('\\', '/'));
 
                 foreach (var file in files)
                 {
                     snapshot.Add(file);
                 }
             }
-            catch
-            {
-            }
+            catch { }
+
             return snapshot;
         }
 
