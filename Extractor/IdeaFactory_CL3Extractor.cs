@@ -139,6 +139,9 @@ namespace super_toolbox
                 List<CL3FileEntry> fileEntries = new List<CL3FileEntry>();
                 List<CL3FileLink> fileLinks = new List<CL3FileLink>();
 
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                Encoding cp932 = Encoding.GetEncoding("shift_jis");
+
                 for (uint i = 0; i < sectionsCount; i++)
                 {
                     fs.Seek(sectionsOffset + i * 0x50, SeekOrigin.Begin);
@@ -164,7 +167,8 @@ namespace super_toolbox
                             fs.Seek(entryOffset, SeekOrigin.Begin);
 
                             byte[] fileNameBytes = reader.ReadBytes(0x200);
-                            string fileName = Encoding.UTF8.GetString(fileNameBytes).TrimEnd('\0');
+
+                            string fileName = DecodeFileName(fileNameBytes, cp932);
 
                             int fileId = ReadInt32(reader, isLittleEndian);
                             int fileOffset = ReadInt32(reader, isLittleEndian);
@@ -215,6 +219,55 @@ namespace super_toolbox
                 }
 
                 ExtractFilesToFolder(fileEntries, outputFolder);
+            }
+        }
+
+        private string DecodeFileName(byte[] fileNameBytes, Encoding cp932)
+        {
+            int length = 0;
+            while (length < fileNameBytes.Length && fileNameBytes[length] != 0)
+            {
+                length++;
+            }
+
+            if (length == 0)
+                return string.Empty;
+
+            byte[] validBytes = new byte[length];
+            Array.Copy(fileNameBytes, validBytes, length);
+
+            try
+            {
+                string fileName = cp932.GetString(validBytes);
+
+                if (!fileName.Contains('�'))
+                {
+                    return fileName;
+                }
+
+                string utf8Name = Encoding.UTF8.GetString(validBytes);
+                if (!utf8Name.Contains('�'))
+                {
+                    return utf8Name;
+                }
+
+                return GetSafeFileNameFromBytes(validBytes);
+            }
+            catch
+            {
+                return GetSafeFileNameFromBytes(validBytes);
+            }
+        }
+
+        private string GetSafeFileNameFromBytes(byte[] bytes)
+        {
+            try
+            {
+                return "FILE_" + BitConverter.ToString(bytes).Replace("-", "");
+            }
+            catch
+            {
+                return "unnamed_file_" + Guid.NewGuid().ToString("N").Substring(0, 8);
             }
         }
 
