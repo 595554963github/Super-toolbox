@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class LzssCustom_Compressor : BaseExtractor
     {
-        public new event EventHandler<string>? CompressionStarted;
-        public new event EventHandler<string>? CompressionProgress;
-        public new event EventHandler<string>? CompressionError;
+        public event EventHandler<string>? CompressionStarted;
+        public event EventHandler<string>? CompressionProgress;
+        public event EventHandler<string>? CompressionError;
 
         private const int LOOKAHEAD_BUFFER_SIZE = 264;
         private const int MIN_LENGTH = 4;
@@ -323,7 +323,7 @@ namespace super_toolbox
                 BitOutputStream bitStream = new BitOutputStream(outputStream);
                 try
                 {
-                    // 写入原始文件大小（32位，小端序）
+                    // 写入原始文件大小（32位,小端序）
                     uint fileSize = (uint)inputData.Length;
                     bitStream.PutBits(fileSize, 32);
 

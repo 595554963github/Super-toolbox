@@ -7,9 +7,9 @@ namespace super_toolbox
         private const ushort COMPRESSION_FORMAT_LZNT1 = 2;
         private const ushort COMPRESSION_ENGINE_STANDARD = 0x0000;
 
-        public new event EventHandler<string>? CompressionStarted;
-        public new event EventHandler<string>? CompressionProgress;
-        public new event EventHandler<string>? CompressionError;
+        public event EventHandler<string>? CompressionStarted;
+        public event EventHandler<string>? CompressionProgress;
+        public event EventHandler<string>? CompressionError;
 
         [DllImport("ntdll.dll", SetLastError = true)]
         private static extern uint RtlGetCompressionWorkSpaceSize(

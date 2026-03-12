@@ -4,10 +4,10 @@ namespace super_toolbox
 {
     public class Brotli_Compressor : BaseExtractor
     {
-        public new event EventHandler<string>? CompressionStarted;
-        public new event EventHandler<string>? CompressionProgress;
-        public new event EventHandler<string>? CompressionError;
-        
+        public event EventHandler<string>? CompressionStarted;
+        public event EventHandler<string>? CompressionProgress;
+        public event EventHandler<string>? CompressionError;
+
         private readonly CompressionLevel _compressionLevel = CompressionLevel.Optimal;
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)

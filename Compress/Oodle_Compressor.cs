@@ -7,9 +7,9 @@ namespace super_toolbox
     public class Oodle_Compressor : BaseExtractor
     {
         private static string _tempExePath;
-        public new event EventHandler<string>? CompressionStarted;
-        public new event EventHandler<string>? CompressionProgress;
-        public new event EventHandler<string>? CompressionError;
+        public event EventHandler<string>? CompressionStarted;
+        public event EventHandler<string>? CompressionProgress;
+        public event EventHandler<string>? CompressionError;
         static Oodle_Compressor()
         {
             string tempDir = Path.Combine(Path.GetTempPath(), "supertoolbox_temp");

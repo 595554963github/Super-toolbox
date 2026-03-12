@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class Zstd_Compressor : BaseExtractor
     {
-        public new event EventHandler<string>? CompressionStarted;
-        public new event EventHandler<string>? CompressionProgress;
-        public new event EventHandler<string>? CompressionError;
+        public event EventHandler<string>? CompressionStarted;
+        public event EventHandler<string>? CompressionProgress;
+        public event EventHandler<string>? CompressionError;
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
@@ -71,7 +71,7 @@ namespace super_toolbox
                     }
 
                     OnCompressionCompleted();
-                    CompressionProgress?.Invoke(this, $"压缩完成，共压缩{TotalFilesToCompress}个文件");
+                    CompressionProgress?.Invoke(this, $"压缩完成,共压缩{TotalFilesToCompress}个文件");
                 }, cancellationToken);
             }
             catch (OperationCanceledException)

@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class Prs_Compressor : BaseExtractor
     {
-        public new event EventHandler<string>? CompressionStarted;
-        public new event EventHandler<string>? CompressionProgress;
-        public new event EventHandler<string>? CompressionError;
+        public event EventHandler<string>? CompressionStarted;
+        public event EventHandler<string>? CompressionProgress;
+        public event EventHandler<string>? CompressionError;
 
         private readonly System.IO.Compression.CompressionLevel _compressionLevel = System.IO.Compression.CompressionLevel.Optimal;
 

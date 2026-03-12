@@ -6,9 +6,9 @@ namespace super_toolbox
     {
         private const uint COMPRESS_ALGORITHM_MSZIP = 2;
 
-        public new event EventHandler<string>? CompressionStarted;
-        public new event EventHandler<string>? CompressionProgress;
-        public new event EventHandler<string>? CompressionError;
+        public event EventHandler<string>? CompressionStarted;
+        public event EventHandler<string>? CompressionProgress;
+        public event EventHandler<string>? CompressionError;
 
         [DllImport("cabinet.dll", SetLastError = true)]
         private static extern bool CreateCompressor(uint algorithm, IntPtr allocationRoutines, out IntPtr compressorHandle);

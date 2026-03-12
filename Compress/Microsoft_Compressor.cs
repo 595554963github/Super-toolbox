@@ -9,9 +9,9 @@ namespace super_toolbox
         private static bool _isInitialized;
         private static string _initError = string.Empty;
 
-        public new event EventHandler<string>? CompressionStarted;
-        public new event EventHandler<string>? CompressionProgress;
-        public new event EventHandler<string>? CompressionError;
+        public event EventHandler<string>? CompressionStarted;
+        public event EventHandler<string>? CompressionProgress;
+        public event EventHandler<string>? CompressionError;
 
         static Microsoft_Compressor()
         {
