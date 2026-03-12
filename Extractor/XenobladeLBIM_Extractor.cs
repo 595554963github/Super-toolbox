@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class XenobladeLBIM_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] XBC1_SIGNATURE = { 0x78, 0x62, 0x63, 0x31 };
         private static readonly byte[] EFB0_SIGNATURE = { 0x65, 0x66, 0x62, 0x30 };
@@ -87,7 +87,7 @@ namespace super_toolbox
 
                 if (fileContent.Length <= 48)
                 {
-                    ExtractionError?.Invoke(this, $"wiefb文件{Path.GetFileName(filePath)}太小，至少需要49字节");
+                    ExtractionError?.Invoke(this, $"wiefb文件{Path.GetFileName(filePath)}太小,至少需要49字节");
                     return;
                 }
 
@@ -189,7 +189,7 @@ namespace super_toolbox
                         decompressedData = decompressedStream.ToArray();
                     }
 
-                    ExtractionProgress?.Invoke(this, $"解压成功，数据大小:{decompressedData.Length}字节");
+                    ExtractionProgress?.Invoke(this, $"解压成功,数据大小:{decompressedData.Length}字节");
                     List<int> lbimPositions = FindSignaturePositionsEx(decompressedData, LBIM_SIGNATURE);
 
                     if (lbimPositions.Count == 0)
@@ -329,12 +329,12 @@ namespace super_toolbox
 
                     if (!endsWithLbim)
                     {
-                        ExtractionProgress?.Invoke(this, $"警告:第{fileCount + 1}段文件不以LBIM结尾，可能不是有效的LBIM文件");
+                        ExtractionProgress?.Invoke(this, $"警告:第{fileCount + 1}段文件不以LBIM结尾,可能不是有效的LBIM文件");
                         endPos = lbimPos + 4;
 
                         if (endPos <= startPos || endPos > fileContent.Length)
                         {
-                            ExtractionError?.Invoke(this, $"第{fileCount + 1}段数据无效，跳过");
+                            ExtractionError?.Invoke(this, $"第{fileCount + 1}段数据无效,跳过");
                             currentPos = endPos;
                             continue;
                         }
@@ -515,7 +515,7 @@ namespace super_toolbox
                     endPos = lbimPos + 4;
                     if (endPos <= startPos || endPos > fileContent.Length)
                     {
-                        ExtractionError?.Invoke(this, $"第{fileCount + 1}段数据无效，跳过");
+                        ExtractionError?.Invoke(this, $"第{fileCount + 1}段数据无效,跳过");
                         currentPos = endPos;
                         continue;
                     }

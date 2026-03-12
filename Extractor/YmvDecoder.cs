@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class YmvDecoder : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] MAGIC_HEADER = HexStringToByteArray("EF C9 ED F3 14 05 5C 51 51 5F");
         private static readonly byte[] WMV_MAGIC = HexStringToByteArray("30 26 B2 75");

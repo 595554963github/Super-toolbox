@@ -6,9 +6,9 @@ namespace super_toolbox
 {
     public class SzsSarc_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] SARC = { 0x53, 0x41, 0x52, 0x43 };
         private static readonly byte[] SFAT = { 0x53, 0x46, 0x41, 0x54 };

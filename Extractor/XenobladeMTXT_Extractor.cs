@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class XenobladeMTXT_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] MTXT_SIGNATURE = { 0x4D, 0x54, 0x58, 0x54 };
         private static readonly byte[] MTHS_SIGNATURE = { 0x4D, 0x54, 0x48, 0x53 };
@@ -82,11 +82,11 @@ namespace super_toolbox
             TotalFilesToExtract = extractedFiles.Count;
             if (extractedFiles.Count > 0)
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，共提取出{extractedFiles.Count}个MTXT文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,共提取出{extractedFiles.Count}个MTXT文件");
             }
             else
             {
-                ExtractionProgress?.Invoke(this, "处理完成，未找到MTXT文件");
+                ExtractionProgress?.Invoke(this, "处理完成,未找到MTXT文件");
             }
 
             OnExtractionCompleted();
@@ -102,7 +102,7 @@ namespace super_toolbox
                 return;
             }
 
-            ExtractionProgress?.Invoke(this, $"找到{mtxtPositions.Count}个MTXT标记，开始提取...");
+            ExtractionProgress?.Invoke(this, $"找到{mtxtPositions.Count}个MTXT标记,开始提取...");
 
             int fileIndex = 1;
 
@@ -128,7 +128,7 @@ namespace super_toolbox
                 return;
             }
 
-            ExtractionProgress?.Invoke(this, $"找到{mtxtPositions.Count}个MTXT标记，开始提取...");
+            ExtractionProgress?.Invoke(this, $"找到{mtxtPositions.Count}个MTXT标记,开始提取...");
 
             int fileIndex = 1;
             int firstMtxtPos = mtxtPositions[0];
@@ -177,7 +177,7 @@ namespace super_toolbox
                 return;
             }
 
-            ExtractionProgress?.Invoke(this, $"找到{mtxtPositions.Count}个MTXT标记，{mthsPositions.Count}个MTHS标记，开始提取...");
+            ExtractionProgress?.Invoke(this, $"找到{mtxtPositions.Count}个MTXT标记,{mthsPositions.Count}个MTHS标记,开始提取...");
 
             int fileIndex = 1;
             const int MAX_FILE_SIZE = 2 * 1024 * 1024;
@@ -198,7 +198,7 @@ namespace super_toolbox
 
             if (validMtxtPositions.Count < 2)
             {
-                ExtractionProgress?.Invoke(this, $"有效MTXT标记不足2个，无法提取");
+                ExtractionProgress?.Invoke(this, $"有效MTXT标记不足2个,无法提取");
                 return;
             }
 
@@ -210,7 +210,7 @@ namespace super_toolbox
             if (segmentSize > MIN_FILE_SIZE && segmentSize <= MAX_FILE_SIZE && startPos < endPos)
             {
                 ExtractSegment(content, startPos, endPos, sourceFilePath, fileIndex++, extractedDir, extractedFiles);
-                ExtractionProgress?.Invoke(this, $"提取第1段:0x{startPos:X}-0x{endPos:X}，大小:{segmentSize}字节");
+                ExtractionProgress?.Invoke(this, $"提取第1段:0x{startPos:X}-0x{endPos:X},大小:{segmentSize}字节");
             }
             else if (segmentSize == MIN_FILE_SIZE)
             {
@@ -226,7 +226,7 @@ namespace super_toolbox
                 if (segmentSize > MIN_FILE_SIZE && segmentSize <= MAX_FILE_SIZE && startPos < endPos)
                 {
                     ExtractSegment(content, startPos, endPos, sourceFilePath, fileIndex++, extractedDir, extractedFiles);
-                    ExtractionProgress?.Invoke(this, $"提取第{i + 1}段:0x{startPos:X}-0x{endPos:X}，大小:{segmentSize}字节");
+                    ExtractionProgress?.Invoke(this, $"提取第{i + 1}段:0x{startPos:X}-0x{endPos:X},大小:{segmentSize}字节");
                 }
                 else if (segmentSize == MIN_FILE_SIZE)
                 {
@@ -234,7 +234,7 @@ namespace super_toolbox
                 }
                 else if (segmentSize > MAX_FILE_SIZE)
                 {
-                    ExtractionProgress?.Invoke(this, $"跳过过大文件段:0x{startPos:X}-0x{endPos:X}，大小:{segmentSize}字节");
+                    ExtractionProgress?.Invoke(this, $"跳过过大文件段:0x{startPos:X}-0x{endPos:X},大小:{segmentSize}字节");
                 }
             }
 
@@ -248,7 +248,7 @@ namespace super_toolbox
                 if (segmentSize > MIN_FILE_SIZE && segmentSize <= MAX_FILE_SIZE && segmentSize > 0)
                 {
                     ExtractSegment(content, startPos, endPos, sourceFilePath, fileIndex++, extractedDir, extractedFiles);
-                    ExtractionProgress?.Invoke(this, $"提取最后段:0x{startPos:X}-文件末尾，大小:{segmentSize}字节");
+                    ExtractionProgress?.Invoke(this, $"提取最后段:0x{startPos:X}-文件末尾,大小:{segmentSize}字节");
                 }
                 else if (segmentSize == MIN_FILE_SIZE)
                 {
@@ -279,7 +279,7 @@ namespace super_toolbox
                 return;
             }
 
-            ExtractionProgress?.Invoke(this, $"找到{mtxtPositions.Count}个MTXT标记，开始提取...");
+            ExtractionProgress?.Invoke(this, $"找到{mtxtPositions.Count}个MTXT标记,开始提取...");
 
             int fileIndex = 1;
 

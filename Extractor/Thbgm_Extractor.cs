@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class Thbgm_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         public override void Extract(string directoryPath)
         {
@@ -45,7 +45,7 @@ namespace super_toolbox
 
             string fmtFile = fmtFiles.First();
             string datFile = FindMatchingDatFile(fmtFile, directoryPath);
-            
+
             if (string.IsNullOrEmpty(datFile))
             {
                 ExtractionError?.Invoke(this, $"未找到与{fmtFile}匹配的Thbgm.dat文件");
@@ -62,7 +62,7 @@ namespace super_toolbox
                 Directory.CreateDirectory(outputDir);
 
                 List<BgmInfo> bgmList = ReadBgmList(fmtFile);
-                
+
                 TotalFilesToExtract = bgmList.Count;
                 ExtractionProgress?.Invoke(this, $"共发现{TotalFilesToExtract}个音频文件");
 

@@ -1,12 +1,12 @@
-﻿using System.Text;
+using System.Text;
 
 namespace super_toolbox
 {
     public class XenobladeTpl_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] CRAM_SIGNATURE = { 0x63, 0x72, 0x61, 0x6D };
 
@@ -72,11 +72,11 @@ namespace super_toolbox
 
                 if (extractedFiles.Count > 0)
                 {
-                    ExtractionProgress?.Invoke(this, $"处理完成，共提取出{extractedFiles.Count}个文件");
+                    ExtractionProgress?.Invoke(this, $"处理完成,共提取出{extractedFiles.Count}个文件");
                 }
                 else
                 {
-                    ExtractionProgress?.Invoke(this, "处理完成，未找到CRAM文件");
+                    ExtractionProgress?.Invoke(this, "处理完成,未找到CRAM文件");
                 }
 
                 OnExtractionCompleted();

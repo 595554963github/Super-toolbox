@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class UKArc_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private const int ENTRY_SIZE = 76;
         private const int HEADER_SIZE = 16;

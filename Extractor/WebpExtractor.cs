@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class WebpExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
         private static readonly byte[] RIFF_HEADER = { 0x52, 0x49, 0x46, 0x46 };
         private static readonly byte[] WEBP_BLOCK = { 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38 };
         private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
@@ -76,11 +76,11 @@ namespace super_toolbox
             }
             if (totalExtractedFiles > 0)
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，共处理{totalSourceFiles}个源文件，提取出{totalExtractedFiles}个WEBP文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,共处理{totalSourceFiles}个源文件,提取出{totalExtractedFiles}个WEBP文件");
             }
             else
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，共处理{totalSourceFiles}个源文件，未找到WEBP文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,共处理{totalSourceFiles}个源文件,未找到WEBP文件");
             }
             OnExtractionCompleted();
         }

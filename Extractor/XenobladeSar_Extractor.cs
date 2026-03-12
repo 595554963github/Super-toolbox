@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class XenobladeSar_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
         private const uint SAR1_LITTLE_ENDIAN = 0x53415231;
         private const uint SAR1_BIG_ENDIAN = 0x31524153;
         private static readonly byte[] SADF_SIGNATURE = { 0x73, 0x61, 0x64, 0x66 }; // "sadf"
@@ -119,7 +119,7 @@ namespace super_toolbox
 
                     if (!isValidSadf)
                     {
-                        ExtractionProgress?.Invoke(this, $"警告:第{i + 1}个sadf结构无效，跳过");
+                        ExtractionProgress?.Invoke(this, $"警告:第{i + 1}个sadf结构无效,跳过");
                         continue;
                     }
                     byte[] sadfData = new byte[endPos - startPos];

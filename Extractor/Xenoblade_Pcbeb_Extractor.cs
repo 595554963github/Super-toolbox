@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class Xenoblade_Pcbeb_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] XBC1_HEADER = { 0x78, 0x62, 0x63, 0x31 };
 
@@ -69,7 +69,7 @@ namespace super_toolbox
                         OnExtractionFailed($"处理文件{fileName}时出错:{ex.Message}");
                     }
                 }
-                ExtractionProgress?.Invoke(this, $"处理完成，共处理{pcbebFiles.Count}个pcbeb文件，提取出来了{totalDatFilesExtracted}个dat文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,共处理{pcbebFiles.Count}个pcbeb文件,提取出来了{totalDatFilesExtracted}个dat文件");
                 OnExtractionCompleted();
             }
             catch (OperationCanceledException)
@@ -116,7 +116,7 @@ namespace super_toolbox
                         successCount++;
                     }
                 }
-                ExtractionProgress?.Invoke(this, $"{baseFileName}:处理完成，成功解压{successCount}个文件");
+                ExtractionProgress?.Invoke(this, $"{baseFileName}:处理完成,成功解压{successCount}个文件");
             }
             catch (Exception ex)
             {
@@ -294,4 +294,3 @@ namespace super_toolbox
         }
     }
 }
-

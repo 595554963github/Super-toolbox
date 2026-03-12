@@ -6,9 +6,9 @@ namespace super_toolbox
 {
     public class Vpp_pc_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private readonly byte[] VPP_MAGIC_HEADER = new byte[] { 0xCE, 0x0A, 0x89, 0x51, 0x11, 0x00, 0x00, 0x00 };
         private const long LARGE_FILE_THRESHOLD = 2L * 1024 * 1024 * 1024;
@@ -257,7 +257,7 @@ namespace super_toolbox
                             long compressedSize = entry.CompressedSize;
                             if (compressedSize > int.MaxValue)
                             {
-                                throw new InvalidOperationException($"压缩文件过大({compressedSize}字节)，无法处理");
+                                throw new InvalidOperationException($"压缩文件过大({compressedSize}字节),无法处理");
                             }
 
                             byte[] compressedData = reader.ReadBytes((int)compressedSize);
@@ -434,7 +434,7 @@ namespace super_toolbox
                             long compressedSize = entry.CompressedSize;
                             if (compressedSize > int.MaxValue)
                             {
-                                throw new InvalidOperationException($"压缩文件过大({compressedSize}字节)，无法处理");
+                                throw new InvalidOperationException($"压缩文件过大({compressedSize}字节),无法处理");
                             }
 
                             byte[] compressedData = reader.ReadBytes((int)compressedSize);

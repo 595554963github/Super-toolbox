@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class Wii_Misc_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
         private static readonly byte[] BresSignature = new byte[] { 0x62, 0x72, 0x65, 0x73 };
         private static readonly byte[] TplSignature = new byte[] { 0x00, 0x20, 0xAF, 0x30 };
         private static readonly byte[] RlanSignature = new byte[] { 0x52, 0x4C, 0x41, 0x4E };

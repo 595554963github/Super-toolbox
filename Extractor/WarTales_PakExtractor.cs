@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class WarTales_PakExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         public override void Extract(string directoryPath)
         {
@@ -79,11 +79,11 @@ namespace super_toolbox
 
             if (totalExtractedFiles > 0)
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，共处理{totalSourceFiles}个源文件，提取出{totalExtractedFiles}个文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,共处理{totalSourceFiles}个源文件,提取出{totalExtractedFiles}个文件");
             }
             else
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，共处理{totalSourceFiles}个源文件，未找到可提取的文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,共处理{totalSourceFiles}个源文件,未找到可提取的文件");
             }
 
             OnExtractionCompleted();

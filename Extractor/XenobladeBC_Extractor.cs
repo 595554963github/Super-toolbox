@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class XenobladeBC_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] BC_START_SIGNATURE = { 0x42, 0x43, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00 };
 
@@ -67,11 +67,11 @@ namespace super_toolbox
 
                 if (extractedFiles.Count > 0)
                 {
-                    ExtractionProgress?.Invoke(this, $"处理完成，共提取出{extractedFiles.Count}个BC文件");
+                    ExtractionProgress?.Invoke(this, $"处理完成,共提取出{extractedFiles.Count}个BC文件");
                 }
                 else
                 {
-                    ExtractionProgress?.Invoke(this, "处理完成，未找到BC文件");
+                    ExtractionProgress?.Invoke(this, "处理完成,未找到BC文件");
                 }
 
                 OnExtractionCompleted();
@@ -172,4 +172,3 @@ namespace super_toolbox
         }
     }
 }
-

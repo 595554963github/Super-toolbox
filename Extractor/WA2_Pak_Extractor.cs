@@ -1,13 +1,13 @@
-﻿using System.Text;
+using System.Text;
 using System.Drawing.Imaging;
 
 namespace super_toolbox
 {
     public class WA2_Pak_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] PACK_MAGIC = { 0x50, 0x41, 0x43, 0x4B };
         private static readonly byte[] LAC0_MAGIC = { 0x00, 0x43, 0x41, 0x4C };
@@ -82,11 +82,11 @@ namespace super_toolbox
             TotalFilesToExtract = extractedFiles.Count;
             if (extractedFiles.Count > 0)
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，共提取出{extractedFiles.Count}个文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,共提取出{extractedFiles.Count}个文件");
             }
             else
             {
-                ExtractionProgress?.Invoke(this, "处理完成，未找到WA2格式文件");
+                ExtractionProgress?.Invoke(this, "处理完成,未找到WA2格式文件");
             }
 
             OnExtractionCompleted();
@@ -382,5 +382,5 @@ namespace super_toolbox
             if (cancellationToken.IsCancellationRequested)
                 throw new OperationCanceledException(cancellationToken);
         }
-    }  
+    }
 }

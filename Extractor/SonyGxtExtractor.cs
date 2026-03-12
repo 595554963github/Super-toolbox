@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class SonyGxtExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
         private static readonly byte[] GXT_HEADER = { 0x47, 0x58, 0x54, 0x00, 0x03, 0x00, 0x00, 0x10 };
         private const int BUFFER_SIZE = 8192;
         private const int MAX_SEARCH_SIZE = 50 * 1024 * 1024;

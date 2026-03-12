@@ -2,18 +2,18 @@ namespace super_toolbox
 {
     public class Tm2_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] TM2_SIGNATURE = new byte[] { 0x54, 0x49, 0x4D, 0x32 };
         private const int MIN_TM2_SIZE = 0x30;
         private const int MAX_REASONABLE_SIZE = 100 * 1024 * 1024;
         private const int MAX_REASONABLE_DIMENSION = 4096;
         private int fileCounter = 0;
-        
+
         private static readonly HashSet<byte> VALID_VERSIONS = new HashSet<byte> { 3, 4, 5, 6 };
-        
+
         private static readonly HashSet<byte> VALID_FORMATS = new HashSet<byte> { 0, 1 };
 
         public override void Extract(string path)
@@ -157,7 +157,7 @@ namespace super_toolbox
                 }
 
                 int totalSize = ReadLittleEndianInt32(content, startIndex + 0x10);
-                
+
                 if (!IsValidTm2Size(totalSize, startIndex, content.Length))
                 {
                     index = startIndex + 1;
@@ -167,7 +167,7 @@ namespace super_toolbox
                 int totalFileSize = totalSize + 16;
 
                 byte imageCount = content[startIndex + 0x06];
-                
+
                 if (imageCount > 1)
                 {
                     if (!ValidateMultiImageTm2(content, startIndex, totalFileSize))
@@ -220,9 +220,9 @@ namespace super_toolbox
 
             short width = ReadLittleEndianInt16(data, offset + 0x24);
             short height = ReadLittleEndianInt16(data, offset + 0x26);
-            
-            if (width <= 0 || height <= 0 || 
-                width > MAX_REASONABLE_DIMENSION || 
+
+            if (width <= 0 || height <= 0 ||
+                width > MAX_REASONABLE_DIMENSION ||
                 height > MAX_REASONABLE_DIMENSION)
                 return false;
 
@@ -250,7 +250,7 @@ namespace super_toolbox
                 return false;
 
             int totalFileSize = totalSize + 16;
-            
+
             if (offset + totalFileSize > fileLength)
                 return false;
 

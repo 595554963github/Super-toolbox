@@ -5,9 +5,9 @@ namespace super_toolbox
 {
     public class XenobladeMap_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] DAP1_HEADER = { 0x44, 0x41, 0x50, 0x31 };
         private static readonly byte[] BRRES_HEADER = { 0x62, 0x72, 0x65, 0x73 };

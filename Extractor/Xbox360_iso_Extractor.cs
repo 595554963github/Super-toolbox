@@ -6,9 +6,9 @@ namespace super_toolbox
     public class Xbox360_iso_Extractor : BaseExtractor
     {
         private static string _tempDllPath;
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         [DllImport("exiso.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern int extract_xiso_extract(string xisoPath, string outputDir);

@@ -1,12 +1,12 @@
-﻿using System.Buffers;
+using System.Buffers;
 
 namespace super_toolbox
 {
     public class TgaExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
         public int MaxDimension { get; set; } = 8192;
         public HashSet<byte> SupportedImageTypes { get; } = new HashSet<byte> { 1, 2, 3, 9, 10, 11 };
         public HashSet<byte> SupportedBitDepths { get; } = new HashSet<byte> { 8, 16, 24, 32, 15, 2 };

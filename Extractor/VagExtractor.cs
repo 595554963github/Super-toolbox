@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class VagExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] VAG_START_MARKER = { 0x56, 0x41, 0x47, 0x70 };
 
