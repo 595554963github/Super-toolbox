@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class IdeaFactory_PacRepacker : BaseExtractor
     {
-        public new event EventHandler<string>? PackingStarted;
-        public new event EventHandler<string>? PackingProgress;
-        public new event EventHandler<string>? PackingError;
+        public event EventHandler<string>? PackingStarted;
+        public event EventHandler<string>? PackingProgress;
+        public event EventHandler<string>? PackingError;
 
         private static string _tempExePath;
 

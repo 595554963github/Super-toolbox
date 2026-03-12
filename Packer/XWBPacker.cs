@@ -7,9 +7,9 @@ namespace super_toolbox
     public class XWBPacker : BaseExtractor
     {
         private static string _tempDllPath;
-        public new event EventHandler<string>? PackingStarted;
-        public new event EventHandler<string>? PackingProgress;
-        public new event EventHandler<string>? PackingError;
+        public event EventHandler<string>? PackingStarted;
+        public event EventHandler<string>? PackingProgress;
+        public event EventHandler<string>? PackingError;
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private new static extern bool SetDllDirectory(string lpPathName);

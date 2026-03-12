@@ -5,9 +5,9 @@ namespace super_toolbox
 {
     public class MagesMpkRepacker : BaseExtractor
     {
-        public new event EventHandler<string>? PackingStarted;
-        public new event EventHandler<string>? PackingProgress;
-        public new event EventHandler<string>? PackingError;
+        public event EventHandler<string>? PackingStarted;
+        public event EventHandler<string>? PackingProgress;
+        public event EventHandler<string>? PackingError;
 
         private const uint MPK_MAGIC = 0x004B504D;
         private const uint MPK_VERSION = 0x020000;

@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class AfsRepacker : BaseExtractor
     {      
-        public new event EventHandler<string>? PackingStarted;
-        public new event EventHandler<string>? PackingProgress;
-        public new event EventHandler<string>? PackingError;
+        public event EventHandler<string>? PackingStarted;
+        public event EventHandler<string>? PackingProgress;
+        public event EventHandler<string>? PackingError;
         private static readonly byte[] AFS_MAGIC = { 0x41, 0x46, 0x53, 0x00 };
         private const uint AFS_DATA_START = 0x80000;
         private const uint ALIGNMENT = 0x800;

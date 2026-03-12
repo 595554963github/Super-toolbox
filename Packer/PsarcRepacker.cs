@@ -5,9 +5,9 @@ namespace super_toolbox
     public class PsarcRepacker : BaseExtractor
     {
         private static string _tempExePath;
-        public new event EventHandler<string>? PackingStarted;
-        public new event EventHandler<string>? PackingProgress;
-        public new event EventHandler<string>? PackingError;
+        public event EventHandler<string>? PackingStarted;
+        public event EventHandler<string>? PackingProgress;
+        public event EventHandler<string>? PackingError;
         private int _processedSourceFiles = 0;
         private int _totalSourceFiles = 0;
 

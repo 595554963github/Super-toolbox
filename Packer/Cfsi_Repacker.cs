@@ -5,9 +5,9 @@ namespace super_toolbox
 {
     public class Cfsi_Repacker : BaseExtractor
     {
-        public new event EventHandler<string>? PackingStarted;
-        public new event EventHandler<string>? PackingProgress;
-        public new event EventHandler<string>? PackingError;
+        public event EventHandler<string>? PackingStarted;
+        public event EventHandler<string>? PackingProgress;
+        public event EventHandler<string>? PackingError;
 
         public override void Extract(string directoryPath)
         {
@@ -42,8 +42,8 @@ namespace super_toolbox
                 string jsonFilePath = FindJsonFile(directoryPath);
                 if (string.IsNullOrEmpty(jsonFilePath))
                 {
-                    PackingError?.Invoke(this, "未找到CFSI结构文件(.json)，无法进行打包");
-                    OnPackingFailed("未找到CFSI结构文件(.json)，无法进行打包");
+                    PackingError?.Invoke(this, "未找到CFSI结构文件(.json),无法进行打包");
+                    OnPackingFailed("未找到CFSI结构文件(.json),无法进行打包");
                     return;
                 }
 

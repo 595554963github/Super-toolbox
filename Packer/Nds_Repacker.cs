@@ -5,9 +5,9 @@ namespace super_toolbox
     public class Nds_Repacker : BaseExtractor
     {
         private static string _tempExePath;
-        public new event EventHandler<string>? PackingStarted;
-        public new event EventHandler<string>? PackingProgress;
-        public new event EventHandler<string>? PackingError;
+        public event EventHandler<string>? PackingStarted;
+        public event EventHandler<string>? PackingProgress;
+        public event EventHandler<string>? PackingError;
         private int _processedSourceFiles = 0;
 
         static Nds_Repacker()
@@ -16,7 +16,7 @@ namespace super_toolbox
 
             if (string.IsNullOrEmpty(_tempExePath) || !File.Exists(_tempExePath))
             {
-                throw new InvalidOperationException("无法加载ndstool.exe，请检查嵌入资源");
+                throw new InvalidOperationException("无法加载ndstool.exe,请检查嵌入资源");
             }
         }
 
@@ -43,7 +43,7 @@ namespace super_toolbox
                 return;
             }
             TotalFilesToPack = sourceFiles.Count;
-            PackingStarted?.Invoke(this, $"开始打包NDS文件，共找到{sourceFiles.Count}个源文件");
+            PackingStarted?.Invoke(this, $"开始打包NDS文件,共找到{sourceFiles.Count}个源文件");
             try
             {
                 foreach (var file in sourceFiles)
@@ -84,7 +84,7 @@ namespace super_toolbox
                 }
                 if (successfullyPackedCount > 0)
                 {
-                    PackingProgress?.Invoke(this, $"打包完成!共处理{sourceFiles.Count}个源文件，成功生成{successfullyPackedCount}个NDS文件");
+                    PackingProgress?.Invoke(this, $"打包完成!共处理{sourceFiles.Count}个源文件,成功生成{successfullyPackedCount}个NDS文件");
                     OnPackingCompleted();
                 }
                 else
