@@ -247,7 +247,7 @@ namespace super_toolbox
             { "任天堂 - szs/sarc", ("其他档案", "任天堂3ds/wiiu/switch平台的szs/sarc档案提取器,可提取bflan、bflyt、bfsha、bflim、bfres、bfrgp、byml等文件") },
             { "任天堂 - tpl/brres/brlan/brlyt/mca", ("其他档案", "任天堂wii平台的提取器,可将tpl、brres、brlan、brlyt等文件从游戏里面提取出来,已测试wii平台的异度之刃") },
             { "任天堂 - bflim", ("图片", "wiiu平台的专用转换器,把bflim转换成dds") },
-            { "任天堂 - byml", ("其他档案", "wiiu平台的byml转换器,可将byml转换为yml") },
+            { "任天堂 - byml", ("其他档案", "wiiu平台的byml转换器,可将byml、bygml、byaml转换为yml,已测试塞尔达传说:王国之泪") },
             { "任天堂 - tpl", ("图片", "wii平台的专用转换器,可将tpl转换为png") },
             { "SGGG - MRG/EFC", ("其他档案", "SEGA Dreamcast的MRG和EFC专用提取器,可提取mrg里面的所有文件") },
             { "PS2真三国无双4猛将传 - bin/idx", ("其他档案", "PS2真三国无双4猛将传的LINKDATA专用提取器") },
@@ -329,6 +329,7 @@ namespace super_toolbox
             { "PSV欲望之拳 - lzs", ("其他档案", "PSV欲望之拳的lzs专用提取器,参考quickbms源码修改而来") },
             { "任天堂 - bwav", ("音频", "任天堂的bwav音频提取器,用于塞尔达传说:王国之泪等游戏") },
             { "塞尔达传说:王国之泪 - zs", ("其他档案", "塞尔达传说:王国之泪的zs文件专用解包器") },
+            { "任天堂 - bnsh提取器", ("其他档案", "任天堂游戏的bnsh着色器文件提取器,可从bfsha等文件里面提取出bnsh文件,比如塞尔达传说:王国之泪") },
         };
         public SuperToolbox()
         {
@@ -975,6 +976,7 @@ namespace super_toolbox
                 case "PSV欲望之拳 - lzs": return new Lzs_Extractor();
                 case "任天堂 - bwav": return new Bwav_Extractor();
                 case "塞尔达传说:王国之泪 - zs": return new TOTK_zs_Extractor();
+                case "任天堂 - bnsh提取器": return new Bnsh_Extractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
