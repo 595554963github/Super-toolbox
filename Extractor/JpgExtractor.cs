@@ -6,7 +6,7 @@ namespace super_toolbox
         public event EventHandler<string>? ExtractionProgress;
         public event EventHandler<string>? ExtractionError;
 
-        private static readonly byte[] START_SEQUENCE = { 0xFF, 0xD8, 0xFF, 0xE0 };
+        private static readonly byte[] START_SEQUENCE = { 0xFF, 0xD8, 0xFF};
         private static readonly byte[] JFIF_MARKER = System.Text.Encoding.ASCII.GetBytes("JFIF");
         private static readonly byte[] EXIF_MARKER = System.Text.Encoding.ASCII.GetBytes("Exif");
         private static readonly byte[] END_SEQUENCE = { 0xFF, 0xD9 };

@@ -7,7 +7,6 @@ namespace super_toolbox
         public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] BWAV_SIG_BYTES = { 0x42, 0x57, 0x41, 0x56 };
-        private static readonly byte[] AMTA_SIG_BYTES = { 0x41, 0x4D, 0x54, 0x41 };
 
         public override void Extract(string directoryPath)
         {
@@ -42,65 +41,15 @@ namespace super_toolbox
                     byte[] content = await File.ReadAllBytesAsync(barsFile, cancellationToken);
 
                     List<long> bwavOffsets = new List<long>();
-                    List<string> audioNames = new List<string>();
 
                     for (long i = 0; i < content.Length - 4; i++)
                     {
-                        if (i + 3 >= content.Length) break;
-
                         if (content[i] == BWAV_SIG_BYTES[0] &&
                             content[i + 1] == BWAV_SIG_BYTES[1] &&
                             content[i + 2] == BWAV_SIG_BYTES[2] &&
                             content[i + 3] == BWAV_SIG_BYTES[3])
                         {
                             bwavOffsets.Add(i);
-                        }
-
-                        if (content[i] == AMTA_SIG_BYTES[0] &&
-                            content[i + 1] == AMTA_SIG_BYTES[1] &&
-                            content[i + 2] == AMTA_SIG_BYTES[2] &&
-                            content[i + 3] == AMTA_SIG_BYTES[3])
-                        {
-                            long nameStart = i + 0x48;
-                            if (nameStart < content.Length && content[nameStart] == 0x01)
-                            {
-                                nameStart += 0x8;
-                            }
-
-                            long nameLen = 0;
-                            for (long j = nameStart; j < content.Length; j++, nameLen++)
-                            {
-                                if (content[j] == 0xC2)
-                                {
-                                    nameStart = j + 1;
-                                    nameLen = -1;
-                                }
-                                if (content[j] == 0x00) break;
-                            }
-
-                            if (nameLen > 0 && nameStart + nameLen <= content.Length)
-                            {
-                                string name = System.Text.Encoding.UTF8.GetString(content, (int)nameStart, (int)nameLen);
-
-                                if (audioNames.Contains(name))
-                                {
-                                    int repeatCounter = 1;
-                                    while (audioNames.Contains(name + "-" + repeatCounter.ToString()))
-                                    {
-                                        repeatCounter++;
-                                    }
-                                    name = name + "-" + repeatCounter.ToString();
-                                }
-                                audioNames.Add(name);
-                            }
-                        }
-                    }
-
-                    if (audioNames.Count < bwavOffsets.Count)
-                    {
-                        for (int i = audioNames.Count; i < bwavOffsets.Count; i++)
-                        {
-                            audioNames.Add("extra_" + (i + 1).ToString());
                         }
                     }
 
@@ -119,7 +68,16 @@ namespace super_toolbox
                         byte[] bwavData = new byte[length];
                         Array.Copy(content, offset, bwavData, 0, length);
 
-                        string fileName = audioNames[i] + ".bwav";
+                        string fileName;
+                        if (bwavOffsets.Count == 1)
+                        {
+                            fileName = barsFileName + ".bwav";
+                        }
+                        else
+                        {
+                            fileName = $"{barsFileName}_{i + 1:D2}.bwav";
+                        }
+
                         string outputPath = Path.Combine(outputSubDir, fileName);
                         outputPath = GetUniqueFilePath(outputPath);
 
