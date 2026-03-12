@@ -1,13 +1,13 @@
-﻿using System.Text;
+using System.Text;
 using System.IO.Compression;
 
 namespace super_toolbox
 {
     public class Fate_pk_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private class PkCrc32
         {

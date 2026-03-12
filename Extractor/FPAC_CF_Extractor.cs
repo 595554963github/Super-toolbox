@@ -1,13 +1,13 @@
-﻿using System.Text;
+using System.Text;
 using System.IO.Compression;
 
 namespace super_toolbox
 {
     public class FPAC_CF_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] PAC_PREFIX = new byte[] { 0x46, 0x50, 0x41, 0x43 };
         private static readonly byte[] COMPRESSED_PAC_PREFIX = new byte[] { 0x44, 0x46, 0x41, 0x53, 0x46, 0x50, 0x41, 0x43 };
@@ -32,7 +32,7 @@ namespace super_toolbox
             }
 
             TotalFilesToExtract = pacFiles.Length;
-            ExtractionStarted?.Invoke(this, $"找到{pacFiles.Length}个PAC文件，开始处理...");
+            ExtractionStarted?.Invoke(this, $"找到{pacFiles.Length}个PAC文件,开始处理...");
 
             try
             {
@@ -90,7 +90,7 @@ namespace super_toolbox
                         }
                     }
 
-                    ExtractionProgress?.Invoke(this, $"处理完成，共解包{processedCount}/{pacFiles.Length}个PAC文件，总共提取出{totalExtractedFiles}个文件");
+                    ExtractionProgress?.Invoke(this, $"处理完成,共解包{processedCount}/{pacFiles.Length}个PAC文件,总共提取出{totalExtractedFiles}个文件");
                     OnExtractionCompleted();
                 }, cancellationToken);
             }
@@ -203,12 +203,12 @@ namespace super_toolbox
 
                 if (!StartsWith(pacData, PAC_PREFIX))
                 {
-                    ExtractionError?.Invoke(this, $"{fileName}不是有效的FPAC文件，跳过");
+                    ExtractionError?.Invoke(this, $"{fileName}不是有效的FPAC文件,跳过");
                     return extractedFiles;
                 }
 
                 extractedFiles = ExtractFromPacData(pacFilePath, pacData);
-                ExtractionProgress?.Invoke(this, $"{fileName}处理完成，提取出{extractedFiles.Count}个文件");
+                ExtractionProgress?.Invoke(this, $"{fileName}处理完成,提取出{extractedFiles.Count}个文件");
             }
             catch (Exception ex)
             {
@@ -325,7 +325,7 @@ namespace super_toolbox
                     int absoluteOffset = dataStart + fileEntry.FileOffset;
                     if (absoluteOffset + fileEntry.FileSize > pacContents.Length)
                     {
-                        ExtractionError?.Invoke(this, $"文件{fileEntry.FileName} 数据超出范围，跳过");
+                        ExtractionError?.Invoke(this, $"文件{fileEntry.FileName} 数据超出范围,跳过");
                         continue;
                     }
 

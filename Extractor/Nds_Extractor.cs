@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class Nds_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
         private static string _tempExePath;
         static Nds_Extractor()
         {
@@ -30,7 +30,7 @@ namespace super_toolbox
             TotalFilesToExtract = ndsFiles.Length;
             int successfullyExtractedCount = 0;
             int totalExtractedFiles = 0;
-            ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}，共找到{ndsFiles.Length}个NDS文件");
+            ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath},共找到{ndsFiles.Length}个NDS文件");
             try
             {
                 foreach (var ndsFile in ndsFiles)
@@ -75,7 +75,7 @@ namespace super_toolbox
                 }
                 if (successfullyExtractedCount > 0)
                 {
-                    ExtractionProgress?.Invoke(this, $"解包完成，成功解包{successfullyExtractedCount}个NDS文件，共提取{totalExtractedFiles}个文件");
+                    ExtractionProgress?.Invoke(this, $"解包完成,成功解包{successfullyExtractedCount}个NDS文件,共提取{totalExtractedFiles}个文件");
                     OnExtractionCompleted();
                 }
                 else

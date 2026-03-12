@@ -5,25 +5,21 @@ namespace super_toolbox
         private static readonly byte[] AHX_START_HEADER = { 0x80, 0x00, 0x00, 0x20 };
         private static readonly byte[] AHX_END_HEADER = { 0x80, 0x01, 0x00, 0x0C, 0x41, 0x48, 0x58, 0x45, 0x28, 0x63, 0x29, 0x43, 0x52, 0x49, 0x00, 0x00 };
 
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
             {
-                ExtractionError?.Invoke(this, $"错误:{directoryPath} 不是有效的目录");
-                OnExtractionFailed($"错误:{directoryPath} 不是有效的目录");
+                ExtractionError?.Invoke(this, $"错误:{directoryPath}不是有效的目录");
+                OnExtractionFailed($"错误:{directoryPath}不是有效的目录");
                 return;
             }
 
-            string extractedRootDir = Path.Combine(directoryPath, "Extracted");
-            Directory.CreateDirectory(extractedRootDir);
-
             var sourceFiles = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories)
-                .Where(file => !file.StartsWith(extractedRootDir, StringComparison.OrdinalIgnoreCase) &&
-                              !Path.GetExtension(file).Equals(".ahx", StringComparison.OrdinalIgnoreCase))
+                .Where(file => !Path.GetExtension(file).Equals(".ahx", StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             TotalFilesToExtract = sourceFiles.Count;
@@ -43,7 +39,12 @@ namespace super_toolbox
 
                             ExtractionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(sourceFilePath)}");
 
-                            int extractedCount = ExtractAhxsFromFile(sourceFilePath, extractedRootDir, cancellationToken);
+                            string sourceDir = Path.GetDirectoryName(sourceFilePath) ?? string.Empty;
+                            string sourceFileNameWithoutExt = Path.GetFileNameWithoutExtension(sourceFilePath);
+                            string extractedDir = Path.Combine(sourceDir, sourceFileNameWithoutExt);
+                            Directory.CreateDirectory(extractedDir);
+
+                            int extractedCount = ExtractAhxsFromFile(sourceFilePath, extractedDir, cancellationToken);
                             totalExtractedAhxFiles += extractedCount;
 
                             if (extractedCount > 0)
@@ -64,11 +65,11 @@ namespace super_toolbox
 
                     if (totalExtractedAhxFiles > 0)
                     {
-                        ExtractionProgress?.Invoke(this, $"处理完成，共从{sourceFiles.Count}个源文件中提取出{totalExtractedAhxFiles}个AHX文件");
+                        ExtractionProgress?.Invoke(this, $"处理完成,共从{sourceFiles.Count}个源文件中提取出{totalExtractedAhxFiles}个AHX文件");
                     }
                     else
                     {
-                        ExtractionProgress?.Invoke(this, "处理完成，未找到AHX文件");
+                        ExtractionProgress?.Invoke(this, "处理完成,未找到AHX文件");
                     }
                 }, cancellationToken);
 
@@ -87,7 +88,7 @@ namespace super_toolbox
             }
         }
 
-        private int ExtractAhxsFromFile(string filePath, string extractedRootDir, CancellationToken cancellationToken)
+        private int ExtractAhxsFromFile(string filePath, string outputDir, CancellationToken cancellationToken)
         {
             int count = 0;
 
@@ -95,17 +96,12 @@ namespace super_toolbox
             {
                 byte[] fileContent = File.ReadAllBytes(filePath);
                 string baseFilename = Path.GetFileNameWithoutExtension(filePath);
-                string outputDir = Path.Combine(extractedRootDir, baseFilename);
-                Directory.CreateDirectory(outputDir);
-
                 foreach (byte[] ahxData in ExtractAhxData(fileContent))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
                     string extractedFilename = $"{baseFilename}_{count + 1}.ahx";
                     string extractedPath = Path.Combine(outputDir, extractedFilename);
-
-                    extractedPath = GetUniqueFilePath(extractedPath);
 
                     File.WriteAllBytes(extractedPath, ahxData);
 
@@ -126,7 +122,6 @@ namespace super_toolbox
 
             return count;
         }
-
         private static IEnumerable<byte[]> ExtractAhxData(byte[] fileContent)
         {
             int startIndex = 0;
@@ -169,29 +164,6 @@ namespace super_toolbox
             }
             return -1;
         }
-
-        private string GetUniqueFilePath(string filePath)
-        {
-            if (!File.Exists(filePath))
-            {
-                return filePath;
-            }
-
-            string directory = Path.GetDirectoryName(filePath) ?? string.Empty;
-            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
-            string fileExtension = Path.GetExtension(filePath);
-            int duplicateCount = 1;
-            string newFilePath;
-
-            do
-            {
-                newFilePath = Path.Combine(directory, $"{fileNameWithoutExtension}_dup{duplicateCount}{fileExtension}");
-                duplicateCount++;
-            } while (File.Exists(newFilePath));
-
-            return newFilePath;
-        }
-
         public override void Extract(string directoryPath)
         {
             ExtractAsync(directoryPath).Wait();

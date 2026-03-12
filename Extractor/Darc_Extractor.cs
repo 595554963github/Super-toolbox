@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class Darc_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] DARC_MAGIC_BYTES = new byte[] { 0x64, 0x61, 0x72, 0x63 };
         private static readonly ushort DARC_BOM = 0xFEFF;

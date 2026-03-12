@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class AdxExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] ADX_SIG_BYTES = { 0x80, 0x00 };
         private static readonly byte[] CRI_COPYRIGHT_BYTES = { 0x28, 0x63, 0x29, 0x43, 0x52, 0x49 };
@@ -130,7 +130,7 @@ namespace super_toolbox
             OnExtractionCompleted();
         }
         private void ProcessAdxSegment(byte[] content, int start, int end, string filePath, int innerCount,
-                                     string extractedDir, List<string> extractedFiles)
+                             string extractedDir, List<string> extractedFiles)
         {
             int length = end - start;
             if (length <= 0) return;
@@ -139,19 +139,11 @@ namespace super_toolbox
 
             if (!ContainsBytes(adxData, CRI_COPYRIGHT_BYTES))
                 return;
+
             string baseFileName = Path.GetFileNameWithoutExtension(filePath);
             string outputFileName = $"{baseFileName}_{innerCount}.adx";
             string outputFilePath = Path.Combine(extractedDir, outputFileName);
-            if (File.Exists(outputFilePath))
-            {
-                int duplicateCount = 1;
-                do
-                {
-                    outputFileName = $"{baseFileName}_{innerCount}_dup{duplicateCount}.adx";
-                    outputFilePath = Path.Combine(extractedDir, outputFileName);
-                    duplicateCount++;
-                } while (File.Exists(outputFilePath));
-            }
+
             try
             {
                 File.WriteAllBytes(outputFilePath, adxData);
@@ -164,8 +156,8 @@ namespace super_toolbox
             }
             catch (IOException e)
             {
-                ExtractionError?.Invoke(this, $"写入文件{outputFilePath} 时出错:{e.Message}");
-                OnExtractionFailed($"写入文件{outputFilePath} 时出错:{e.Message}");
+                ExtractionError?.Invoke(this, $"写入文件{outputFilePath}时出错:{e.Message}");
+                OnExtractionFailed($"写入文件{outputFilePath}时出错:{e.Message}");
             }
         }
     }

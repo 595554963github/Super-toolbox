@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class DyingLight_rpack_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         public override void Extract(string directoryPath)
         {
@@ -33,7 +33,7 @@ namespace super_toolbox
             }
 
             TotalFilesToExtract = rpackFiles.Count;
-            ExtractionProgress?.Invoke(this, $"找到{rpackFiles.Count}个.rpack文件，开始提取...");
+            ExtractionProgress?.Invoke(this, $"找到{rpackFiles.Count}个.rpack文件,开始提取...");
 
             int processedCount = 0;
             int totalExtractedFiles = 0;
@@ -53,7 +53,7 @@ namespace super_toolbox
                         int extractedCount = await ExtractRP6LWithAccurateCounting(filePath, cancellationToken);
                         totalExtractedFiles += extractedCount;
 
-                        ExtractionProgress?.Invoke(this, $"{fileName}提取完成，共提取{extractedCount}个文件");
+                        ExtractionProgress?.Invoke(this, $"{fileName}提取完成,共提取{extractedCount}个文件");
                     }
                     catch (OperationCanceledException)
                     {
@@ -68,7 +68,7 @@ namespace super_toolbox
                     }
                 }
 
-                ExtractionProgress?.Invoke(this, $"所有.rpack文件处理完成，总共提取{totalExtractedFiles}个文件");
+                ExtractionProgress?.Invoke(this, $"所有.rpack文件处理完成,总共提取{totalExtractedFiles}个文件");
                 OnExtractionCompleted();
             }
             catch (OperationCanceledException)
@@ -187,7 +187,7 @@ namespace super_toolbox
                                 {
                                     consecutiveNoChangeCount = 0;
                                     int totalCount = extractedFiles.Count;
-                                    ExtractionProgress?.Invoke(this, $"轮询发现{newFilesCount}个新文件，总计:{totalCount}个文件");
+                                    ExtractionProgress?.Invoke(this, $"轮询发现{newFilesCount}个新文件,总计:{totalCount}个文件");
                                 }
                                 else
                                 {
@@ -261,7 +261,7 @@ namespace super_toolbox
                     await pollingTask;
 
                     int finalCount = extractedFiles.Count;
-                    ExtractionProgress?.Invoke(this, $"{Path.GetFileName(filePath)}提取完成，最终数量:{finalCount}个文件");
+                    ExtractionProgress?.Invoke(this, $"{Path.GetFileName(filePath)}提取完成,最终数量:{finalCount}个文件");
 
                     return finalCount;
                 }

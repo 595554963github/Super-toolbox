@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class GustElixir_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         public override void Extract(string directoryPath)
         {
@@ -38,7 +38,7 @@ namespace super_toolbox
                 return;
             }
             int actualFileCount = 0;
-            ExtractionStarted?.Invoke(this, $"正在分析{allFiles.Length}个文件，统计可提取内容...");
+            ExtractionStarted?.Invoke(this, $"正在分析{allFiles.Length}个文件,统计可提取内容...");
 
             foreach (var filePath in allFiles)
             {
@@ -56,7 +56,7 @@ namespace super_toolbox
                 }
             }
             TotalFilesToExtract = actualFileCount;
-            ExtractionStarted?.Invoke(this, $"开始处理{allFiles.Length}个文件(.elixir/.gz)，预计提取{actualFileCount}个文件(g1m/g1t)");
+            ExtractionStarted?.Invoke(this, $"开始处理{allFiles.Length}个文件(.elixir/.gz),预计提取{actualFileCount}个文件(g1m/g1t)");
 
             int extractedCount = 0;
 
@@ -81,7 +81,7 @@ namespace super_toolbox
                 }
             }
 
-            ExtractionProgress?.Invoke(this, $"提取完成，共提取{extractedCount}个文件(g1m/g1t)");
+            ExtractionProgress?.Invoke(this, $"提取完成,共提取{extractedCount}个文件(g1m/g1t)");
             OnExtractionCompleted();
         }
         private async Task<int> CountExtractableFilesAsync(string filePath, CancellationToken cancellationToken)

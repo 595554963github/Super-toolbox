@@ -1,13 +1,13 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Text;
 
 namespace super_toolbox
 {
     public class PodExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         public override void Extract(string directoryPath)
         {
@@ -126,7 +126,7 @@ namespace super_toolbox
                             }
                             File.Move(fullOutputPath, wemFilePath);
                             fullOutputPath = wemFilePath;
-                            ExtractionProgress?.Invoke(this, $"识别为WEM文件，已重命名:{fileEntry.Key} -> {Path.GetFileName(wemFilePath)}");
+                            ExtractionProgress?.Invoke(this, $"识别为WEM文件,已重命名:{fileEntry.Key} -> {Path.GetFileName(wemFilePath)}");
                         }
                     }
 

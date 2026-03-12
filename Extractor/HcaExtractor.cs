@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class HcaExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
         private static readonly byte[] START_SEQ_1 = { 0x48, 0x43, 0x41, 0x00 };
         private static readonly byte[] START_SEQ_2 = { 0xC8, 0xC3, 0xC1, 0x00, 0x03, 0x00, 0x00, 0x60 };
         private static readonly byte[] HCA_BLOCK_MARKER = { 0x66, 0x6D, 0x74 };

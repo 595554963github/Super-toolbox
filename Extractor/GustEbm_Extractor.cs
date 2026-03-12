@@ -7,9 +7,9 @@ namespace super_toolbox
     {
         private static string _tempExePath;
 
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         static GustEbm_Extractor()
         {
@@ -102,7 +102,7 @@ namespace super_toolbox
                             }
                             else
                             {
-                                ExtractionError?.Invoke(this, $"处理文件{Path.GetFileName(ebmFilePath)}失败，退出代码:{process.ExitCode}");
+                                ExtractionError?.Invoke(this, $"处理文件{Path.GetFileName(ebmFilePath)}失败,退出代码:{process.ExitCode}");
                             }
                         }
                         catch (Exception ex)

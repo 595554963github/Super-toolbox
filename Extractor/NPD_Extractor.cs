@@ -74,7 +74,7 @@ namespace super_toolbox
                             StartInfo = new ProcessStartInfo
                             {
                                 FileName = _tempExePath,
-                                Arguments = $"-d \"{sdatFilePath}\" \"{outputFilePath}\" 0", 
+                                Arguments = $"-d \"{sdatFilePath}\" \"{outputFilePath}\" 0",
                                 WorkingDirectory = Path.GetDirectoryName(sdatFilePath),
                                 UseShellExecute = false,
                                 CreateNoWindow = true,

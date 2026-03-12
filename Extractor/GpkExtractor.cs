@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class GpkExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         public override void Extract(string directoryPath)
         {
@@ -65,11 +65,11 @@ namespace super_toolbox
 
                 if (extractedFiles.Count > 0)
                 {
-                    ExtractionProgress?.Invoke(this, $"处理完成，共从{processedGpkFiles} 个GPK文件中提取出{extractedFiles.Count}个文件");
+                    ExtractionProgress?.Invoke(this, $"处理完成,共从{processedGpkFiles} 个GPK文件中提取出{extractedFiles.Count}个文件");
                 }
                 else
                 {
-                    ExtractionProgress?.Invoke(this, "处理完成，未找到可提取的文件");
+                    ExtractionProgress?.Invoke(this, "处理完成,未找到可提取的文件");
                 }
 
                 OnExtractionCompleted();

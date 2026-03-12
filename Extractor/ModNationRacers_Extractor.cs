@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class ModNationRacers_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         public override void Extract(string directoryPath)
         {
@@ -140,7 +140,7 @@ namespace super_toolbox
 
                         if (extractedOffsets.Contains(fileOffset))
                         {
-                            ExtractionProgress?.Invoke(this, $"条目{entryIndex}:偏移{fileOffset:X8}已提取过，跳过");
+                            ExtractionProgress?.Invoke(this, $"条目{entryIndex}:偏移{fileOffset:X8}已提取过,跳过");
                             currentOffset += 32;
                             entryIndex++;
                             continue;
@@ -164,7 +164,7 @@ namespace super_toolbox
 
                         if (fileOffset < nextValidOffset)
                         {
-                            ExtractionProgress?.Invoke(this, $"条目{entryIndex}:偏移{fileOffset:X8}小于预期偏移{nextValidOffset:X8}，可能已提取过");
+                            ExtractionProgress?.Invoke(this, $"条目{entryIndex}:偏移{fileOffset:X8}小于预期偏移{nextValidOffset:X8},可能已提取过");
                             currentOffset += 32;
                             entryIndex++;
                             continue;
@@ -209,7 +209,7 @@ namespace super_toolbox
 
                         if (nextValidOffset >= datFileSize)
                         {
-                            ExtractionProgress?.Invoke(this, $"dat文件已完全提取，停止处理剩余条目");
+                            ExtractionProgress?.Invoke(this, $"dat文件已完全提取,停止处理剩余条目");
                             break;
                         }
                     }

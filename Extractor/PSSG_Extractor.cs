@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using MiscUtil.Conversion;
 using MiscUtil.IO;
 
@@ -6,9 +6,9 @@ namespace super_toolbox
 {
     public class PSSG_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -96,11 +96,11 @@ namespace super_toolbox
 
                 if (extractedFiles.Count > 0)
                 {
-                    ExtractionProgress?.Invoke(this, $"处理完成，共提取出{extractedFiles.Count}个DDS纹理");
+                    ExtractionProgress?.Invoke(this, $"处理完成,共提取出{extractedFiles.Count}个DDS纹理");
                 }
                 else
                 {
-                    ExtractionProgress?.Invoke(this, "处理完成，但未找到任何可提取的纹理");
+                    ExtractionProgress?.Invoke(this, "处理完成,但未找到任何可提取的纹理");
                 }
 
                 OnExtractionCompleted();
@@ -161,7 +161,7 @@ namespace super_toolbox
                     this.rootNode = new CNode(endianBinaryReaderEx, this, null, false);
                     if (endianBinaryReaderEx.BaseStream.Position < endianBinaryReaderEx.BaseStream.Length)
                     {
-                        throw new Exception("文件保存不正确，不被此版本的PSSG编辑器支持");
+                        throw new Exception("文件保存不正确,不被此版本的PSSG编辑器支持");
                     }
                 }
             }
@@ -201,7 +201,7 @@ namespace super_toolbox
 
             if (num2 > reader.BaseStream.Length || num > reader.BaseStream.Length)
             {
-                throw new Exception("文件保存不正确，不被此版本的PSSG编辑器支持");
+                throw new Exception("文件保存不正确,不被此版本的PSSG编辑器支持");
             }
 
             this.attributes = new Dictionary<string, CAttribute>();
@@ -639,7 +639,7 @@ namespace super_toolbox
                 {
                     if (this.bdata2.Count != (int)blockCountAttr.Value)
                     {
-                        throw new Exception("加载立方体贴图失败，因为未找到所有块");
+                        throw new Exception("加载立方体贴图失败,因为未找到所有块");
                     }
                     this.header.caps2 |= DDS_HEADER.Caps2.DDSCAPS2_CUBEMAP;
                     this.header.flags &= ~DDS_HEADER.Flags.DDSD_LINEARSIZE;

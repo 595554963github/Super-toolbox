@@ -5,9 +5,9 @@ namespace super_toolbox
     public class AFUpkExtractor : BaseExtractor
     {
         private static string _tempExePath;
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
         static AFUpkExtractor()
         {
             _tempExePath = LoadEmbeddedExe("embedded.AFUpkExtractor.exe", "AFUpkExtractor.exe");
@@ -36,7 +36,7 @@ namespace super_toolbox
             }
             TotalFilesToExtract = upkFiles.Count;
             ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
-            ExtractionProgress?.Invoke(this, $"找到{upkFiles.Count}个.upk文件，开始解包...");
+            ExtractionProgress?.Invoke(this, $"找到{upkFiles.Count}个.upk文件,开始解包...");
             int extractedCount = 0;
             int totalExtractedFiles = 0;
             try
@@ -90,8 +90,8 @@ namespace super_toolbox
                                 process.WaitForExit();
                                 if (process.ExitCode != 0)
                                 {
-                                    ExtractionError?.Invoke(this, $"{fileName}解包失败，错误代码:{process.ExitCode}");
-                                    OnExtractionFailed($"{fileName}解包失败，错误代码:{process.ExitCode}");
+                                    ExtractionError?.Invoke(this, $"{fileName}解包失败,错误代码:{process.ExitCode}");
+                                    OnExtractionFailed($"{fileName}解包失败,错误代码:{process.ExitCode}");
                                 }
                                 else
                                 {
@@ -107,7 +107,7 @@ namespace super_toolbox
                                             ExtractionProgress?.Invoke(this, $"已提取:{relativePath}");
                                             OnFileExtracted(extractedFile);
                                         }
-                                        ExtractionProgress?.Invoke(this, $"处理完成，共提取{totalExtractedFiles}个文件");
+                                        ExtractionProgress?.Invoke(this, $"处理完成,共提取{totalExtractedFiles}个文件");
                                     }
                                     else
                                     {
@@ -122,7 +122,7 @@ namespace super_toolbox
                             OnExtractionFailed($"{fileName} 处理错误:{ex.Message}");
                         }
                     }
-                    ExtractionProgress?.Invoke(this, $"处理完成，共提取{totalExtractedFiles}个文件");
+                    ExtractionProgress?.Invoke(this, $"处理完成,共提取{totalExtractedFiles}个文件");
                     OnExtractionCompleted();
                 }, cancellationToken);
             }

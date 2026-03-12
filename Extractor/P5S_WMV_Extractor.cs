@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class P5S_WMV_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] WMV_START_SEQ = { 0x30, 0x26, 0xB2, 0x75, 0x8E, 0x66, 0xCF, 0x11 };
 
@@ -66,11 +66,11 @@ namespace super_toolbox
 
                 if (totalExtractedCount > 0)
                 {
-                    ExtractionProgress?.Invoke(this, $"处理完成，共提取出{totalExtractedCount}个WMV文件");
+                    ExtractionProgress?.Invoke(this, $"处理完成,共提取出{totalExtractedCount}个WMV文件");
                 }
                 else
                 {
-                    ExtractionProgress?.Invoke(this, "处理完成，未找到WMV文件");
+                    ExtractionProgress?.Invoke(this, "处理完成,未找到WMV文件");
                 }
 
                 OnExtractionCompleted();
@@ -99,7 +99,7 @@ namespace super_toolbox
                 int nextHeaderIndex = IndexOf(content, WMV_START_SEQ, headerStartIndex + 1);
                 int endIndex = nextHeaderIndex == -1 ? content.Length : nextHeaderIndex;
 
-                if (endIndex - headerStartIndex < 100) 
+                if (endIndex - headerStartIndex < 100)
                 {
                     index = headerStartIndex + 1;
                     continue;

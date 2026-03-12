@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class Msf_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] MSF_HEADER = { 0x4D, 0x53, 0x46, 0x43 }; // "MSFC"
         private static readonly int REQUIRED_TRAILING_ZEROS = 148;
@@ -113,11 +113,11 @@ namespace super_toolbox
 
             if (extractedFiles.Count > 0)
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，共提取出{extractedFiles.Count}个MSF文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,共提取出{extractedFiles.Count}个MSF文件");
             }
             else
             {
-                ExtractionProgress?.Invoke(this, "处理完成，未找到MSF文件");
+                ExtractionProgress?.Invoke(this, "处理完成,未找到MSF文件");
             }
         }
 
@@ -162,7 +162,7 @@ namespace super_toolbox
                     fixedMsfData[i] = 0x00;
                 }
 
-                ExtractionProgress?.Invoke(this, "未找到连续的148个00字节，已在尾部填充00");
+                ExtractionProgress?.Invoke(this, "未找到连续的148个00字节,已在尾部填充00");
                 return fixedMsfData;
             }
         }
@@ -250,4 +250,3 @@ namespace super_toolbox
         }
     }
 }
-

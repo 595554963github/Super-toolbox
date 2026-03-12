@@ -5,9 +5,9 @@ namespace super_toolbox
 {
     public class LightvnExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly Dictionary<string, byte[][]> FileTypeSignatures = new Dictionary<string, byte[][]>
         {
@@ -114,11 +114,11 @@ namespace super_toolbox
                     await ScanAndRenameFilesAsync(extractedDir, cancellationToken);
                     ExtractionProgress?.Invoke(this, "开始按文件类型分类...");
                     await ClassifyFilesByExtensionAsync(extractedDir, cancellationToken);
-                    ExtractionProgress?.Invoke(this, $"处理完成，共提取出{extractedFiles.Count}个文件");
+                    ExtractionProgress?.Invoke(this, $"处理完成,共提取出{extractedFiles.Count}个文件");
                 }
                 else
                 {
-                    ExtractionProgress?.Invoke(this, "处理完成，未找到可提取的文件");
+                    ExtractionProgress?.Invoke(this, "处理完成,未找到可提取的文件");
                 }
                 OnExtractionCompleted();
             }
@@ -136,7 +136,7 @@ namespace super_toolbox
             using var zipFile = new ZipFile(vndatFile);
             if (usePassword)
             {
-                ExtractionProgress?.Invoke(this, $"{Path.GetFileName(vndatFile)} 受密码保护，使用密码解密");
+                ExtractionProgress?.Invoke(this, $"{Path.GetFileName(vndatFile)} 受密码保护,使用密码解密");
                 zipFile.Password = zipPassword;
             }
             if (zipFile.Count > 0)

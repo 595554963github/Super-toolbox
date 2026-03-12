@@ -5,9 +5,9 @@ namespace super_toolbox
 {
     public class GustPak_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static string _tempDllPath;
         private static bool _dllLoaded = false;
@@ -126,7 +126,7 @@ namespace super_toolbox
                         }
                     }
 
-                    ExtractionProgress?.Invoke(this, $"全部完成! 处理了{pakFiles.Length}个PAK文件，共提取{totalExtractedFiles}个文件");
+                    ExtractionProgress?.Invoke(this, $"全部完成! 处理了{pakFiles.Length}个PAK文件,共提取{totalExtractedFiles}个文件");
                     OnExtractionCompleted();
                 }, cancellationToken);
             }

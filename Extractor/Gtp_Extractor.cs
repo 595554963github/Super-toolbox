@@ -1,12 +1,12 @@
-﻿using System.Text;
+using System.Text;
 
 namespace super_toolbox
 {
     public class Gtp_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         public override void Extract(string directoryPath)
         {
@@ -62,11 +62,11 @@ namespace super_toolbox
 
             if (totalExtracted > 0)
             {
-                ExtractionProgress?.Invoke(this, $"提取完成，共提取{totalExtracted}个文件");
+                ExtractionProgress?.Invoke(this, $"提取完成,共提取{totalExtracted}个文件");
             }
             else
             {
-                ExtractionProgress?.Invoke(this, "处理完成，未提取到文件");
+                ExtractionProgress?.Invoke(this, "处理完成,未提取到文件");
             }
 
             OnExtractionCompleted();
@@ -82,7 +82,7 @@ namespace super_toolbox
 
                 if (gtpData.Length < 0x40)
                 {
-                    ExtractionError?.Invoke(this, $"文件{Path.GetFileName(gtpFilePath)}太小，不是有效的GTP格式");
+                    ExtractionError?.Invoke(this, $"文件{Path.GetFileName(gtpFilePath)}太小,不是有效的GTP格式");
                     return 0;
                 }
 
@@ -239,7 +239,7 @@ namespace super_toolbox
                 }
 
                 ExtractionProgress?.Invoke(this,
-                    $"文件 {Path.GetFileName(gtpFilePath)} 处理完成，提取{extractedCount}个文件");
+                    $"文件 {Path.GetFileName(gtpFilePath)} 处理完成,提取{extractedCount}个文件");
 
                 return extractedCount;
             }

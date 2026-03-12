@@ -79,7 +79,7 @@ namespace super_toolbox
                 BinaryReader reader = new BinaryReader(stream);
                 if (reader.BaseStream.Length < 4)
                 {
-                    throw new Exception("文件大小不足，可能已损坏");
+                    throw new Exception("文件大小不足,可能已损坏");
                 }
 
                 var header = ReadHeader(ref reader);

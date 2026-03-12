@@ -1,10 +1,10 @@
-﻿namespace super_toolbox
+namespace super_toolbox
 {
     public class Hmt_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] HMT_SIG_BYTES = { 0x48, 0x4D, 0x4F, 0x54 };
         private static readonly byte[] KFMO_SIG_BYTES = { 0x4B, 0x46, 0x4D, 0x4F };

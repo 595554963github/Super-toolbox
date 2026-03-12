@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class FPAC_CS_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] FPAC_SIGNATURE = { 0x46, 0x50, 0x41, 0x43 };
         private static readonly byte[] SH_HCA_HEADER = { 0x53, 0x48, 0x03, 0x05, 0x00, 0x00, 0x00, 0x00 };
@@ -214,7 +214,7 @@ namespace super_toolbox
                         try
                         {
                             Directory.Delete(outputDir, true);
-                            ExtractionProgress?.Invoke(this, "没有提取到有效文件，已删除输出目录");
+                            ExtractionProgress?.Invoke(this, "没有提取到有效文件,已删除输出目录");
                         }
                         catch { }
                     }

@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class Radgametools_Audio_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] ADAR_SIGNATURE = { 0x41, 0x44, 0x41, 0x52 };
         private static readonly byte[] SEEK_SIGNATURE = { 0x53, 0x45, 0x45, 0x4B };

@@ -5,9 +5,9 @@ namespace super_toolbox
         private readonly object _lockObject = new object();
         private const int BufferSize = 8192;
 
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private const uint DDS_MAGIC = 0x20534444;
         private const int DDS_HEADER_SIZE = 124;

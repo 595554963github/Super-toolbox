@@ -44,7 +44,7 @@ namespace super_toolbox
 
                 if (isJustCause4)
                 {
-                    outputQueue.Add("检测到ARC和TAB文件，使用正当防卫4提取逻辑...");
+                    outputQueue.Add("检测到ARC和TAB文件,使用正当防卫4提取逻辑...");
                     var arcFiles = allFiles.Where(f => f.EndsWith(".arc", StringComparison.OrdinalIgnoreCase)).ToList();
                     TotalFilesToExtract = arcFiles.Count;
                     ProcessJustCause4ArcFiles(arcFiles, outputQueue);
@@ -116,7 +116,7 @@ namespace super_toolbox
                         OnFileExtracted(outputPath);
                     }
 
-                    outputQueue.Add($"已处理ARC源文件:{Path.GetFileName(arcFilePath)}，提取出{fsbPositions.Count}个FSB文件");
+                    outputQueue.Add($"已处理ARC源文件:{Path.GetFileName(arcFilePath)},提取出{fsbPositions.Count}个FSB文件");
                 }
                 catch (Exception ex)
                 {
@@ -171,7 +171,7 @@ namespace super_toolbox
                 }
             });
 
-            outputQueue.Add($"处理完成，共处理{processedCount}个源文件");
+            outputQueue.Add($"处理完成,共处理{processedCount}个源文件");
         }
         private bool ProcessSmallFile(string filePath, BlockingCollection<string> outputQueue)
         {

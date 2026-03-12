@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class PngExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] START_SEQUENCE = { 0x89, 0x50, 0x4E, 0x47 };
         private static readonly byte[] BLOCK_MARKER = { 0x49, 0x48, 0x44, 0x52 };

@@ -1,10 +1,10 @@
-﻿namespace super_toolbox
+namespace super_toolbox
 {
     public class DataToc_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         public override void Extract(string directoryPath)
         {
@@ -76,7 +76,7 @@
                 }
             }
 
-            ExtractionProgress?.Invoke(this, $"处理完成，成功解包{successCount}/{dataFiles.Count}个.data文件，共提取出{totalExtractedFiles}个文件");
+            ExtractionProgress?.Invoke(this, $"处理完成,成功解包{successCount}/{dataFiles.Count}个.data文件,共提取出{totalExtractedFiles}个文件");
             OnExtractionCompleted();
         }
 
@@ -148,12 +148,12 @@
                 if (Directory.Exists(defaultExtractDir))
                 {
                     int extractedCount = MoveExtractedFiles(defaultExtractDir, extractDir);
-                    ExtractionProgress?.Invoke(this, $"成功解包到:{extractDir}，提取出{extractedCount}个文件");
+                    ExtractionProgress?.Invoke(this, $"成功解包到:{extractDir},提取出{extractedCount}个文件");
                     return extractedCount;
                 }
                 else
                 {
-                    ExtractionError?.Invoke(this, $"解包失败，未找到输出目录:{defaultExtractDir}");
+                    ExtractionError?.Invoke(this, $"解包失败,未找到输出目录:{defaultExtractDir}");
                     return 0;
                 }
             }

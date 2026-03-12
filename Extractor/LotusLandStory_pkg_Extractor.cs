@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class LotusLandStory_pkg_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private const int ENTRY_SIZE = 80;
         private int fileCounter = 0;
@@ -53,7 +53,7 @@ namespace super_toolbox
                     }
                 }
 
-                ExtractionProgress?.Invoke(this, $"处理完成，共提取{fileCounter}个文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,共提取{fileCounter}个文件");
                 OnExtractionCompleted();
             }
             catch (OperationCanceledException)

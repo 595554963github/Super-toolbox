@@ -2,8 +2,8 @@ namespace super_toolbox
 {
     public class CdxaExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
         protected void OnExtractionProgress(string message)
         {
             ExtractionProgress?.Invoke(this, message);

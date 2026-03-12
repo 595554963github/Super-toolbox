@@ -2,11 +2,11 @@ namespace super_toolbox
 {
     public class OggExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
         private bool _stopParsingOnFormatError = true;
-        private int _globalIndex = 1; 
+        private int _globalIndex = 1;
 
         public override void Extract(string directoryPath)
         {
@@ -54,11 +54,11 @@ namespace super_toolbox
                 }
                 if (extractedFiles.Count > 0)
                 {
-                    ExtractionProgress?.Invoke(this, $"处理完成，共提取出{extractedFiles.Count}个ogg文件");
+                    ExtractionProgress?.Invoke(this, $"处理完成,共提取出{extractedFiles.Count}个ogg文件");
                 }
                 else
                 {
-                    ExtractionProgress?.Invoke(this, "处理完成，未找到ogg文件");
+                    ExtractionProgress?.Invoke(this, "处理完成,未找到ogg文件");
                 }
                 OnExtractionCompleted();
             }
@@ -99,11 +99,11 @@ namespace super_toolbox
                                 if (_stopParsingOnFormatError)
                                 {
                                     throw new FormatException(
-                                        $"多次找到流开始页面，但没有流结束页面，用于序列号:{bitstreamSerialNumber:X8}，文件:{filePath}");
+                                        $"多次找到流开始页面,但没有流结束页面,用于序列号:{bitstreamSerialNumber:X8},文件:{filePath}");
                                 }
                                 else
                                 {
-                                    ExtractionProgress?.Invoke(this, $"警告:对于文件 <{filePath}>，多次找到流开始页面但没有流结束页面，序列号为:{bitstreamSerialNumber:X8}");
+                                    ExtractionProgress?.Invoke(this, $"警告:对于文件 <{filePath}>,多次找到流开始页面但没有流结束页面,序列号为:{bitstreamSerialNumber:X8}");
                                     continue;
                                 }
                             }
@@ -133,11 +133,11 @@ namespace super_toolbox
                             if (_stopParsingOnFormatError)
                             {
                                 throw new FormatException(
-                                    $"找到没有流开始页的流数据页，用于序列号:{bitstreamSerialNumber:X8}，文件:{filePath}");
+                                    $"找到没有流开始页的流数据页,用于序列号:{bitstreamSerialNumber:X8},文件:{filePath}");
                             }
                             else
                             {
-                                ExtractionProgress?.Invoke(this, $"警告:对于文件 <{filePath}>，找到没有流开始页的流数据页，序列号为:{bitstreamSerialNumber:X8}");
+                                ExtractionProgress?.Invoke(this, $"警告:对于文件 <{filePath}>,找到没有流开始页的流数据页,序列号为:{bitstreamSerialNumber:X8}");
                                 continue;
                             }
                         }
@@ -160,11 +160,11 @@ namespace super_toolbox
                                 if (_stopParsingOnFormatError)
                                 {
                                     throw new FormatException(
-                                        $"找到没有流开始页面的流结束页面，用于序列号:{bitstreamSerialNumber:X8}，文件:{filePath}");
+                                        $"找到没有流开始页面的流结束页面,用于序列号:{bitstreamSerialNumber:X8},文件:{filePath}");
                                 }
                                 else
                                 {
-                                    ExtractionProgress?.Invoke(this, $"警告:对于文件 <{filePath}>，找到没有流开始页面的流结束页面，序列号为:{bitstreamSerialNumber:X8}");
+                                    ExtractionProgress?.Invoke(this, $"警告:对于文件 <{filePath}>,找到没有流开始页面的流结束页面,序列号为:{bitstreamSerialNumber:X8}");
                                 }
                             }
                         }

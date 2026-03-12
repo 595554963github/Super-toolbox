@@ -1,12 +1,12 @@
-﻿using System.Text;
+using System.Text;
 
 namespace super_toolbox
 {
     public class DoubleDragonNeon_PakExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private const int PADDING = 8;
         private bool LIST_ONLY = false;
@@ -107,7 +107,7 @@ namespace super_toolbox
                         }
                     }
 
-                    ExtractionProgress?.Invoke(this, $"解包完成，共处理{processedPakFiles}个PAK文件，提取了{totalExtractedFiles}个文件");
+                    ExtractionProgress?.Invoke(this, $"解包完成,共处理{processedPakFiles}个PAK文件,提取了{totalExtractedFiles}个文件");
                     OnExtractionCompleted();
                 }
                 catch (Exception ex)
@@ -201,7 +201,7 @@ namespace super_toolbox
 
                         if (!sig.SequenceEqual(expectedSig))
                         {
-                            ExtractionProgress?.Invoke(this, $"警告:在偏移量{offset}处签名不匹配，但继续处理剩余文件");
+                            ExtractionProgress?.Invoke(this, $"警告:在偏移量{offset}处签名不匹配,但继续处理剩余文件");
                             break;
                         }
 

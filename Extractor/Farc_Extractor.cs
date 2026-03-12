@@ -6,9 +6,9 @@ namespace super_toolbox
 {
     public class Farc_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private class FARCEntry
         {
@@ -314,20 +314,5 @@ namespace super_toolbox
 
             return newPath;
         }
-
-        protected virtual void ThrowIfCancellationRequested(CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-        }
-
-        protected virtual void OnExtractionFailed(string message) { }
-        protected virtual void OnExtractionCompleted() { }
-        protected virtual void OnFileExtracted(string path) { }
-    }
-
-    public abstract class BaseExtractor
-    {
-        public abstract void Extract(string directoryPath);
-        public abstract Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default);
     }
 }

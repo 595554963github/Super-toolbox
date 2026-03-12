@@ -1,10 +1,10 @@
-﻿namespace super_toolbox
+namespace super_toolbox
 {
     public class FPAC_CPV_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] HIP_SIGNATURE = { 0x48, 0x49, 0x50, 0x00, 0x25, 0x01, 0x00, 0x00 };
         private static readonly byte[] LIP_SIGNATURE = { 0x4C, 0x49, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00 };

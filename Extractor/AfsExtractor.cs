@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class AfsExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private const long LARGE_FILE_THRESHOLD = 2L * 1024 * 1024 * 1024;
         private const uint AFS_HEADER_MAGIC = 0x00534641;

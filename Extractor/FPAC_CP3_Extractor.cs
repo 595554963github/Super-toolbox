@@ -5,9 +5,9 @@ namespace super_toolbox
     public class FPAC_CP3_Extractor : BaseExtractor
     {
         private static string _tempExePath;
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
         static FPAC_CP3_Extractor()
         {
             _tempExePath = LoadEmbeddedExe("embedded.exah3pac.exe", "exah3pac.exe");

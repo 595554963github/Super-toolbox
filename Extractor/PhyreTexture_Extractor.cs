@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class PhyreTexture_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
         private static string _tempDllPath;
         private static readonly byte[] OFS3_MAGIC = { 0x4F, 0x46, 0x53, 0x33 };
         private static readonly byte[] RYHP_MAGIC = { 0x52, 0x59, 0x48, 0x50 };

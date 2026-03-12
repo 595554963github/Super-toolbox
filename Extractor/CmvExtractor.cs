@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class CmvExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] CMV_HEADER = { 0x43, 0x4D, 0x56 };
         private static readonly byte[] JBPD_HEADER = { 0x4A, 0x42, 0x50, 0x44, 0x2C, 0x00, 0x00, 0x00 };

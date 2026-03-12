@@ -5,9 +5,9 @@ namespace super_toolbox
 {
     public class ApkExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private string _existsMode = "skip";
         private bool _isDebug = false;
@@ -53,7 +53,7 @@ namespace super_toolbox
                 }
 
                 TotalFilesToExtract = validApkFiles.Count;
-                ExtractionProgress?.Invoke(this, $"找到{validApkFiles.Count}个有效APK文件，开始提取...");
+                ExtractionProgress?.Invoke(this, $"找到{validApkFiles.Count}个有效APK文件,开始提取...");
 
                 int totalExtractedFiles = 0;
                 foreach (string apkFile in validApkFiles)
@@ -78,7 +78,7 @@ namespace super_toolbox
                     }
                 }
 
-                ExtractionProgress?.Invoke(this, $"APK提取完成，共提取{totalExtractedFiles}个文件");
+                ExtractionProgress?.Invoke(this, $"APK提取完成,共提取{totalExtractedFiles}个文件");
                 OnExtractionCompleted();
             }
             catch (OperationCanceledException)
@@ -100,7 +100,7 @@ namespace super_toolbox
             {
                 int fileCount = 0;
                 string apkName = Path.GetFileNameWithoutExtension(apkFilePath);
-                string outputDir = Path.Combine(baseDirectory, "Extracted", apkName ?? "Unnamed");
+                string outputDir = Path.Combine(baseDirectory, apkName ?? "Unnamed");
                 Directory.CreateDirectory(outputDir);
 
                 try

@@ -5,9 +5,9 @@ namespace super_toolbox
 {
     public class Filename_Pck_BE_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] FILENAME_HEADER = { 0x46, 0x69, 0x6C, 0x65, 0x6E, 0x61, 0x6D, 0x65 };
         private static readonly byte[] PACK_MARKER = { 0x50, 0x61, 0x63, 0x6B, 0x20, 0x20, 0x20, 0x20 };//白色相簿(ps3)、约会大作战或守安装(ps3)、约会大作战凛祢理想乡(ps3)
@@ -159,7 +159,7 @@ namespace super_toolbox
                         }
                     }
 
-                    ExtractionProgress?.Invoke(this, $"{Path.GetFileName(pckFilePath)}提取完成，共提取{extractedCount}个文件");
+                    ExtractionProgress?.Invoke(this, $"{Path.GetFileName(pckFilePath)}提取完成,共提取{extractedCount}个文件");
                     if (fileNames.Count > 0)
                     {
                         ExtractionProgress?.Invoke(this, $"{Path.GetFileName(pckFilePath)} - 成功还原了{Math.Min(fileNames.Count, entries.Count)}个文件的原始文件名");
@@ -180,11 +180,11 @@ namespace super_toolbox
             TotalFilesToExtract = extractedFiles.Count;
             if (extractedFiles.Count > 0)
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，共提取出{extractedFiles.Count}个文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,共提取出{extractedFiles.Count}个文件");
             }
             else
             {
-                ExtractionProgress?.Invoke(this, "处理完成，未找到可提取的文件");
+                ExtractionProgress?.Invoke(this, "处理完成,未找到可提取的文件");
             }
             OnExtractionCompleted();
         }

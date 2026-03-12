@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class DXBC_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] DXBC_SIGNATURE = { 0x44, 0x58, 0x42, 0x43 };
         private const int SIZE_OFFSET = 0x18;

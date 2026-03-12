@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class Attack_on_Titan_Wings_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private const int BLOCK_SIZE = 0x800; // 2048
         private static readonly byte[] G1T_SIGNATURE = { 0x47, 0x54, 0x31, 0x47 };
@@ -74,7 +74,7 @@ namespace super_toolbox
                     await ProcessZlibFilesAsync(zlibFiles, cancellationToken);
                 }
 
-                ExtractionProgress?.Invoke(this, $"提取完成:共处理{files.Count}个BIN文件，提取出{ExtractedFileCount}个文件");
+                ExtractionProgress?.Invoke(this, $"提取完成:共处理{files.Count}个BIN文件,提取出{ExtractedFileCount}个文件");
                 OnExtractionCompleted();
             }
             catch (OperationCanceledException)

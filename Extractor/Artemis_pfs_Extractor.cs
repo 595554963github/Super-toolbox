@@ -8,9 +8,9 @@ namespace super_toolbox
         private const int ARCHIVE_MAGIC_0 = 0x70;
         private const int ARCHIVE_MAGIC_1 = 0x66;
 
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {

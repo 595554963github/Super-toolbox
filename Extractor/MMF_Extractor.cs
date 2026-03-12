@@ -1,12 +1,12 @@
-﻿using System.Text;
+using System.Text;
 
 namespace super_toolbox
 {
     public class MMF_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] MXMI_SIG = { 0x4D, 0x58, 0x4D, 0x49 };
         private static readonly byte[] MXMH_SIG = { 0x4D, 0x58, 0x4D, 0x48 };

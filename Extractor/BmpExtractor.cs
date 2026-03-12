@@ -1,10 +1,10 @@
-﻿namespace super_toolbox
+namespace super_toolbox
 {
     public class BmpExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] START_SEQUENCE = { 0x42, 0x4D };
 

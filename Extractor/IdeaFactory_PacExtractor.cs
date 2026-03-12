@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class IdeaFactory_PacExtractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static string _tempExePath;
         private readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _processedFiles = new System.Collections.Concurrent.ConcurrentDictionary<string, bool>();
@@ -148,7 +148,7 @@ namespace super_toolbox
                     }
                 }
 
-                ExtractionProgress?.Invoke(this, $"处理完成，总提取文件数:{ExtractedFileCount}");
+                ExtractionProgress?.Invoke(this, $"处理完成,总提取文件数:{ExtractedFileCount}");
                 OnExtractionCompleted();
             }
             catch (OperationCanceledException)

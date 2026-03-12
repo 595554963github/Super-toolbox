@@ -5,9 +5,9 @@ namespace super_toolbox
 {
     public class GPDA_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private const string GPDA_SIGNATURE = "GPDA";
         private int _totalExtractedFiles = 0;
@@ -79,11 +79,11 @@ namespace super_toolbox
 
                 if (extractedFiles.Count > 0)
                 {
-                    ExtractionProgress?.Invoke(this, $"处理完成，共从{filePaths.Count}个源文件中提取出{extractedFiles.Count}个文件");
+                    ExtractionProgress?.Invoke(this, $"处理完成,共从{filePaths.Count}个源文件中提取出{extractedFiles.Count}个文件");
                 }
                 else
                 {
-                    ExtractionProgress?.Invoke(this, "处理完成，未找到可提取的文件");
+                    ExtractionProgress?.Invoke(this, "处理完成,未找到可提取的文件");
                 }
                 OnExtractionCompleted();
             }
@@ -353,7 +353,7 @@ namespace super_toolbox
             }
             catch (Exception ex)
             {
-                ExtractionError?.Invoke(this, $"GZip解压缩失败 {fileName}: {ex.Message}，保存原始数据");
+                ExtractionError?.Invoke(this, $"GZip解压缩失败 {fileName}: {ex.Message},保存原始数据");
                 await File.WriteAllBytesAsync(fullOutputPath + ".compressed", compressedData);
             }
         }

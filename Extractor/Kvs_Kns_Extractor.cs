@@ -6,9 +6,9 @@ namespace super_toolbox
         private static readonly byte[] KNS_SIG_BYTES = { 0x4B, 0x54, 0x53, 0x53 }; // Switch平台 "KTSS"
         private static readonly byte[] AT3_SIG_BYTES = { 0x52, 0x49, 0x46, 0x46 }; // PS4平台(AT3) "RIFF"
         private static readonly byte[] KTAC_SIG_BYTES = { 0x4B, 0x54, 0x41, 0x43 }; // PS4平台 "KTAC"
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
         private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
             for (int i = startIndex; i <= data.Length - pattern.Length; i++)
@@ -97,11 +97,11 @@ namespace super_toolbox
                 }
                 if (totalExtractedFiles > 0)
                 {
-                    ExtractionProgress?.Invoke(this, $"处理完成，共提取出{totalExtractedFiles}个音频文件");
+                    ExtractionProgress?.Invoke(this, $"处理完成,共提取出{totalExtractedFiles}个音频文件");
                 }
                 else
                 {
-                    ExtractionProgress?.Invoke(this, "处理完成，未找到音频文件");
+                    ExtractionProgress?.Invoke(this, "处理完成,未找到音频文件");
                 }
 
                 OnExtractionCompleted();

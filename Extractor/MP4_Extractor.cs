@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class MP4_Extractor : BaseExtractor
     {
-        public new event EventHandler<string>? ExtractionStarted;
-        public new event EventHandler<string>? ExtractionProgress;
-        public new event EventHandler<string>? ExtractionError;
+        public event EventHandler<string>? ExtractionStarted;
+        public event EventHandler<string>? ExtractionProgress;
+        public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] HEADER_SEQ_1 = { 0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70 };
         private static readonly byte[] HEADER_SEQ_2 = { 0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70 };
@@ -79,11 +79,11 @@ namespace super_toolbox
             TotalFilesToExtract = extractedFiles.Count;
             if (extractedFiles.Count > 0)
             {
-                ExtractionProgress?.Invoke(this, $"处理完成，共提取出{extractedFiles.Count}个MP4文件");
+                ExtractionProgress?.Invoke(this, $"处理完成,共提取出{extractedFiles.Count}个MP4文件");
             }
             else
             {
-                ExtractionProgress?.Invoke(this, "处理完成，未找到MP4文件");
+                ExtractionProgress?.Invoke(this, "处理完成,未找到MP4文件");
             }
             OnExtractionCompleted();
         }
