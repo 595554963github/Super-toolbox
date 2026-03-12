@@ -10,9 +10,9 @@ namespace super_toolbox
         private static string? _tempDllPath;
         private static bool _dllLoaded;
 
-        public new event EventHandler<string>? ConversionStarted;
-        public new event EventHandler<string>? ConversionProgress;
-        public new event EventHandler<string>? ConversionError;
+        public event EventHandler<string>? ConversionStarted;
+        public event EventHandler<string>? ConversionProgress;
+        public event EventHandler<string>? ConversionError;
 
         static Bfwav2wav_Converter()
         {

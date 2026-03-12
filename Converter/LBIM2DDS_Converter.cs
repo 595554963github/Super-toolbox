@@ -5,9 +5,9 @@ namespace super_toolbox
 {
     public class LBIM2DDS_Converter : BaseExtractor
     {
-        public new event EventHandler<string>? ConversionStarted;
-        public new event EventHandler<string>? ConversionProgress;
-        public new event EventHandler<string>? ConversionError;
+        public event EventHandler<string>? ConversionStarted;
+        public event EventHandler<string>? ConversionProgress;
+        public event EventHandler<string>? ConversionError;
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct DDS_PIXELFORMAT
@@ -123,9 +123,9 @@ namespace super_toolbox
                             fileData.Length >= 4 &&
                             fileData.Take(4).SequenceEqual(XBC1_HEADER))
                         {
-                            ConversionProgress?.Invoke(this, "检测到.wismda文件，开始分割xbc1数据块...");
+                            ConversionProgress?.Invoke(this, "检测到.wismda文件,开始分割xbc1数据块...");
                             splitDatas = SplitXBC1Data(fileData);
-                            ConversionProgress?.Invoke(this, $"分割完成，共{splitDatas.Count}个数据块");
+                            ConversionProgress?.Invoke(this, $"分割完成,共{splitDatas.Count}个数据块");
                         }
                         else
                         {
@@ -150,7 +150,7 @@ namespace super_toolbox
 
                             if (processedData.Length >= 4 && processedData.Take(4).SequenceEqual(XBC1_HEADER))
                             {
-                                ConversionProgress?.Invoke(this, "检测到xbc1文件头，移除前48字节...");
+                                ConversionProgress?.Invoke(this, "检测到xbc1文件头,移除前48字节...");
                                 if (processedData.Length > 48)
                                 {
                                     byte[] compressedData = new byte[processedData.Length - 48];
@@ -163,7 +163,7 @@ namespace super_toolbox
                             if (processedData.Length >= 2 && processedData[0] == 0x78 &&
                                 (processedData[1] == 0x01 || processedData[1] == 0x9C || processedData[1] == 0xDA))
                             {
-                                ConversionProgress?.Invoke(this, "检测到zlib压缩数据，开始解压...");
+                                ConversionProgress?.Invoke(this, "检测到zlib压缩数据,开始解压...");
                                 try
                                 {
                                     using (var compressedStream = new MemoryStream(processedData, 2, processedData.Length - 2))
@@ -182,13 +182,13 @@ namespace super_toolbox
                             }
                             else
                             {
-                                ConversionProgress?.Invoke(this, "未检测到zlib压缩数据，跳过解压");
+                                ConversionProgress?.Invoke(this, "未检测到zlib压缩数据,跳过解压");
                             }
 
                             if (processedData.Length >= 4 &&
                                 processedData.Skip(processedData.Length - 4).Take(4).SequenceEqual(LBIM_MAGIC))
                             {
-                                ConversionProgress?.Invoke(this, "检测到LBIM文件尾，开始转换...");
+                                ConversionProgress?.Invoke(this, "检测到LBIM文件尾,开始转换...");
 
                                 string fileName = Path.GetFileNameWithoutExtension(filePath);
                                 string fileDirectory = Path.GetDirectoryName(filePath) ?? string.Empty;
@@ -219,7 +219,7 @@ namespace super_toolbox
                             {
                                 fileSkipped++;
                                 skippedCount++;
-                                ConversionProgress?.Invoke(this, "未找到LBIM文件尾，跳过当前数据块");
+                                ConversionProgress?.Invoke(this, "未找到LBIM文件尾,跳过当前数据块");
                             }
 
                             if (splitDatas.Count > 1)
@@ -239,7 +239,7 @@ namespace super_toolbox
                 if (successCount > 0)
                 {
                     int totalCount = successCount + skippedCount;
-                    ConversionProgress?.Invoke(this, $"转换完成，成功转换{successCount}个文件，跳过{skippedCount}个数据块");
+                    ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}个文件,跳过{skippedCount}个数据块");
                     ConversionProgress?.Invoke(this, $"总计处理数据块:{totalCount}个");
 
                     if (totalBlocksProcessed == totalCount)
@@ -248,7 +248,7 @@ namespace super_toolbox
                     }
                     else
                     {
-                        ConversionProgress?.Invoke(this, $"数据统计差异:处理了{totalBlocksProcessed}个数据块，但统计为{totalCount}个");
+                        ConversionProgress?.Invoke(this, $"数据统计差异:处理了{totalBlocksProcessed}个数据块,但统计为{totalCount}个");
                     }
                 }
                 else
@@ -307,7 +307,7 @@ namespace super_toolbox
                 }
             }
 
-            ConversionProgress?.Invoke(this, $"找到{xbc1Positions.Count}个xbc1文件头，分割为{result.Count}个数据块");
+            ConversionProgress?.Invoke(this, $"找到{xbc1Positions.Count}个xbc1文件头,分割为{result.Count}个数据块");
             return result;
         }
 
@@ -318,7 +318,7 @@ namespace super_toolbox
                 ConvertLBIM_Out result = ConvertLBIM(lbimData, lbimData.Length, null, 0);
                 if (result.result != 0)
                 {
-                    ConversionError?.Invoke(this, $"LBIM转换失败，错误代码:{result.result}");
+                    ConversionError?.Invoke(this, $"LBIM转换失败,错误代码:{result.result}");
                     return false;
                 }
 

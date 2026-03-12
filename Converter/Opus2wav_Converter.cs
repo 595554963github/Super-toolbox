@@ -6,9 +6,9 @@ namespace super_toolbox
 {
     public class Opus2wav_Converter : BaseExtractor
     {
-        public new event EventHandler<string>? ConversionStarted;
-        public new event EventHandler<string>? ConversionProgress;
-        public new event EventHandler<string>? ConversionError;
+        public event EventHandler<string>? ConversionStarted;
+        public event EventHandler<string>? ConversionProgress;
+        public event EventHandler<string>? ConversionError;
 
         [DllImport("opus_tool.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern int DecodeOpusToWav(string inputPath, string outputPath, StringBuilder errorMsg, int errorMsgSize);

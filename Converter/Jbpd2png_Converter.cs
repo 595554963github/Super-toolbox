@@ -5,9 +5,9 @@ namespace super_toolbox
 {
     public class Jbpd2png_Converter : BaseExtractor
     {
-        public new event EventHandler<string>? ConversionStarted;
-        public new event EventHandler<string>? ConversionProgress;
-        public new event EventHandler<string>? ConversionError;
+        public event EventHandler<string>? ConversionStarted;
+        public event EventHandler<string>? ConversionProgress;
+        public event EventHandler<string>? ConversionError;
 
         private static readonly byte[] JBPD_MAGIC_HEADER = new byte[] { 0x4A, 0x42, 0x50, 0x44, 0x2C, 0x00, 0x00, 0x00 };
 

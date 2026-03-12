@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class DXBC2HLSL_Converter : BaseExtractor
     {
-        public new event EventHandler<string>? ConversionStarted;
-        public new event EventHandler<string>? ConversionProgress;
-        public new event EventHandler<string>? ConversionError;
+        public event EventHandler<string>? ConversionStarted;
+        public event EventHandler<string>? ConversionProgress;
+        public event EventHandler<string>? ConversionError;
 
         private const int BUFFER_SIZE = 1024 * 1024 * 4;
         private static readonly byte[] DXBC_MAGIC_HEADER = new byte[] { 0x44, 0x58, 0x42, 0x43 };

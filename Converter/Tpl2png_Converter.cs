@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class Tpl2png_Converter : BaseExtractor
     {
-        public new event EventHandler<string>? ConversionStarted;
-        public new event EventHandler<string>? ConversionProgress;
-        public new event EventHandler<string>? ConversionError;
+        public event EventHandler<string>? ConversionStarted;
+        public event EventHandler<string>? ConversionProgress;
+        public event EventHandler<string>? ConversionError;
 
         private const uint TPL_MAGIC = 0x0020AF30;
 

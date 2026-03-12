@@ -7,9 +7,9 @@ namespace super_toolbox
 {
     public class Vag2wav_Converter : BaseExtractor
     {
-        public new event EventHandler<string>? ConversionStarted;
-        public new event EventHandler<string>? ConversionProgress;
-        public new event EventHandler<string>? ConversionError;
+        public event EventHandler<string>? ConversionStarted;
+        public event EventHandler<string>? ConversionProgress;
+        public event EventHandler<string>? ConversionError;
 
         public int OutputSampleRate { get; set; } = 44100;
         public bool ForceStereo { get; set; } = true;

@@ -8,9 +8,9 @@ namespace super_toolbox
 {
     public class JavaDecompiler : BaseExtractor
     {
-        public new event EventHandler<string>? ConversionStarted;
-        public new event EventHandler<string>? ConversionProgress;
-        public new event EventHandler<string>? ConversionError;
+        public event EventHandler<string>? ConversionStarted;
+        public event EventHandler<string>? ConversionProgress;
+        public event EventHandler<string>? ConversionError;
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -397,9 +397,9 @@ namespace super_toolbox
             try
             {
                 var classFile = _job.SourceFile;
-                
+
                 string outputDirPath;
-                
+
                 if (!string.IsNullOrEmpty(_job.RelativePath))
                 {
                     outputDirPath = Path.Combine(_config.OutputPath, _job.RelativePath);
@@ -408,7 +408,7 @@ namespace super_toolbox
                 {
                     outputDirPath = _job.TargetPath;
                 }
-                
+
                 var outputDir = new DirectoryInfo(outputDirPath);
 
                 if (!outputDir.Exists)
@@ -444,16 +444,16 @@ namespace super_toolbox
                 if (javaFiles.Length > 0)
                 {
                     string finalOutputPath = javaFiles[0].FullName;
-                    
+
                     string safeFileName = Path.GetFileNameWithoutExtension(finalOutputPath).Replace('$', '_') + Path.GetExtension(finalOutputPath);
                     string safeFilePath = Path.Combine(Path.GetDirectoryName(finalOutputPath) ?? string.Empty, safeFileName);
-                    
+
                     if (finalOutputPath != safeFilePath && File.Exists(finalOutputPath))
                     {
                         File.Move(finalOutputPath, safeFilePath, true);
                         finalOutputPath = safeFilePath;
                     }
-                    
+
                     if (_config.DeleteClassFiles)
                     {
                         classFile.Delete();
@@ -492,7 +492,7 @@ namespace super_toolbox
                         var javaBaseName = Path.GetFileNameWithoutExtension(f.Name).Replace('$', '_');
                         var cleanBaseName = baseName.Replace('$', '_');
                         var cleanBaseNameWithoutNumber = baseNameWithoutNumber.Replace('$', '_');
-                        
+
                         return javaBaseName.Equals(cleanBaseName) ||
                                javaBaseName.Equals(cleanBaseNameWithoutNumber) ||
                                javaBaseName.Equals(baseName.Replace('$', '_')) ||
@@ -629,7 +629,7 @@ namespace super_toolbox
         {
             if (string.IsNullOrEmpty(basePath) || string.IsNullOrEmpty(fullPath))
                 return string.Empty;
-                
+
             if (!basePath.EndsWith(Path.DirectorySeparatorChar.ToString()))
                 basePath += Path.DirectorySeparatorChar;
 

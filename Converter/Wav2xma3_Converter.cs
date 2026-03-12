@@ -7,9 +7,9 @@ namespace super_toolbox
 {
     public class Wav2xma3_Converter : BaseExtractor
     {
-        public new event EventHandler<string>? ConversionStarted;
-        public new event EventHandler<string>? ConversionProgress;
-        public new event EventHandler<string>? ConversionError;
+        public event EventHandler<string>? ConversionStarted;
+        public event EventHandler<string>? ConversionProgress;
+        public event EventHandler<string>? ConversionError;
 
         private const int ENCODED_SAMPLES_IN_ADPCM_BLOCK = 64;
         private const int SAMPLES_IN_ADPCM_BLOCK = 65;

@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class Tid2DDS_Converter : BaseExtractor
     {
-        public new event EventHandler<string>? ConversionStarted;
-        public new event EventHandler<string>? ConversionProgress;
-        public new event EventHandler<string>? ConversionError;
+        public event EventHandler<string>? ConversionStarted;
+        public event EventHandler<string>? ConversionProgress;
+        public event EventHandler<string>? ConversionError;
 
         public Tid2DDS_Converter() { }
 
@@ -247,19 +247,19 @@ namespace super_toolbox
             }
             else
             {
-                BitConverter.GetBytes(0x04).CopyTo(buffer, 80); 
-                BitConverter.GetBytes(dxt).CopyTo(buffer, 84);  
-                BitConverter.GetBytes(0).CopyTo(buffer, 88); 
-                BitConverter.GetBytes(0).CopyTo(buffer, 92);   
-                BitConverter.GetBytes(0).CopyTo(buffer, 96);   
-                BitConverter.GetBytes(0).CopyTo(buffer, 100);    
-                BitConverter.GetBytes(0).CopyTo(buffer, 104);  
+                BitConverter.GetBytes(0x04).CopyTo(buffer, 80);
+                BitConverter.GetBytes(dxt).CopyTo(buffer, 84);
+                BitConverter.GetBytes(0).CopyTo(buffer, 88);
+                BitConverter.GetBytes(0).CopyTo(buffer, 92);
+                BitConverter.GetBytes(0).CopyTo(buffer, 96);
+                BitConverter.GetBytes(0).CopyTo(buffer, 100);
+                BitConverter.GetBytes(0).CopyTo(buffer, 104);
             }
-            BitConverter.GetBytes(0x1000).CopyTo(buffer, 108);   
-            BitConverter.GetBytes(0).CopyTo(buffer, 112);     
-            BitConverter.GetBytes(0).CopyTo(buffer, 116);    
-            BitConverter.GetBytes(0).CopyTo(buffer, 120);      
-            BitConverter.GetBytes(0).CopyTo(buffer, 124);      
+            BitConverter.GetBytes(0x1000).CopyTo(buffer, 108);
+            BitConverter.GetBytes(0).CopyTo(buffer, 112);
+            BitConverter.GetBytes(0).CopyTo(buffer, 116);
+            BitConverter.GetBytes(0).CopyTo(buffer, 120);
+            BitConverter.GetBytes(0).CopyTo(buffer, 124);
         }
 
         public enum Endianness

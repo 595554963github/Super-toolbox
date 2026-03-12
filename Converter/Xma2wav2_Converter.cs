@@ -5,9 +5,9 @@ namespace super_toolbox
 {
     public class Xma2wav2_Converter : BaseExtractor
     {
-        public new event EventHandler<string>? ConversionStarted;
-        public new event EventHandler<string>? ConversionProgress;
-        public new event EventHandler<string>? ConversionError;
+        public event EventHandler<string>? ConversionStarted;
+        public event EventHandler<string>? ConversionProgress;
+        public event EventHandler<string>? ConversionError;
 
         private const int EncodedSamplesInAdpcmBlock = 64;
         private const int SamplesInAdpcmBlock = 65;

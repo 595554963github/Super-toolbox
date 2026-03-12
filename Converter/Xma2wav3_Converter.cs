@@ -1,36 +1,27 @@
-using QOALib;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 namespace super_toolbox
 {
-    public class Qoa2wav_Converter : BaseExtractor
+    public class Xma2wav3_Converter : BaseExtractor
     {
         public event EventHandler<string>? ConversionStarted;
         public event EventHandler<string>? ConversionProgress;
         public event EventHandler<string>? ConversionError;
 
-        private static bool ConvertQoaToWav(string inputQoaFile, string outputWavFile)
+        private const int ADPCM_FLAG_NOISE_SHAPING = 0x1;
+        private const int ADPCM_SUCCESS = 0;
+
+        [DllImport("IMA_codec.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int ADPCM_DecodeFile(string inputFile, string outputFile, int flags);
+
+        static Xma2wav3_Converter()
         {
-            try
-            {
-                using (FileStream qoaStream = File.OpenRead(inputQoaFile))
-                using (FileStream wavStream = File.Create(outputWavFile))
-                {
-                    QOA qoaDecoder = new QOA();
-                    qoaDecoder.DecodeToWav(qoaStream, wavStream);
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"转换错误:{ex.Message}");
-                return false;
-            }
+            LoadEmbeddedDll("embedded.IMA_codec.dll", "IMA_codec.dll");
         }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
-            List<string> convertedFiles = new List<string>();
             if (!Directory.Exists(directoryPath))
             {
                 ConversionError?.Invoke(this, $"源文件夹{directoryPath}不存在");
@@ -39,55 +30,54 @@ namespace super_toolbox
             }
 
             ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
-            var qoaFiles = Directory.GetFiles(directoryPath, "*.qoa", SearchOption.AllDirectories)
-                    .OrderBy(f =>
-                    {
-                        string fileName = Path.GetFileNameWithoutExtension(f);
-                        var match = Regex.Match(fileName, @"_(\d+)$");
-                        if (match.Success && int.TryParse(match.Groups[1].Value, out int num))
-                            return num;
-                        return int.MaxValue;
-                    })
-                    .ThenBy(f => Path.GetFileNameWithoutExtension(f))
-                    .ToArray();
 
-            TotalFilesToConvert = qoaFiles.Length;
+            var xmaFiles = Directory.GetFiles(directoryPath, "*.xma", SearchOption.AllDirectories)
+                .OrderBy(f =>
+                {
+                    string fileName = Path.GetFileNameWithoutExtension(f);
+                    var match = Regex.Match(fileName, @"_(\d+)$");
+                    if (match.Success && int.TryParse(match.Groups[1].Value, out int num))
+                        return num;
+                    return int.MaxValue;
+                })
+                .ThenBy(f => Path.GetFileNameWithoutExtension(f))
+                .ToArray();
+
+            TotalFilesToConvert = xmaFiles.Length;
             int successCount = 0;
 
             try
             {
-                foreach (var qoaFilePath in qoaFiles)
+                foreach (var xmaFilePath in xmaFiles)
                 {
                     ThrowIfCancellationRequested(cancellationToken);
-                    ConversionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(qoaFilePath)}");
 
-                    string fileName = Path.GetFileNameWithoutExtension(qoaFilePath);
-                    string fileDirectory = Path.GetDirectoryName(qoaFilePath) ?? string.Empty;
-                    fileName = fileName.Replace(".wav", "", StringComparison.OrdinalIgnoreCase);
+                    string fileName = Path.GetFileNameWithoutExtension(xmaFilePath);
+                    ConversionProgress?.Invoke(this, $"正在处理:{fileName}");
 
+                    string fileDirectory = Path.GetDirectoryName(xmaFilePath) ?? string.Empty;
                     string wavFilePath = Path.Combine(fileDirectory, $"{fileName}.wav");
 
                     try
                     {
-                        bool conversionSuccess = await Task.Run(() => ConvertQoaToWav(qoaFilePath, wavFilePath), cancellationToken);
+                        bool conversionSuccess = await ConvertXMAToWAV(xmaFilePath, wavFilePath, cancellationToken);
 
                         if (conversionSuccess && File.Exists(wavFilePath))
                         {
                             successCount++;
-                            convertedFiles.Add(wavFilePath);
                             ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(wavFilePath)}");
                             OnFileConverted(wavFilePath);
                         }
                         else
                         {
-                            ConversionError?.Invoke(this, $"{fileName}.qoa转换失败");
-                            OnConversionFailed($"{fileName}.qoa转换失败");
+                            ConversionError?.Invoke(this, $"{fileName}转换失败");
+                            OnConversionFailed($"{fileName}转换失败");
                         }
                     }
                     catch (Exception ex)
                     {
                         ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
-                        OnConversionFailed($"{fileName}.qoa处理错误:{ex.Message}");
+                        OnConversionFailed($"{fileName}处理错误:{ex.Message}");
                     }
                 }
 
@@ -114,9 +104,21 @@ namespace super_toolbox
             }
         }
 
-        public override void Extract(string directoryPath)
+        private async Task<bool> ConvertXMAToWAV(string xmaFilePath, string wavFilePath, CancellationToken cancellationToken)
         {
-            ExtractAsync(directoryPath).Wait();
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    int result = ADPCM_DecodeFile(xmaFilePath, wavFilePath, ADPCM_FLAG_NOISE_SHAPING);
+                    return result == ADPCM_SUCCESS;
+                }
+                catch (Exception ex)
+                {
+                    ConversionError?.Invoke(this, $"转换过程异常:{ex.Message}");
+                    return false;
+                }
+            }, cancellationToken);
         }
     }
 }

@@ -6,9 +6,9 @@ namespace super_toolbox
 {
     public class Cv2_Converter : BaseExtractor
     {
-        public new event EventHandler<string>? ConversionStarted;
-        public new event EventHandler<string>? ConversionProgress;
-        public new event EventHandler<string>? ConversionError;
+        public event EventHandler<string>? ConversionStarted;
+        public event EventHandler<string>? ConversionProgress;
+        public event EventHandler<string>? ConversionError;
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -82,7 +82,7 @@ namespace super_toolbox
 
         private async Task<string> ConvertCv2ToPng(string cv2FilePath, CancellationToken cancellationToken)
         {
-            await Task.Yield(); 
+            await Task.Yield();
 
             try
             {

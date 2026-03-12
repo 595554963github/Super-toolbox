@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class PVRT2PNG_Converter : BaseExtractor
     {
-        public new event EventHandler<string>? ConversionStarted;
-        public new event EventHandler<string>? ConversionProgress;
-        public new event EventHandler<string>? ConversionError;
+        public event EventHandler<string>? ConversionStarted;
+        public event EventHandler<string>? ConversionProgress;
+        public event EventHandler<string>? ConversionError;
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -58,12 +58,12 @@ namespace super_toolbox
 
                 if (successCount > 0)
                 {
-                    ConversionProgress?.Invoke(this, $"转换完成，成功转换{successCount}/{TotalFilesToConvert}个文件");
+                    ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件");
                     OnConversionCompleted();
                 }
                 else
                 {
-                    ConversionProgress?.Invoke(this, "转换完成，但未成功转换任何文件");
+                    ConversionProgress?.Invoke(this, "转换完成,但未成功转换任何文件");
                     OnConversionCompleted();
                 }
             }

@@ -7,9 +7,9 @@ namespace super_toolbox
     {
         private static string _tempExePath;
 
-        public new event EventHandler<string>? ConversionStarted;
-        public new event EventHandler<string>? ConversionProgress;
-        public new event EventHandler<string>? ConversionError;
+        public event EventHandler<string>? ConversionStarted;
+        public event EventHandler<string>? ConversionProgress;
+        public event EventHandler<string>? ConversionError;
 
         static Rada2wav_Converter()
         {

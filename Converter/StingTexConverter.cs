@@ -6,9 +6,9 @@ namespace super_toolbox
 {
     public class StingTexConverter : BaseExtractor
     {
-        public new event EventHandler<string>? ConversionStarted;
-        public new event EventHandler<string>? ConversionProgress;
-        public new event EventHandler<string>? ConversionError;
+        public event EventHandler<string>? ConversionStarted;
+        public event EventHandler<string>? ConversionProgress;
+        public event EventHandler<string>? ConversionError;
 
         private static readonly byte[] TARGET_HEADER = { 0x5A, 0x4C, 0x49, 0x42 };
 
@@ -66,11 +66,11 @@ namespace super_toolbox
 
                 if (successCount > 0)
                 {
-                    ConversionProgress?.Invoke(this, $"转换完成，成功转换{successCount}/{TotalFilesToConvert}个文件");
+                    ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件");
                 }
                 else
                 {
-                    ConversionProgress?.Invoke(this, "转换完成，但未成功转换任何文件");
+                    ConversionProgress?.Invoke(this, "转换完成,但未成功转换任何文件");
                 }
 
                 OnConversionCompleted();
@@ -138,7 +138,7 @@ namespace super_toolbox
                             }
                             else
                             {
-                                File.Delete(pngFilePath); 
+                                File.Delete(pngFilePath);
                                 return false;
                             }
                         }
