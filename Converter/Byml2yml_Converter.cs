@@ -18,8 +18,14 @@ namespace super_toolbox
                 OnConversionFailed($"源文件夹{directoryPath}不存在");
                 return;
             }
+
             ConversionStarted?.Invoke(this, $"开始处理目录: {directoryPath}");
-            var bymlFiles = Directory.EnumerateFiles(directoryPath, "*.byml", SearchOption.AllDirectories).ToList();
+
+            var bymlFiles = Directory.EnumerateFiles(directoryPath, "*.byml", SearchOption.AllDirectories)
+                .Concat(Directory.EnumerateFiles(directoryPath, "*.byaml", SearchOption.AllDirectories))
+                .Concat(Directory.EnumerateFiles(directoryPath, "*.bgyml", SearchOption.AllDirectories))
+                .ToList();
+
             TotalFilesToConvert = bymlFiles.Count;
             int successCount = 0;
 
@@ -29,16 +35,18 @@ namespace super_toolbox
                 {
                     ThrowIfCancellationRequested(cancellationToken);
                     ConversionProgress?.Invoke(this, $"正在处理:{Path.GetFileName(filePath)}");
+
                     string fileName = Path.GetFileNameWithoutExtension(filePath);
                     string fileDirectory = Path.GetDirectoryName(filePath) ?? string.Empty;
                     string ymlFilePath = Path.Combine(fileDirectory, $"{fileName}.yml");
+
                     try
                     {
                         byte[] fileBytes = await File.ReadAllBytesAsync(filePath, cancellationToken);
 
                         if (fileBytes.Length < 4)
                         {
-                            ConversionError?.Invoke(this, "文件太小,不是有效的BYML文件");
+                            ConversionError?.Invoke(this, "文件太小,不是有效的BYML/BYAML/BGYML文件");
                             OnConversionFailed($"{Path.GetFileName(filePath)}转换失败");
                             continue;
                         }
@@ -61,10 +69,11 @@ namespace super_toolbox
                     }
                     catch (Exception ex)
                     {
-                        ConversionError?.Invoke(this, $"{Path.GetFileName(filePath)}转换失败: {ex.Message}");
+                        ConversionError?.Invoke(this, $"{Path.GetFileName(filePath)}转换失败:{ex.Message}");
                         OnConversionFailed($"{Path.GetFileName(filePath)}转换失败");
                     }
                 }
+
                 if (successCount > 0)
                 {
                     ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件");
