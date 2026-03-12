@@ -58,7 +58,7 @@ namespace super_toolbox
             { "PS3苍翼默示录_刻之幻影 - pac", ("其他档案", "PS3平台的苍翼默示录_刻之幻影的专用解包工具,无法用于PSV版和苍翼默示录_神观之梦") },
             { "PSV苍翼默示录_刻之幻影 - pac", ("其他档案", "PSV平台的苍翼默示录_刻之幻影的专用解包工具,无法用于PS3版和苍翼默示录_神观之梦") },
             { "PSV苍翼默示录_连续变换 - pac", ("其他档案", "PSV平台的苍翼默示录_连续变换的专用解包工具,无法用于苍翼默示录_刻之幻影和苍翼默示录_神观之梦") },
-            { "苍翼默示录_神观之梦 - pac", ("其他档案", "苍翼默示录_神观之梦的专用解包工具,支持解包压缩的pac文件和普通pac文件") },
+            { "苍翼默示录_神观之梦 - pac", ("其他档案", "苍翼默示录_神观之梦的专用解包工具,支持解包压缩的pac文件和普通pac文件,经测试也可以解包switch平台的赛马娘") },
             { "断罪的玛利亚 - dat", ("其他档案", "PS3游戏断罪的玛利亚专用提取器,可解包data.dat文件,提取其中的视频、音频和图片") },
             { "进击的巨人_自由之翼 - bin", ("其他档案", "进击的巨人_自由之翼提取器,能从LINKDATA.bin文件中提取出g1t、g1m等文件") },
             { "PlayStation 4 bit ADPCM - vag", ("音频", "以二进制形式从PlayStation游戏文件中提取vag音频文件,vag是采用PlayStation 4 bit ADPCM编码的音频格式") },
@@ -274,7 +274,7 @@ namespace super_toolbox
             { "bfstm2wav", ("音频", "bfstm转换到wav的音频转换器") },
             { "brstm2wav", ("音频", "brstm转换到wav的音频转换器") },
             { "bcwav2wav", ("音频", "将任天堂3DS平台的bcwav音频文件转换为wav格式,支持IMA 4-bit ADPCM、任天堂DSP 4-bit ADPCM、8-bit带符号PCM和16-bit小端序PCM") },
-            { "bfwav2wav", ("音频", "将任天堂WiiU平台的bfwav音频文件转换为wav格式,支持8-bit带符号PCM和16-bit小端序PCM,暂不支持任天堂DSP 4-bit ADPCM解码,请改用vgmstream或foobar2000") },
+            { "bfwav2wav", ("音频", "将任天堂WiiU平台的bfwav音频文件转换为wav格式,支持8-bit带符号PCM、16-bit小端序PCM和任天堂DSP 4-bit ADPCM解码") },
             { "brwav2wav", ("音频", "将任天堂Wii平台的brwav音频文件转换为wav格式,16-bit大端序PCM和任天堂DSP 4-bit ADPCM完美支持,8-bit带符号PCM的建议改用vgmstream或foobar2000,因为VGAudio不完美支持") },
             { "opus2wav", ("音频", "opus转换到wav的音频转换器,VGAudio不支持此格式,自主实现转换") },
             { "swav2wav", ("音频", "swav转换到wav的音频转换器,VGAudio不支持此格式,自主实现8-bit带符号PCM、16-bit小端序PCM和IMA 4-bit ADPCM的解码") },
@@ -288,7 +288,7 @@ namespace super_toolbox
             { "wav2bcwav_IMA 4-bit ADPCM", ("音频", "wav转换到bcwav的音频转换器,VGAudio不支持此格式,自主实现转换,IMA 4-bit ADPCM") },
             { "wav2bfwav_8-bit有符号PCM", ("音频", "wav转换到bfwav的音频转换器,VGAudio不支持此格式,自主实现转换,8-bit带符号PCM编码") },
             { "wav2bfwav_16-bit小端序PCM", ("音频", "wav转换到bfwav的音频转换器,VGAudio不支持此格式,自主实现转换,16-bit小端序PCM编码") },
-            { "wav2bfwav_任天堂DSP ADPCM", ("音频", "wav转换到bfwav的音频转换器,VGAudio不支持此格式,自主实现转换,任天堂DSP 4-bit ADPCM,如果要解码此文件请改用vgmstream或foobar2000") },
+            { "wav2bfwav_任天堂DSP ADPCM", ("音频", "wav转换到bfwav的音频转换器,VGAudio不支持此格式,自主实现转换,任天堂DSP 4-bit ADPCM") },
             { "wav2brwav_8-bit有符号PCM", ("音频", "wav转换到brwav的音频转换器,VGAudio不支持此格式,使用官方sdk转换,8-bit带符号PCM编码") },
             { "wav2brwav_16-bit大端序PCM", ("音频", "wav转换到brwav的音频转换器,VGAudio不支持此格式,使用官方sdk转换,16-bit大端序PCM编码") },
             { "wav2brwav_任天堂DSP ADPCM", ("音频", "wav转换到brwav的音频转换器,VGAudio不支持此格式,使用官方sdk转换,任天堂DSP 4-bit ADPCM") },
@@ -327,6 +327,8 @@ namespace super_toolbox
             { "NekoPack - dat", ("其他档案", "NekoPack引擎游戏的dat文件提取器,测试游戏Really Really!") },
             { "Innocent Grey - dat", ("其他档案", "Innocent Grey游戏的dat文件提取器,测试游戏恋狱月狂病") },
             { "PSV欲望之拳 - lzs", ("其他档案", "PSV欲望之拳的lzs专用提取器,参考quickbms源码修改而来") },
+            { "任天堂 - bwav", ("音频", "任天堂的bwav音频提取器,用于塞尔达传说:王国之泪等游戏") },
+            { "塞尔达传说:王国之泪 - zs", ("其他档案", "塞尔达传说:王国之泪的zs文件专用解包器") },
         };
         public SuperToolbox()
         {
@@ -971,6 +973,8 @@ namespace super_toolbox
                 case "NekoPack - dat": return new NekoPack_dat_Extractor();
                 case "Innocent Grey - dat": return new PACKDAT_Extractor();
                 case "PSV欲望之拳 - lzs": return new Lzs_Extractor();
+                case "任天堂 - bwav": return new Bwav_Extractor();
+                case "塞尔达传说:王国之泪 - zs": return new TOTK_zs_Extractor();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }

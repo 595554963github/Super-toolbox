@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net8.0-windows</TargetFramework>
@@ -39,7 +39,7 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\exlnk4.exe">
 			<LogicalName>embedded.exlnk4.exe</LogicalName>
-		</EmbeddedResource>
+		</EmbeddedResource>		
 		<EmbeddedResource Include="plugins\ToBTools.exe">
 			<LogicalName>embedded.ToBTools.exe</LogicalName>
 		</EmbeddedResource>
@@ -153,6 +153,12 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\EA_XA-ADPCM.dll">
 			<LogicalName>embedded.EA_XA-ADPCM.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\zs.zsdic">
+			<LogicalName>embedded.zs.zsdic</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\pack.zsdic">
+			<LogicalName>embedded.pack.zsdic</LogicalName>
 		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>

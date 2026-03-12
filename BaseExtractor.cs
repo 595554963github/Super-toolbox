@@ -56,45 +56,7 @@ namespace super_toolbox
                 }
             }
             return exePath;
-        }
-        protected bool SaveExtractedFile(byte[] data, string baseFileName, string extractedDir, string format, int count,
-                                         List<string> extractedFiles, out string outputFilePath)
-        {
-            outputFilePath = string.Empty;
-
-            if (data.Length <= 0) return false;
-
-            string outputFileName = $"{baseFileName}_{count}.{format}";
-            outputFilePath = Path.Combine(extractedDir, outputFileName);
-
-            if (File.Exists(outputFilePath))
-            {
-                int duplicateCount = 1;
-                do
-                {
-                    outputFileName = $"{baseFileName}_{count}_dup{duplicateCount}.{format}";
-                    outputFilePath = Path.Combine(extractedDir, outputFileName);
-                    duplicateCount++;
-                } while (File.Exists(outputFilePath));
-            }
-
-            try
-            {
-                File.WriteAllBytes(outputFilePath, data);
-                if (!extractedFiles.Contains(outputFilePath))
-                {
-                    extractedFiles.Add(outputFilePath);
-                    OnFileExtracted(outputFilePath);
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new IOException($"保存文件{outputFileName}时出错:{ex.Message}", ex);
-            }
-
-            return false;
-        }
+        }    
 #pragma warning disable CS0067
         public event EventHandler<string>? FileExtracted;
         public event EventHandler<int>? ProgressUpdated;
@@ -112,21 +74,6 @@ namespace super_toolbox
         public event EventHandler<string>? FileDecompressed;
         public event EventHandler<int>? DecompressionCompleted;
         public event EventHandler<string>? DecompressionFailed;
-        public event EventHandler<string>? ExtractionStarted;
-        public event EventHandler<string>? ExtractionProgress;
-        public event EventHandler<string>? ExtractionError;
-        public event EventHandler<string>? ConversionStarted;
-        public event EventHandler<string>? ConversionProgress;
-        public event EventHandler<string>? ConversionError;
-        public event EventHandler<string>? PackingStarted;
-        public event EventHandler<string>? PackingProgress;
-        public event EventHandler<string>? PackingError;
-        public event EventHandler<string>? CompressionStarted;
-        public event EventHandler<string>? CompressionProgress;
-        public event EventHandler<string>? CompressionError;
-        public event EventHandler<string>? DecompressionStarted;
-        public event EventHandler<string>? DecompressionProgress;
-        public event EventHandler<string>? DecompressionError;
 #pragma warning restore CS0067
 
         private int _extractedFileCount = 0;
