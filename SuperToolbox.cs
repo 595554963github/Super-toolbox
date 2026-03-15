@@ -167,8 +167,8 @@ namespace super_toolbox
             { "Mages - mpk提取器", ("其他档案", "Mages的mpk解包工具,代表作为命运石之门,可提取mpk文件中的各类资源") },
             { "Mages - mpk打包器", ("其他档案", "Mages的mpk打包器,能将一个文件夹及子文件夹里的所有文件重新打包成mpk文件") },
             { "Gnf2Png", ("图片", "PS4平台的gnf到png的转换器,支持批量转换,解决了GFDstudio手动转换的繁琐问题") },
-            { "wav2qoa", ("音频", "wav到qoa的音频转换器,VGAudio不支持此格式,自主实现转换") },
-            { "qoa2wav", ("音频", "qoa到wav的音频转换器,VGAudio不支持此格式,自主实现转换") },
+            { "wav2qoa", ("音频", "wav到qoa的音频转换器,VGAudio不支持此格式,") },
+            { "qoa2wav", ("音频", "qoa到wav的音频转换器,VGAudio不支持此格式,") },
             { "SRPG_Studio - dts", ("其他档案", "SRPG Studio的dts提取器,代表作为刻印战记2_七圣英雄,可提取dts文件中的资源") },
             { "XACT Wave Bank - xwb打包器", ("其他档案", "XWB打包器,能将一个文件夹里的所有wav打包成xwb文件,为了打包成功建议使用pcm_s16le的wav文件,有些编码不支持") },
             { "hip2png", ("图片", "hip到png的转换器,代表作为switch平台的赛马娘,可批量处理该格式转换成png") },
@@ -240,7 +240,7 @@ namespace super_toolbox
             { "PSV弹丸论破系列 - pak", ("其他档案", "PSV弹丸论破1和2的专用pak提取器") },
             { "索尼 - gim", ("图片", "PSP平台的专用转换器,把gim转换成png") },
             { "GBIX_PVRT - pvr", ("图片", "世嘉和索尼平台游戏的pvr转换器") },
-            { "OKI ADPCM - pcm", ("音频", "OKI ADPCM的音频专用提取器") },
+            { "索尼非标准ADPCM - pcm", ("音频", "PlayStation 4-bit ADPCM,无标准文件头,多用于ps2游戏") },
             { "CloneCD - ccd/img", ("其他档案", "CloneCD镜像专用转换器") },
             { "索尼 - tim", ("图片", "ps1平台的专用转换器,把tim转换成png") },
             { "Java反编译 - jar/class", ("其他档案", "java反编译器,可将jar和class文件反编译成java伪代码,使用之前请务必下载JRE或者JDK") },
@@ -264,9 +264,11 @@ namespace super_toolbox
             { "adx2wav", ("音频", "adx转换到wav的音频转换器") },
             { "at32wav", ("音频", "at3转换到wav的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
             { "at92wav", ("音频", "at9转换到wav的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
+            { "hps2wav", ("音频", "hps转换到wav的音频转换器") },
             { "idsp2wav", ("音频", "idsp转换到wav的音频转换器") },
-            { "mdsp2wav", ("音频", "mdsp转换到wav的音频转换器") },
-            { "lopus2wav", ("音频", "lopus转换到wav的音频转换器,VGAudio不支持此格式,自主实现转换") },
+            { "mdsp2wav", ("音频", "mdsp转换到wav的音频转换器,VGAudio库和vgmstream不支持此格式,我已经向vgmstream提交issue,希望支持此格式解码") },
+            { "mtaf2wav", ("音频", "mtaf转换到wav的音频转换器") },
+            { "lopus2wav", ("音频", "lopus转换到wav的音频转换器,VGAudio不支持此格式") },
             { "dsp2adx", ("音频", "dsp转换到adx的音频转换器") },
             { "dsp2hca", ("音频", "dsp转换到hca的音频转换器") },
             { "dsp2wav", ("音频", "dsp转换到wav的音频转换器") },
@@ -276,53 +278,65 @@ namespace super_toolbox
             { "bcwav2wav", ("音频", "将任天堂3DS平台的bcwav音频文件转换为wav格式,支持IMA 4-bit ADPCM、任天堂DSP 4-bit ADPCM、8-bit带符号PCM和16-bit小端序PCM") },
             { "bfwav2wav", ("音频", "将任天堂WiiU平台的bfwav音频文件转换为wav格式,支持8-bit带符号PCM、16-bit小端序PCM和任天堂DSP 4-bit ADPCM解码") },
             { "brwav2wav", ("音频", "将任天堂Wii平台的brwav音频文件转换为wav格式,16-bit大端序PCM和任天堂DSP 4-bit ADPCM完美支持,8-bit带符号PCM的建议改用vgmstream或foobar2000,因为VGAudio不完美支持") },
-            { "opus2wav", ("音频", "opus转换到wav的音频转换器,VGAudio不支持此格式,自主实现转换") },
-            { "swav2wav", ("音频", "swav转换到wav的音频转换器,VGAudio不支持此格式,自主实现8-bit带符号PCM、16-bit小端序PCM和IMA 4-bit ADPCM的解码") },
-            { "vag2wav", ("音频", "vag转换到wav的音频转换器,VGAudio不支持此格式,自主实现转换") },
-            { "wav2bcstm", ("音频", "wav转换到bcstm的音频转换器,16-bit小端序PCM") },
-            { "wav2bfstm", ("音频", "wav转换到bfstm的音频转换器,16-bit大端序PCM") },
-            { "wav2brstm", ("音频", "wav转换到brstm的音频转换器,16-bit大端序PCM") },
-            { "wav2bcwav_8-bit有符号PCM", ("音频", "wav转换到bcwav的音频转换器,VGAudio不支持此格式,自主实现转换,8-bit带符号PCM编码") },
-            { "wav2bcwav_16-bit小端序PCM", ("音频", "wav转换到bcwav的音频转换器,VGAudio不支持此格式,自主实现转换,16-bit小端序PCM编码") },
-            { "wav2bcwav_任天堂DSP ADPCM", ("音频", "wav转换到bcwav的音频转换器,VGAudio不支持此格式,自主实现转换,任天堂DSP 4-bit ADPCM") },
-            { "wav2bcwav_IMA 4-bit ADPCM", ("音频", "wav转换到bcwav的音频转换器,VGAudio不支持此格式,自主实现转换,IMA 4-bit ADPCM") },
-            { "wav2bfwav_8-bit有符号PCM", ("音频", "wav转换到bfwav的音频转换器,VGAudio不支持此格式,自主实现转换,8-bit带符号PCM编码") },
-            { "wav2bfwav_16-bit小端序PCM", ("音频", "wav转换到bfwav的音频转换器,VGAudio不支持此格式,自主实现转换,16-bit小端序PCM编码") },
-            { "wav2bfwav_任天堂DSP ADPCM", ("音频", "wav转换到bfwav的音频转换器,VGAudio不支持此格式,自主实现转换,任天堂DSP 4-bit ADPCM") },
+            { "ogg2wem", ("音频", "ogg转换到wem的音频转换器,NAudio和VGAudio不支持此格式,16-bit小端序PCM编码") },
+            { "opus2wav", ("音频", "opus转换到wav的音频转换器,VGAudio不支持此格式,") },
+            { "swav2wav", ("音频", "swav转换到wav的音频转换器,VGAudio不支持此格式,实现了8-bit带符号PCM、16-bit小端序PCM和IMA 4-bit ADPCM的解码") },
+            { "vag2wav", ("音频", "vag转换到wav的音频转换器,VGAudio不支持此格式") },
+            { "msf2wav", ("音频", "mfs转换到wav的音频转换器,VGAudio不支持此格式,无论大小端序的msf都支持转换") },
+            { "wav2bcstm_8-bit有符号PCM", ("音频", "wav转换到bcstm的音频转换器,8-bit带符号PCM编码") },
+            { "wav2bcstm_16-bit小端序PCM", ("音频", "wav转换到bcstm的音频转换器,16-bit小端序PCM编码") },
+            { "wav2bcstm_任天堂DSP ADPCM", ("音频", "wav转换到bcstm的音频转换器,任天堂DSP 4-bit ADPCM编码") },
+            { "wav2bfstm_8-bit有符号PCM", ("音频", "wav转换到bfstm的音频转换器,8-bit带符号PCM编码") },
+            { "wav2bfstm_16-bit大端序PCM", ("音频", "wav转换到bfstm的音频转换器,16-bit大端序PCM编码") },
+            { "wav2bfstm_任天堂DSP ADPCM", ("音频", "wav转换到brftm的音频转换器,任天堂DSP 4-bit ADPCM编码") },
+            { "wav2brstm_8-bit有符号PCM", ("音频", "wav转换到brstm的音频转换器,8-bit带符号PCM编码") },
+            { "wav2brstm_16-bit大端序PCM", ("音频", "wav转换到brstm的音频转换器,16-bit大端序PCM编码") },
+            { "wav2brstm_任天堂DSP ADPCM", ("音频", "wav转换到brstm的音频转换器,任天堂DSP 4-bit ADPCM编码") },
+            { "wav2bcwav_8-bit有符号PCM", ("音频", "wav转换到bcwav的音频转换器,VGAudio不支持此格式,8-bit带符号PCM编码") },
+            { "wav2bcwav_16-bit小端序PCM", ("音频", "wav转换到bcwav的音频转换器,VGAudio不支持此格式,16-bit小端序PCM编码") },
+            { "wav2bcwav_任天堂DSP ADPCM", ("音频", "wav转换到bcwav的音频转换器,VGAudio不支持此格式,任天堂DSP 4-bit ADPCM编码") },
+            { "wav2bcwav_IMA 4-bit ADPCM", ("音频", "wav转换到bcwav的音频转换器,VGAudio不支持此格式,IMA 4-bit ADPCM编码") },
+            { "wav2bfwav_8-bit有符号PCM", ("音频", "wav转换到bfwav的音频转换器,VGAudio不支持此格式,8-bit带符号PCM编码") },
+            { "wav2bfwav_16-bit小端序PCM", ("音频", "wav转换到bfwav的音频转换器,VGAudio不支持此格式,16-bit小端序PCM编码") },
+            { "wav2bfwav_任天堂DSP ADPCM", ("音频", "wav转换到bfwav的音频转换器,VGAudio不支持此格式,任天堂DSP 4-bit ADPCM编码") },
             { "wav2brwav_8-bit有符号PCM", ("音频", "wav转换到brwav的音频转换器,VGAudio不支持此格式,使用官方sdk转换,8-bit带符号PCM编码") },
             { "wav2brwav_16-bit大端序PCM", ("音频", "wav转换到brwav的音频转换器,VGAudio不支持此格式,使用官方sdk转换,16-bit大端序PCM编码") },
-            { "wav2brwav_任天堂DSP ADPCM", ("音频", "wav转换到brwav的音频转换器,VGAudio不支持此格式,使用官方sdk转换,任天堂DSP 4-bit ADPCM") },
+            { "wav2brwav_任天堂DSP ADPCM", ("音频", "wav转换到brwav的音频转换器,VGAudio不支持此格式,使用官方sdk转换,任天堂DSP 4-bit ADPCM编码") },
             { "wav2dsp", ("音频", "wav转换到dsp的音频转换器") },
+            { "wav2hps", ("音频", "wav转换到hps的音频转换器") },
             { "wav2idsp", ("音频", "wav转换到idsp的音频转换器") },
             { "wav2mdsp", ("音频", "wav转换到mdsp的音频转换器") },
+            { "wav2msf1", ("音频", "wav转换到msf的音频转换器,VGAudio不支持此格式,16-bit大端序PCM编码") },
+            { "wav2msf2", ("音频", "wav转换到msf的音频转换器,VGAudio不支持此格式,16-bit小端序PCM编码") },
+            { "wav2mtaf", ("音频", "wav转换到mtaf的音频转换器,VGAudio不支持此格式,Konami MTAF ADPCM编码") },
             { "wav2hca", ("音频", "wav转换到hca的音频转换器") },
             { "wav2adx", ("音频", "wav转换到adx的音频转换器") },           
             { "wav2at3", ("音频", "wav转换到at3的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
-            { "wav2lopus", ("音频", "wav转换到lopus的音频转换器,VGAudio不支持此格式,自主实现转换") },
+            { "wav2lopus", ("音频", "wav转换到lopus的音频转换器,VGAudio不支持此格式,") },
             { "wav2at9", ("音频", "wav转换到at9的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
-            { "wav2opus", ("音频", "wav转换到opus的音频转换器,VGAudio不支持此格式,自主实现转换") },
-            { "wav2swav_8-bit有符号PCM", ("音频", "wav转换到swav的音频转换器,VGAudio不支持此格式,自主实现转换,8-bit signed PCM") },
-            { "wav2swav_16-bit小端序PCM", ("音频", "wav转换到swav的音频转换器,VGAudio不支持此格式,自主实现转换,16-bit小端序PCM") },
-            { "wav2swav_IMA 4-bit ADPCM", ("音频", "wav转换到swav的音频转换器,VGAudio不支持此格式,自主实现转换,IMA 4-bit ADPCM") },
-            { "wav2vag", ("音频", "wav转换到vag的音频转换器,VGAudio不支持此格式,自主实现转换") },
+            { "wav2opus", ("音频", "wav转换到opus的音频转换器,VGAudio不支持此格式,") },
+            { "wav2swav_8-bit有符号PCM", ("音频", "wav转换到swav的音频转换器,VGAudio不支持此格式,8-bit signed PCM编码") },
+            { "wav2swav_16-bit小端序PCM", ("音频", "wav转换到swav的音频转换器,VGAudio不支持此格式,16-bit小端序PCM编码") },
+            { "wav2swav_IMA 4-bit ADPCM", ("音频", "wav转换到swav的音频转换器,VGAudio不支持此格式,IMA 4-bit ADPCM编码") },
+            { "wav2vag", ("音频", "wav转换到vag的音频转换器,VGAudio不支持此格式") },
             { "wav2xma1", ("音频", "wav转换到xma的音频转换器,编码为xma1,VGAudio不支持此格式,使用微软官方工具实现转换") },
             { "wav2xma2", ("音频", "wav转换到xma的音频转换器,编码为xma2,VGAudio不支持此格式,使用微软官方工具实现转换") },
-            { "wav2xma3", ("音频", "wav转换到xma的音频转换器,编码为Xbox 4-bit IMA ADPCM,VGAudio不支持此格式,自主实现转换") },
-            { "wav2xma4", ("音频", "wav转换到xma的音频转换器,编码为IMA ADPCM或微软4-bit IMA ADPCM,VGAudio不支持此格式,自主实现转换") },
+            { "wav2xma3", ("音频", "wav转换到xma的音频转换器,编码为Xbox 4-bit IMA ADPCM,VGAudio不支持此格式,") },
+            { "wav2xma4", ("音频", "wav转换到xma的音频转换器,编码为IMA ADPCM或微软4-bit IMA ADPCM,VGAudio不支持此格式") },
             { "wav2xma5", ("音频", "使用AdpcmEncode把wav编码生成的音频文件保存为xma、xwm、xwma和wav都能被foobar2000识别和播放,VGAudio不支持此格式,使用微软官方工具实现转换") },          
             { "wav2xwma", ("音频", "wav转换到xwma的音频转换器,VGAudio不支持此格式,使用微软官方工具实现转换") },
-            { "wav2wem", ("音频", "wav转换到wem的音频转换器,当前仅支持16-bit小端序PCM") },
-            { "wem2wav", ("音频", "wem转换到wav的音频转换器,当前仅支持16-bit小端序PCM") },
+            { "wav2wem", ("音频", "wav转换到wem的音频转换器,当前仅支持16-bit小端序PCM编码") },
+            { "wem2wav", ("音频", "wem转换到wav的音频转换器,当前仅支持16-bit小端序PCM编码") },
             { "xma2wav1", ("音频", "xma转换到wav的音频转换器,VGAudio不支持此格式,使用微软官方工具实现转换,仅支持xma1和部分xma2编码,若要解码所有编码的xma推荐使用vgmstream+foobar2000") },
-            { "xma2wav2", ("音频", "xma转换到wav的音频转换器,VGAudio不支持此格式,Xbox 4-bit IMA ADPCM,自主实现转换") },
-            { "xma2wav3", ("音频", "xma转换到wav的音频转换器,VGAudio不支持此格式,IMA ADPCM或微软4-bit IMA ADPCM,自主实现转换") },
+            { "xma2wav2", ("音频", "xma转换到wav的音频转换器,VGAudio不支持此格式,Xbox 4-bit IMA ADPCM编码,") },
+            { "xma2wav3", ("音频", "xma转换到wav的音频转换器,VGAudio不支持此格式,IMA ADPCM或微软4-bit IMA ADPCM编码") },
             { "xma2wav4", ("音频", "使用AdpcmEncode编码的音频文件专用解码器,VGAudio不支持此格式,仅处理偏移0x10-0x15为32 00 00 00 02 00的文件,不管它是wav/xma/xwm/xwma/pcm/adpcm/imaadpcm的哪一种") },
             { "xwma2wav", ("音频", "xwma转换到wav的音频转换器,VGAudio不支持此格式,使用微软官方工具实现转换") },
             { "任天堂stream/wave", ("音频", "bcwav、bcstm、bfwav、bfstm、brwav、brstm到wav的转换器") },          
             { "Bethesda Archive - bsa", ("其他档案", "Bethesda Game Studios的bsa档案提取器,如上古卷轴5:天际重制版") },
             { "nds - sdat", ("其他档案", "任天堂nds平台的sdat文件提取器") },
-            { "wav2asf1", ("音频", "wav转换到asf的音频转换器,电子艺界EA-XA 4-bit ADPCM v1") },
-            { "wav2asf2", ("音频", "wav转换到asf的音频转换器,电子艺界EA-XA 4-bit ADPCM v2") },
+            { "wav2asf1", ("音频", "wav转换到asf的音频转换器,电子艺界EA-XA 4-bit ADPCM v1编码") },
+            { "wav2asf2", ("音频", "wav转换到asf的音频转换器,电子艺界EA-XA 4-bit ADPCM v2编码") },
             { "Artemis - pfs", ("其他档案", "阿尔特弥斯引擎游戏的pfs文件提取器,测试游戏虚之少女") },
             { "NekoPack - dat", ("其他档案", "NekoPack引擎游戏的dat文件提取器,测试游戏Really Really!") },
             { "Innocent Grey - dat", ("其他档案", "Innocent Grey游戏的dat文件提取器,测试游戏恋狱月狂病") },
@@ -437,7 +451,7 @@ namespace super_toolbox
         }
         private readonly HashSet<string> _converters = new HashSet<string>
         {
-         "Gnf2Png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav", "bfstm2wav", "brstm2wav", "wav2bcstm", "wav2bfstm", "wav2brstm","wav2opus","opus2wav","wav2at3","at32wav","at92wav","wav2at9","wav2swav_8-bit有符号PCM","wav2swav_16-bit小端序PCM","wav2swav_IMA 4-bit ADPCM","swav2wav","wav2asf1","wav2asf2",
+         "Gnf2Png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav","bfstm2wav","brstm2wav","wav2bcstm_8-bit有符号PCM","wav2bcstm_16-bit小端序PCM","wav2bcstm_任天堂DSP ADPCM","wav2bfstm_8-bit有符号PCM","wav2bfstm_16-bit大端序PCM","wav2bfstm_任天堂DSP ADPCM","wav2brstm_8-bit有符号PCM","wav2brstm_16-bit大端序PCM","wav2brstm_任天堂DSP ADPCM","wav2opus","opus2wav","wav2at3","at32wav","at92wav","wav2at9","wav2swav_8-bit有符号PCM","wav2swav_16-bit小端序PCM","wav2swav_IMA 4-bit ADPCM","swav2wav","wav2asf1","wav2asf2","wav2msf1","wav2msf2","msf2wav","hps2wav","wav2hps","wav2mtaf","mtaf2wav","ogg2wem",
          "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rad game tools - rada转换器","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav","wav2hca", "wav2adx","dsp2adx","dsp2hca","dsp2wav","wav2dsp","wav2vag","vag2wav","wav2wem","wem2wav","xwma2wav","wav2xwma","wav2lopus","lopus2wav","wav2bcwav_16-bit小端序PCM","wav2bcwav_8-bit有符号PCM","wav2bfwav_16-bit小端序PCM","wav2bfwav_8-bit有符号PCM","wav2brwav_16-bit大端序PCM","wav2brwav_8-bit有符号PCM","wav2bcwav_任天堂DSP ADPCM","wav2bcwav_IMA 4-bit ADPCM","wav2bfwav_任天堂DSP ADPCM","wav2brwav_任天堂DSP ADPCM",
          "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml","任天堂stream/wave","wav2idsp","wav2mdsp","idsp2wav","mdsp2wav","bcwav2wav","bfwav2wav","brwav2wav","wav2xma1","wav2xma2","wav2xma3","wav2xma4","xma2wav1","xma2wav2","xma2wav3","wav2xma5","xma2wav4"
         };
@@ -888,7 +902,7 @@ namespace super_toolbox
                 case "索尼 - gim": return new GIM2PNG_Converter();
                 case "索尼 - tim": return new Tim2png_Converter();
                 case "GBIX_PVRT - pvr": return new PVRT2PNG_Converter();
-                case "OKI ADPCM - pcm": return new OKI_ADPCM_Extractor();
+                case "索尼非标准ADPCM - pcm": return new PlayStationHeaderlessADPCM_Extractor();
                 case "CloneCD - ccd/img": return new Ccdimg2isoConverter();
                 case "Java反编译 - jar/class": return new JavaDecompiler();
                 case "任天堂 - szs/sarc": return new SzsSarc_Extractor();
@@ -911,8 +925,11 @@ namespace super_toolbox
                 case "adx2wav": return new Adx2wav_Converter();
                 case "at32wav": return new At32wav_Converter();
                 case "at92wav": return new At92wav_Converter();
+                case "hps2wav": return new Hps2wav_Converter();
                 case "idsp2wav": return new Idsp2wav_Converter();
                 case "mdsp2wav": return new Mdsp2wav_Converter();
+                case "msf2wav": return new Msf2wav_Converter();
+                case "mtaf2wav": return new Mtaf2wav_Converter();
                 case "lopus2wav": return new Lopus2wav_Converter();
                 case "dsp2adx": return new Dsp2adx_Converter();
                 case "dsp2hca": return new Dsp2hca_Converter();
@@ -923,12 +940,19 @@ namespace super_toolbox
                 case "bcwav2wav": return new Bcwav2wav_Converter();
                 case "bfwav2wav": return new Bfwav2wav_Converter();
                 case "brwav2wav": return new Brwav2wav_Converter();
+                case "ogg2wem": return new Ogg2wem_Converter();
                 case "opus2wav": return new Opus2wav_Converter();
                 case "swav2wav": return new Swav2wav_Converter();
                 case "vag2wav": return new Vag2wav_Converter();
-                case "wav2bcstm": return new Wav2bcstm_Converter();
-                case "wav2bfstm": return new Wav2bfstm_Converter();
-                case "wav2brstm": return new Wav2brstm_Converter();
+                case "wav2bcstm_8-bit有符号PCM": return new Wav2bcstm1_Converter();
+                case "wav2bcstm_16-bit小端序PCM": return new Wav2bcstm2_Converter();
+                case "wav2bcstm_任天堂DSP ADPCM": return new Wav2bcstm3_Converter();
+                case "wav2bfstm_8-bit有符号PCM": return new Wav2bfstm1_Converter();
+                case "wav2bfstm_16-bit大端序PCM": return new Wav2bfstm2_Converter();
+                case "wav2bfstm_任天堂DSP ADPCM": return new Wav2bfstm3_Converter();
+                case "wav2brstm_8-bit有符号PCM": return new Wav2brstm1_Converter();
+                case "wav2brstm_16-bit大端序PCM": return new Wav2brstm2_Converter();
+                case "wav2brstm_任天堂DSP ADPCM": return new Wav2brstm3_Converter();
                 case "wav2bcwav_8-bit有符号PCM": return new Wav2bcwav1_Converter();
                 case "wav2bcwav_16-bit小端序PCM": return new Wav2bcwav2_Converter();
                 case "wav2bcwav_任天堂DSP ADPCM": return new Wav2bcwav3_Converter();
@@ -940,8 +964,12 @@ namespace super_toolbox
                 case "wav2brwav_16-bit大端序PCM": return new Wav2brwav2_Converter();
                 case "wav2brwav_任天堂DSP ADPCM": return new Wav2brwav3_Converter();
                 case "wav2dsp": return new Wav2dsp_Converter();
+                case "wav2hps": return new Wav2hps_Converter();
                 case "wav2idsp": return new Wav2idsp_Converter();
                 case "wav2mdsp": return new Wav2mdsp_Converter();
+                case "wav2msf1": return new Wav2msf1_Converter();
+                case "wav2msf2": return new Wav2msf2_Converter();
+                case "wav2mtaf": return new Wav2mtaf_Converter();
                 case "wav2hca": return new Wav2hca_Converter();
                 case "wav2adx": return new Wav2adx_Converter();
                 case "wav2at3": return new Wav2at3_Converter();
