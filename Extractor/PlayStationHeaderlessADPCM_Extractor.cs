@@ -1,6 +1,6 @@
 namespace super_toolbox
 {
-    public class OKI_ADPCM_Extractor : BaseExtractor
+    public class PlayStationHeaderlessADPCM_Extractor : BaseExtractor
     {
         public event EventHandler<string>? ExtractionStarted;
         public event EventHandler<string>? ExtractionProgress;
