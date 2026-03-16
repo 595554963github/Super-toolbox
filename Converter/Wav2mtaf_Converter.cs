@@ -11,19 +11,12 @@ namespace super_toolbox
         public event EventHandler<string>? ConversionProgress;
         public event EventHandler<string>? ConversionError;
 
-        public int ResamplingType { get; set; } = 2;
-
         private const int FRAME_SIZE = 0x110;
         private const int FRAME_SAMPLES = 256;
         private const int HEADER_SIZE = 0x800;
-        private const int TARGET_SAMPLE_RATE = 48000;
-        private static readonly byte[] HEADER_NAME = new byte[] { (byte)'M', (byte)'T', (byte)'A', (byte)'F' };
+        private static readonly byte[] HEADER_NAME = { 0x4D, 0x54, 0x41, 0x46 };
 
-        private static readonly int[] STEP_INDEXES = new int[]
-        {
-            -1,-1,-1,-1,2,4,6,8,
-            -1,-1,-1,-1,2,4,6,8
-        };
+        private static readonly int[] STEP_INDEXES = new int[] { -1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8 };
 
         private static readonly int[][] STEP_SIZES = new int[][]
         {
@@ -58,27 +51,86 @@ namespace super_toolbox
             new int[] {251,753,1255,1757,2260,2762,3264,3766,-251,-753,-1255,-1757,-2260,-2762,-3264,-3766},
             new int[] {299,897,1495,2093,2692,3290,3888,4486,-299,-897,-1495,-2093,-2692,-3290,-3888,-4486},
             new int[] {356,1068,1781,2493,3206,3918,4631,5343,-356,-1068,-1781,-2493,-3206,-3918,-4631,-5343},
-            new int[] {424,1273,2121,2970,3819,4668,5516,6365,-424,-1273,-2121,-2970,-3819,-4668,-5516,-6365}
+            new int[] {424,1273,2121,2970,3819,4668,5516,6365,-424,-1273,-2121,-2970,-3819,-4668,-5516,-6365},
         };
 
-        private static int[][] ComputeNextStepTable()
+        private static readonly byte[] TRKP_TEMPLATE = new byte[]
         {
-            int[][] nextStep = new int[32][];
+            0x54,0x52,0x4B,0x50,0x68,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+            0x7F,0x7F,0x40,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+            0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+            0x7F,0x00,0x7F,0x00,0x7F,0x00,0x7F,0x00,0x7F,0x00,0x7F,0x00,
+            0x7F,0x00,0x7F,0x00,0x7F,0x00,0x7F,0x00,0x7F,0x00,0x7F,0x00,
+            0x7F,0x00,0x7F,0x00,0x7F,0x00,0x7F,0x00,0x7F,0x00,0x7F,0x00,
+            0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+            0xFF,0xFF,0xFF,0xFF,
+        };
+
+        private int[][] _nextStep;
+
+        public Wav2mtaf_Converter()
+        {
+            _nextStep = new int[32][];
             for (int s = 0; s < 32; s++)
             {
-                nextStep[s] = new int[16];
+                _nextStep[s] = new int[16];
                 for (int n = 0; n < 16; n++)
                 {
                     int ns = s + STEP_INDEXES[n];
                     if (ns < 0) ns = 0;
-                    else if (ns > 31) ns = 31;
-                    nextStep[s][n] = ns;
+                    if (ns > 31) ns = 31;
+                    _nextStep[s][n] = ns;
                 }
             }
-            return nextStep;
         }
 
-        private static readonly int[][] NEXT_STEP = ComputeNextStepTable();
+        private short Clamp16(int x)
+        {
+            if (x > 32767) return 32767;
+            if (x < -32768) return -32768;
+            return (short)x;
+        }
+
+        private byte[] PackNibbles(int[] nibbles)
+        {
+            byte[] output = new byte[nibbles.Length / 2];
+            for (int i = 0, j = 0; i < nibbles.Length; i += 2, j++)
+            {
+                output[j] = (byte)(nibbles[i] | (nibbles[i + 1] << 4));
+            }
+            return output;
+        }
+
+        private (int[] Nibbles, short Hist, int Step) EncodeChannelFrame(short[] samples, short hist, int step)
+        {
+            int[] nibbles = new int[FRAME_SAMPLES];
+            for (int i = 0; i < FRAME_SAMPLES; i++)
+            {
+                int s = samples[i];
+                int[] sizes = STEP_SIZES[step];
+                int bestN = 0;
+                int bestErr = int.MaxValue;
+                short bestHist = hist;
+                int start = s >= hist ? 0 : 8;
+                int end = start + 8;
+                for (int n = start; n < end; n++)
+                {
+                    int predicted = hist + sizes[n];
+                    short clampedPred = Clamp16(predicted);
+                    int error = Math.Abs(s - clampedPred);
+                    if (error < bestErr)
+                    {
+                        bestErr = error;
+                        bestN = n;
+                        bestHist = clampedPred;
+                    }
+                }
+                hist = bestHist;
+                step = _nextStep[step][bestN];
+                nibbles[i] = bestN;
+            }
+            return (nibbles, hist, step);
+        }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -98,9 +150,7 @@ namespace super_toolbox
                         {
                             string fileName = Path.GetFileNameWithoutExtension(f);
                             var match = Regex.Match(fileName, @"_(\d+)$");
-                            if (match.Success && int.TryParse(match.Groups[1].Value, out int num))
-                                return num;
-                            return int.MaxValue;
+                            return match.Success && int.TryParse(match.Groups[1].Value, out int num) ? num : int.MaxValue;
                         })
                         .ThenBy(f => Path.GetFileNameWithoutExtension(f))
                         .ToArray();
@@ -154,8 +204,8 @@ namespace super_toolbox
             }
             catch (OperationCanceledException)
             {
-                ConversionError?.Invoke(this, "转换操作已取消");
-                OnConversionFailed("转换操作已取消");
+                ConversionError?.Invoke(this, "操作已取消");
+                OnConversionFailed("操作已取消");
                 throw;
             }
             catch (Exception ex)
@@ -165,182 +215,177 @@ namespace super_toolbox
             }
         }
 
-        public override void Extract(string directoryPath)
-        {
-            ExtractAsync(directoryPath).Wait();
-        }
+        public override void Extract(string directoryPath) => ExtractAsync(directoryPath).Wait();
 
         private bool ConvertWavToMtaf(string wavFilePath, string mtafFilePath)
         {
             try
             {
-                var wavReader = new WaveReader();
+                var waveReader = new WaveReader();
                 AudioData audioData;
 
                 using (var wavStream = File.OpenRead(wavFilePath))
-                {
-                    audioData = wavReader.Read(wavStream);
-                }
+                    audioData = waveReader.Read(wavStream);
 
-                if (audioData == null)
-                    return false;
+                if (audioData == null) return false;
 
                 var pcmFormat = audioData.GetFormat<Pcm16Format>();
-                int sampleRate = pcmFormat.SampleRate;
-                short[][] channels = pcmFormat.Channels;
+                if (pcmFormat == null) return false;
 
-                if (channels.Length != 2)
+                int targetSampleRate = 48000;
+                Pcm16Format processedFormat;
+
+                if (pcmFormat.SampleRate != targetSampleRate)
                 {
-                    ConversionError?.Invoke(this, "必须是立体声");
+                    ConversionProgress?.Invoke(this,
+                        $"采样率 {pcmFormat.SampleRate}Hz 不符合要求，正在重采样到 {targetSampleRate}Hz...");
+
+                    if (pcmFormat.Channels.Length > 1)
+                    {
+                        short[] leftChannel = pcmFormat.Channels[0];
+                        short[] rightChannel = pcmFormat.Channels[1];
+                        double ratio = (double)targetSampleRate / pcmFormat.SampleRate;
+
+                        short[] resampledLeft = ResampleSamples(leftChannel, ratio);
+                        short[] resampledRight = ResampleSamples(rightChannel, ratio);
+
+                        processedFormat = new Pcm16Format(new short[][] { resampledLeft, resampledRight }, targetSampleRate);
+                    }
+                    else
+                    {
+                        short[] mono = pcmFormat.Channels[0];
+                        double ratio = (double)targetSampleRate / pcmFormat.SampleRate;
+                        short[] resampledMono = ResampleSamples(mono, ratio);
+
+                        short[] stereoLeft = resampledMono;
+                        short[] stereoRight = new short[resampledMono.Length];
+                        Array.Copy(resampledMono, stereoRight, resampledMono.Length);
+
+                        processedFormat = new Pcm16Format(new short[][] { stereoLeft, stereoRight }, targetSampleRate);
+                    }
+                }
+                else
+                {
+                    processedFormat = pcmFormat;
+                }
+
+                short[][] channels = processedFormat.Channels;
+
+                if (channels.Length < 2)
+                {
+                    ConversionError?.Invoke(this, "MTAF格式需要立体声输入");
                     return false;
                 }
 
-                double resampleFactor = 1.0;
-                if (sampleRate != TARGET_SAMPLE_RATE)
-                {
-                    resampleFactor = (double)TARGET_SAMPLE_RATE / sampleRate;
-                    ConversionProgress?.Invoke(this, $"采样率{sampleRate}Hz不符合要求,自动重采样至{TARGET_SAMPLE_RATE}Hz");
-                }
+                short[] leftSamples = channels[0];
+                short[] rightSamples = channels[1];
+                int totalSamples = leftSamples.Length;
 
-                short[] left = channels[0];
-                short[] right = channels[1];
-
-                if (Math.Abs(resampleFactor - 1.0) > 0.001)
-                {
-                    left = ResampleSamples(left, resampleFactor, ResamplingType);
-                    right = ResampleSamples(right, resampleFactor, ResamplingType);
-                }
-
-                int totalSamples = left.Length;
                 int frames = (totalSamples + FRAME_SAMPLES - 1) / FRAME_SAMPLES;
 
-                using (var fs = new FileStream(mtafFilePath, FileMode.Create))
-                using (var bw = new BinaryWriter(fs))
+                using (var fs = new FileStream(mtafFilePath, FileMode.Create, FileAccess.Write))
                 {
-                    byte[] header = new byte[HEADER_SIZE];
-                    Array.Copy(HEADER_NAME, 0, header, 0, 4);
+                    fs.Write(new byte[HEADER_SIZE], 0, HEADER_SIZE);
 
-                    byte[] headMarker = BitConverter.GetBytes(0x44414548);
-                    Array.Copy(headMarker, 0, header, 0x40, 4);
+                    short histL = 0, histR = 0;
+                    int stepL = 0, stepR = 0, pos = 0;
 
-                    byte[] sampleCount = BitConverter.GetBytes((uint)totalSamples);
-                    Array.Copy(sampleCount, 0, header, 0x5C, 4);
-
-                    header[0x61] = 1;
-
-                    bw.Write(header);
-
-                    int histL = 0, histR = 0;
-                    int stepL = 0, stepR = 0;
-                    int pos = 0;
-
-                    for (int frameIndex = 0; frameIndex < frames; frameIndex++)
+                    for (int fi = 0; fi < frames; fi++)
                     {
-                        int samplesToTake = Math.Min(FRAME_SAMPLES, totalSamples - pos);
+                        var lf = new short[FRAME_SAMPLES];
+                        var rf = new short[FRAME_SAMPLES];
+                        int copyCount = Math.Min(FRAME_SAMPLES, totalSamples - pos);
 
-                        short[] l = new short[FRAME_SAMPLES];
-                        short[] r = new short[FRAME_SAMPLES];
-
-                        Array.Copy(left, pos, l, 0, samplesToTake);
-                        Array.Copy(right, pos, r, 0, samplesToTake);
-
+                        Array.Copy(leftSamples, pos, lf, 0, copyCount);
+                        Array.Copy(rightSamples, pos, rf, 0, copyCount);
+                        for (int i = copyCount; i < FRAME_SAMPLES; i++)
+                        {
+                            lf[i] = 0;
+                            rf[i] = 0;
+                        }
                         pos += FRAME_SAMPLES;
 
-                        byte[] framebuf = new byte[FRAME_SIZE];
+                        byte[] frameBuffer = new byte[FRAME_SIZE];
+                        int samplePos = (fi + 1) * FRAME_SAMPLES;
 
-                        byte[] stepLBuf = BitConverter.GetBytes((short)stepL);
-                        byte[] stepRBuf = BitConverter.GetBytes((short)stepR);
-                        Array.Copy(stepLBuf, 0, framebuf, 4, 2);
-                        Array.Copy(stepRBuf, 0, framebuf, 6, 2);
+                        Buffer.BlockCopy(BitConverter.GetBytes(samplePos), 0, frameBuffer, 0, 4);
+                        Buffer.BlockCopy(BitConverter.GetBytes((short)stepL), 0, frameBuffer, 4, 2);
+                        Buffer.BlockCopy(BitConverter.GetBytes((short)stepR), 0, frameBuffer, 6, 2);
+                        Buffer.BlockCopy(BitConverter.GetBytes(histL), 0, frameBuffer, 8, 2);
+                        Buffer.BlockCopy(BitConverter.GetBytes(histR), 0, frameBuffer, 12, 2);
 
-                        byte[] histLBuf = BitConverter.GetBytes((short)histL);
-                        byte[] histRBuf = BitConverter.GetBytes((short)histR);
-                        Array.Copy(histLBuf, 0, framebuf, 8, 2);
-                        Array.Copy(histRBuf, 0, framebuf, 12, 2);
+                        var (ln, hl, sl) = EncodeChannelFrame(lf, histL, stepL);
+                        var (rn, hr, sr) = EncodeChannelFrame(rf, histR, stepR);
+                        histL = hl; histR = hr; stepL = sl; stepR = sr;
 
-                        var ln = EncodeChannelFrame(l, ref histL, ref stepL);
-                        var rn = EncodeChannelFrame(r, ref histR, ref stepR);
+                        byte[] leftPacked = PackNibbles(ln);
+                        byte[] rightPacked = PackNibbles(rn);
+                        Array.Copy(leftPacked, 0, frameBuffer, 0x10, leftPacked.Length);
+                        Array.Copy(rightPacked, 0, frameBuffer, 0x90, rightPacked.Length);
 
-                        byte[] leftNibbles = PackNibbles(ln);
-                        byte[] rightNibbles = PackNibbles(rn);
-
-                        Array.Copy(leftNibbles, 0, framebuf, 0x10, leftNibbles.Length);
-                        Array.Copy(rightNibbles, 0, framebuf, 0x90, rightNibbles.Length);
-
-                        bw.Write(framebuf);
+                        fs.Write(frameBuffer, 0, frameBuffer.Length);
                     }
+
+                    int dataSize = frames * FRAME_SIZE;
+                    int fileSize = HEADER_SIZE + dataSize;
+                    byte[] header = new byte[HEADER_SIZE];
+
+                    Array.Copy(HEADER_NAME, 0, header, 0, 4);
+                    Buffer.BlockCopy(BitConverter.GetBytes(fileSize - 8), 0, header, 0x04, 4);
+
+                    header[0x40] = 0x48; header[0x41] = 0x45; header[0x42] = 0x41; header[0x43] = 0x44;
+                    Buffer.BlockCopy(BitConverter.GetBytes(0xB0), 0, header, 0x44, 4);
+
+                    Buffer.BlockCopy(BitConverter.GetBytes(0x10), 0, header, 0x4C, 4);
+
+                    Buffer.BlockCopy(BitConverter.GetBytes(0x7F), 0, header, 0x50, 4);
+                    Buffer.BlockCopy(BitConverter.GetBytes((short)0x40), 0, header, 0x54, 2);
+                    Buffer.BlockCopy(BitConverter.GetBytes(totalSamples), 0, header, 0x58, 4);
+                    Buffer.BlockCopy(BitConverter.GetBytes(totalSamples), 0, header, 0x5C, 4);
+                    Buffer.BlockCopy(BitConverter.GetBytes(FRAME_SIZE), 0, header, 0x60, 4);
+                    header[0x61] = 1;
+
+                    int loop = totalSamples / 0x100;
+                    Buffer.BlockCopy(BitConverter.GetBytes(loop), 0, header, 0x64, 4);
+                    Buffer.BlockCopy(BitConverter.GetBytes(loop), 0, header, 0x68, 4);
+
+                    Buffer.BlockCopy(BitConverter.GetBytes(0), 0, header, 0x70, 4);
+
+                    header[0x7F8] = 0x44; header[0x7F9] = 0x41; header[0x7FA] = 0x54; header[0x7FB] = 0x41;
+                    Buffer.BlockCopy(BitConverter.GetBytes(dataSize), 0, header, 0x7FC, 4);
+
+                    int offset = 0xF8;
+                    for (int i = 0; i < 16; i++)
+                    {
+                        byte[] block = (byte[])TRKP_TEMPLATE.Clone();
+                        if (i >= 2)
+                        {
+                            block[8] = 0xFF; block[9] = 0xFF; block[10] = 0xFF; block[11] = 0xFF;
+                        }
+                        Array.Copy(block, 0, header, offset, TRKP_TEMPLATE.Length);
+                        offset += TRKP_TEMPLATE.Length;
+                    }
+
+                    fs.Seek(0, SeekOrigin.Begin);
+                    fs.Write(header, 0, header.Length);
                 }
 
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                ConversionError?.Invoke(this, $"转换错误:{ex.Message}");
                 return false;
             }
         }
 
-        private int[] EncodeChannelFrame(short[] samples, ref int hist, ref int step)
+        private short[] ResampleSamples(short[] samples, double ratio)
         {
-            int[] nibbles = new int[FRAME_SAMPLES];
+            if (Math.Abs(ratio - 1.0) < 0.001) return samples;
 
-            for (int i = 0; i < FRAME_SAMPLES; i++)
-            {
-                int sample = samples[i];
-                int[] sizes = STEP_SIZES[step];
-
-                int bestN = 0;
-                int bestErr = int.MaxValue;
-                int bestHist = hist;
-
-                int start = sample >= hist ? 0 : 8;
-                int end = start + 8;
-
-                for (int n = start; n < end; n++)
-                {
-                    int pred = Clamp16(hist + sizes[n]);
-                    int err = Math.Abs(sample - pred);
-
-                    if (err < bestErr)
-                    {
-                        bestErr = err;
-                        bestN = n;
-                        bestHist = pred;
-                    }
-                }
-
-                hist = bestHist;
-                step = NEXT_STEP[step][bestN];
-                nibbles[i] = bestN;
-            }
-
-            return nibbles;
-        }
-
-        private byte[] PackNibbles(int[] nibbles)
-        {
-            byte[] result = new byte[nibbles.Length / 2];
-            int j = 0;
-            for (int i = 0; i < nibbles.Length; i += 2)
-            {
-                result[j++] = (byte)(nibbles[i] | (nibbles[i + 1] << 4));
-            }
-            return result;
-        }
-
-        private short Clamp16(int x)
-        {
-            if (x > 32767) return 32767;
-            if (x < -32768) return -32768;
-            return (short)x;
-        }
-
-        private short[] ResampleSamples(short[] samples, double factor, int type)
-        {
-            if (Math.Abs(factor - 1.0) < 0.001) return samples;
-
-            int newLength = (int)(samples.Length * factor);
+            int newLength = (int)(samples.Length * ratio);
             short[] result = new short[newLength];
-            double step = 1.0 / factor;
+            double step = 1.0 / ratio;
             double position = 0;
 
             for (int i = 0; i < newLength; i++)
@@ -352,61 +397,11 @@ namespace super_toolbox
                 {
                     result[i] = samples[samples.Length - 1];
                 }
-                else if (type == 0)
+                else
                 {
                     int x0 = samples[Math.Max(0, index)];
                     int x1 = samples[Math.Min(samples.Length - 1, index + 1)];
                     result[i] = (short)Math.Round(x0 + (x1 - x0) * frac);
-                }
-                else if (type == 1)
-                {
-                    int xm1 = samples[Math.Max(0, index - 1)];
-                    int x0 = samples[index];
-                    int x1 = samples[Math.Min(samples.Length - 1, index + 1)];
-                    int x2 = samples[Math.Min(samples.Length - 1, index + 2)];
-
-                    double a0 = 2 * x0;
-                    double a1 = -xm1 + x1;
-                    double a2 = 2 * xm1 - 5 * x0 + 4 * x1 - x2;
-                    double a3 = -xm1 + 3 * x0 - 3 * x1 + x2;
-
-                    double v = (a0 + frac * (a1 + frac * (a2 + frac * a3))) * 0.5;
-                    int vi = (int)Math.Round(v);
-                    if (vi < -32768) vi = -32768;
-                    if (vi > 32767) vi = 32767;
-                    result[i] = (short)vi;
-                }
-                else
-                {
-                    int window = 16;
-                    double sum = 0;
-                    double weightSum = 0;
-
-                    for (int j = -window; j <= window; j++)
-                    {
-                        int sampleIndex = index + j;
-                        if (sampleIndex < 0) sampleIndex = 0;
-                        if (sampleIndex >= samples.Length) sampleIndex = samples.Length - 1;
-
-                        double weight;
-                        if (Math.Abs(j - frac) < 0.001)
-                        {
-                            weight = 1;
-                        }
-                        else
-                        {
-                            weight = Math.Sin(Math.PI * (j - frac)) / (Math.PI * (j - frac));
-                        }
-
-                        weight *= 0.54 - 0.46 * Math.Cos(2 * Math.PI * (j + window) / (2 * window));
-                        sum += samples[sampleIndex] * weight;
-                        weightSum += weight;
-                    }
-
-                    int vi2 = (int)Math.Round(sum / weightSum);
-                    if (vi2 < -32768) vi2 = -32768;
-                    if (vi2 > 32767) vi2 = 32767;
-                    result[i] = (short)vi2;
                 }
 
                 position += step;
