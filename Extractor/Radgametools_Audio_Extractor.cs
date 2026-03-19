@@ -7,9 +7,9 @@ namespace super_toolbox
         public event EventHandler<string>? ExtractionError;
 
         private static readonly byte[] ADAR_SIGNATURE = { 0x41, 0x44, 0x41, 0x52 };
-        private static readonly byte[] SEEK_SIGNATURE = { 0x53, 0x45, 0x45, 0x4B };
         private static readonly byte[] ABEU_SIGNATURE = { 0x41, 0x42, 0x45, 0x55 };
         private const int RADA_HEADER_SIZE = 168;
+        private const int ABEU_UEXP_SIZE = 48;
 
         private static int IndexOf(byte[] data, byte[] pattern, int startIndex)
         {
@@ -53,11 +53,6 @@ namespace super_toolbox
             return -1;
         }
 
-        private static bool ContainsBytes(byte[] data, byte[] pattern)
-        {
-            return IndexOf(data, pattern, 0) != -1;
-        }
-
         public override void Extract(string directoryPath)
         {
             ExtractAsync(directoryPath).Wait();
@@ -66,8 +61,6 @@ namespace super_toolbox
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             List<string> extractedFiles = new List<string>();
-            string extractedDir = Path.Combine(directoryPath, "Extracted");
-            Directory.CreateDirectory(extractedDir);
 
             if (!Directory.Exists(directoryPath))
             {
@@ -79,7 +72,6 @@ namespace super_toolbox
             ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
             var filePaths = Directory.EnumerateFiles(directoryPath, "*.uasset", SearchOption.AllDirectories)
-                .Where(file => !file.StartsWith(extractedDir, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             TotalFilesToExtract = filePaths.Count;
@@ -97,7 +89,9 @@ namespace super_toolbox
                     try
                     {
                         string baseFileName = Path.GetFileNameWithoutExtension(uassetPath);
-                        string ubulkPath = Path.Combine(Path.GetDirectoryName(uassetPath) ?? "", baseFileName + ".ubulk");
+                        string directory = Path.GetDirectoryName(uassetPath) ?? "";
+                        string ubulkPath = Path.Combine(directory, baseFileName + ".ubulk");
+                        string uexpPath = Path.Combine(directory, baseFileName + ".uexp");
 
                         if (!File.Exists(ubulkPath))
                         {
@@ -105,11 +99,15 @@ namespace super_toolbox
                             continue;
                         }
 
-                        bool isRada = await ProcessRadaFileAsync(uassetPath, ubulkPath, extractedDir, extractedFiles, baseFileName, cancellationToken);
+                        bool hasUexp = File.Exists(uexpPath);
 
-                        if (!isRada)
+                        if (hasUexp)
                         {
-                            await ProcessBinkaFileAsync(uassetPath, ubulkPath, extractedDir, extractedFiles, baseFileName, cancellationToken);
+                            await ProcessWithUexpAsync(uexpPath, ubulkPath, directory, extractedFiles, baseFileName, cancellationToken);
+                        }
+                        else
+                        {
+                            await ProcessWithUassetAsync(uassetPath, ubulkPath, directory, extractedFiles, baseFileName, cancellationToken);
                         }
                     }
                     catch (OperationCanceledException)
@@ -142,53 +140,67 @@ namespace super_toolbox
             }
         }
 
-        private async Task<bool> ProcessRadaFileAsync(string uassetPath, string ubulkPath, string extractedDir,
-                                                     List<string> extractedFiles, string baseFileName, CancellationToken cancellationToken)
+        private async Task ProcessWithUassetAsync(string uassetPath, string ubulkPath, string outputDir,
+                                                 List<string> extractedFiles, string baseFileName, CancellationToken cancellationToken)
         {
-            byte[]? radaHeader = await ExtractRadaHeaderAsync(uassetPath, cancellationToken);
-            if (radaHeader == null)
+            byte[]? radaHeader = await ExtractRadaHeaderFromUassetAsync(uassetPath, cancellationToken);
+            if (radaHeader != null)
             {
-                return false;
+                bool success = await CreateAudioFileAsync(radaHeader, ubulkPath, outputDir, extractedFiles,
+                                                          baseFileName, ".rada", cancellationToken);
+                if (success)
+                {
+                    ExtractionProgress?.Invoke(this, $"成功创建{baseFileName}.rada");
+                    return;
+                }
             }
 
-            bool isValidUbulk = await VerifyUbulkHeaderAsync(ubulkPath, cancellationToken);
-            if (!isValidUbulk)
+            byte[]? abeuSection = await ExtractAbeuFromUassetAsync(uassetPath, cancellationToken);
+            if (abeuSection != null)
             {
-                ExtractionProgress?.Invoke(this, $"错误:UBULK文件头部无效:{baseFileName}");
-                return false;
+                bool success = await CreateAudioFileAsync(abeuSection, ubulkPath, outputDir, extractedFiles,
+                                                          baseFileName, ".binka", cancellationToken);
+                if (success)
+                {
+                    ExtractionProgress?.Invoke(this, $"成功创建{baseFileName}.binka");
+                    return;
+                }
             }
 
-            bool success = await CreateRadaFileAsync(uassetPath, radaHeader, ubulkPath, extractedDir, extractedFiles, cancellationToken);
-            if (success)
-            {
-                ExtractionProgress?.Invoke(this, $"成功创建{baseFileName}.rada");
-                return true;
-            }
-
-            return false;
+            ExtractionProgress?.Invoke(this, $"错误:在UASSET文件中未找到ADAR或ABEU签名:{baseFileName}");
         }
 
-        private async Task<bool> ProcessBinkaFileAsync(string uassetPath, string ubulkPath, string extractedDir,
-                                                      List<string> extractedFiles, string baseFileName, CancellationToken cancellationToken)
+        private async Task ProcessWithUexpAsync(string uexpPath, string ubulkPath, string outputDir,
+                                               List<string> extractedFiles, string baseFileName, CancellationToken cancellationToken)
         {
-            byte[]? uassetSection = await ExtractAbeuSectionAsync(uassetPath, cancellationToken);
-            if (uassetSection == null)
+            byte[]? radaHeader = await ExtractRadaHeaderFromUexpAsync(uexpPath, cancellationToken);
+            if (radaHeader != null)
             {
-                ExtractionProgress?.Invoke(this, $"错误:在UASSET文件中未找到ABEU签名:{baseFileName}");
-                return false;
+                bool success = await CreateAudioFileAsync(radaHeader, ubulkPath, outputDir, extractedFiles,
+                                                          baseFileName, ".rada", cancellationToken);
+                if (success)
+                {
+                    ExtractionProgress?.Invoke(this, $"成功创建{baseFileName}.rada");
+                    return;
+                }
             }
 
-            bool success = await CreateBinkaFileAsync(uassetSection, ubulkPath, extractedDir, extractedFiles, baseFileName, cancellationToken);
-            if (success)
+            byte[]? abeuHeader = await ExtractAbeuHeaderFromUexpAsync(uexpPath, cancellationToken);
+            if (abeuHeader != null)
             {
-                ExtractionProgress?.Invoke(this, $"成功创建{baseFileName}.binka");
-                return true;
+                bool success = await CreateAudioFileAsync(abeuHeader, ubulkPath, outputDir, extractedFiles,
+                                                          baseFileName, ".binka", cancellationToken);
+                if (success)
+                {
+                    ExtractionProgress?.Invoke(this, $"成功创建{baseFileName}.binka");
+                    return;
+                }
             }
 
-            return false;
+            ExtractionProgress?.Invoke(this, $"错误:在UEXP文件中未找到ADAR或ABEU签名:{baseFileName}");
         }
 
-        private async Task<byte[]?> ExtractRadaHeaderAsync(string uassetPath, CancellationToken cancellationToken)
+        private async Task<byte[]?> ExtractRadaHeaderFromUassetAsync(string uassetPath, CancellationToken cancellationToken)
         {
             try
             {
@@ -216,7 +228,35 @@ namespace super_toolbox
             }
         }
 
-        private async Task<byte[]?> ExtractAbeuSectionAsync(string uassetPath, CancellationToken cancellationToken)
+        private async Task<byte[]?> ExtractRadaHeaderFromUexpAsync(string uexpPath, CancellationToken cancellationToken)
+        {
+            try
+            {
+                byte[] data = await File.ReadAllBytesAsync(uexpPath, cancellationToken);
+
+                int adarPos = IndexOf(data, ADAR_SIGNATURE, 0);
+                if (adarPos == -1)
+                {
+                    return null;
+                }
+
+                if (adarPos + RADA_HEADER_SIZE > data.Length)
+                {
+                    return null;
+                }
+
+                byte[] radaHeader = new byte[RADA_HEADER_SIZE];
+                Array.Copy(data, adarPos, radaHeader, 0, RADA_HEADER_SIZE);
+
+                return radaHeader;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private async Task<byte[]?> ExtractAbeuFromUassetAsync(string uassetPath, CancellationToken cancellationToken)
         {
             try
             {
@@ -229,10 +269,10 @@ namespace super_toolbox
                 }
 
                 int remainingLength = data.Length - abeuPos;
-                byte[] uassetSection = new byte[remainingLength];
-                Array.Copy(data, abeuPos, uassetSection, 0, remainingLength);
+                byte[] abeuSection = new byte[remainingLength];
+                Array.Copy(data, abeuPos, abeuSection, 0, remainingLength);
 
-                return uassetSection;
+                return abeuSection;
             }
             catch
             {
@@ -240,41 +280,52 @@ namespace super_toolbox
             }
         }
 
-        private async Task<bool> VerifyUbulkHeaderAsync(string ubulkPath, CancellationToken cancellationToken)
+        private async Task<byte[]?> ExtractAbeuHeaderFromUexpAsync(string uexpPath, CancellationToken cancellationToken)
         {
             try
             {
-                byte[] header = new byte[4];
-                using (var fs = new FileStream(ubulkPath, FileMode.Open, FileAccess.Read))
+                byte[] data = await File.ReadAllBytesAsync(uexpPath, cancellationToken);
+
+                int abeuPos = IndexOf(data, ABEU_SIGNATURE, 0);
+                if (abeuPos == -1)
                 {
-                    await fs.ReadAsync(header, 0, 4, cancellationToken);
+                    return null;
                 }
-                return header.SequenceEqual(SEEK_SIGNATURE);
+
+                if (abeuPos + ABEU_UEXP_SIZE > data.Length)
+                {
+                    return null;
+                }
+
+                byte[] abeuHeader = new byte[ABEU_UEXP_SIZE];
+                Array.Copy(data, abeuPos, abeuHeader, 0, ABEU_UEXP_SIZE);
+
+                return abeuHeader;
             }
             catch
             {
-                return false;
+                return null;
             }
         }
 
-        private async Task<bool> CreateRadaFileAsync(string uassetPath, byte[] radaHeader, string ubulkPath,
-                                                   string extractedDir, List<string> extractedFiles, CancellationToken cancellationToken)
+        private async Task<bool> CreateAudioFileAsync(byte[] headerSection, string ubulkPath, string outputDir,
+                                                     List<string> extractedFiles, string baseFileName,
+                                                     string extension, CancellationToken cancellationToken)
         {
             try
             {
-                string baseFileName = Path.GetFileNameWithoutExtension(uassetPath);
                 byte[] ubulkData = await File.ReadAllBytesAsync(ubulkPath, cancellationToken);
 
-                byte[] radaData = new byte[radaHeader.Length + ubulkData.Length];
-                Array.Copy(radaHeader, 0, radaData, 0, radaHeader.Length);
-                Array.Copy(ubulkData, 0, radaData, radaHeader.Length, ubulkData.Length);
+                byte[] audioData = new byte[headerSection.Length + ubulkData.Length];
+                Array.Copy(headerSection, 0, audioData, 0, headerSection.Length);
+                Array.Copy(ubulkData, 0, audioData, headerSection.Length, ubulkData.Length);
 
-                string outputFileName = $"{baseFileName}.rada";
-                string outputFilePath = Path.Combine(extractedDir, outputFileName);
+                string outputFileName = $"{baseFileName}{extension}";
+                string outputFilePath = Path.Combine(outputDir, outputFileName);
 
                 outputFilePath = await GenerateUniqueFilePathAsync(outputFilePath, cancellationToken);
 
-                await File.WriteAllBytesAsync(outputFilePath, radaData, cancellationToken);
+                await File.WriteAllBytesAsync(outputFilePath, audioData, cancellationToken);
 
                 if (!extractedFiles.Contains(outputFilePath))
                 {
@@ -285,43 +336,8 @@ namespace super_toolbox
             }
             catch (Exception ex)
             {
-                ExtractionError?.Invoke(this, $"创建RADA文件时出错:{ex.Message}");
-                OnExtractionFailed($"创建RADA文件时出错:{ex.Message}");
-            }
-
-            return false;
-        }
-
-        private async Task<bool> CreateBinkaFileAsync(byte[] uassetSection, string ubulkPath,
-                                                     string extractedDir, List<string> extractedFiles,
-                                                     string baseFileName, CancellationToken cancellationToken)
-        {
-            try
-            {
-                byte[] ubulkData = await File.ReadAllBytesAsync(ubulkPath, cancellationToken);
-
-                byte[] binkaData = new byte[uassetSection.Length + ubulkData.Length];
-                Array.Copy(uassetSection, 0, binkaData, 0, uassetSection.Length);
-                Array.Copy(ubulkData, 0, binkaData, uassetSection.Length, ubulkData.Length);
-
-                string outputFileName = $"{baseFileName}.binka";
-                string outputFilePath = Path.Combine(extractedDir, outputFileName);
-
-                outputFilePath = await GenerateUniqueFilePathAsync(outputFilePath, cancellationToken);
-
-                await File.WriteAllBytesAsync(outputFilePath, binkaData, cancellationToken);
-
-                if (!extractedFiles.Contains(outputFilePath))
-                {
-                    extractedFiles.Add(outputFilePath);
-                    OnFileExtracted(outputFilePath);
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                ExtractionError?.Invoke(this, $"创建BINKA文件时出错:{ex.Message}");
-                OnExtractionFailed($"创建BINKA文件时出错:{ex.Message}");
+                ExtractionError?.Invoke(this, $"创建音频文件时出错:{ex.Message}");
+                OnExtractionFailed($"创建音频文件时出错:{ex.Message}");
             }
 
             return false;
