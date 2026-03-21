@@ -84,7 +84,7 @@ namespace super_toolbox
             { "光荣特库摩 - gepk", ("其他档案", "光荣特库摩的gepk文件提取器,适用于零系列的濡鸦之巫女等游戏") },
             { "光荣特库摩 - gspk", ("其他档案", "光荣特库摩的gspk和trd文件提取器,适用于零系列的濡鸦之巫女等游戏,提取出来的g2s文件里面包含DXBC着色器文件") },
             { "光荣特库摩 - pak", ("其他档案", "光荣特库摩的pak文件提取器,适用于蓝色反射_帝、幻舞少女之剑、苏菲的炼金工房2等游戏") },
-            { "逆战 - upk", ("其他档案", "逆战upk提取器,解决手动逐个解包的麻烦,支持批量解包,高效提取upk文件中的资源") },
+            { "逆战 - upk", ("其他档案", "逆战upk提取器") },
             { "战争传说 - pak", ("其他档案", "战争传说的pak解包工具,基于bms脚本改写成c#语言,解决了原PAKTool易出现非法字符报错的问题,可彻底解包该游戏所有pak文件") },
             { "IdeaFactory - cl3", ("其他档案", "地雷社游戏的CL3提取器,可从CL3文件中提取dat、tid等文件,已测试妖精剑士F,解决了stcm-editor.exe工具使用不便的问题") },
             { "5pb - LNK4档案 - dat", ("其他档案", "5pb的LNK4文件头的dat解包工具,可解xbox360游戏11只眼_交错的视线等采用该格式的文件") },
@@ -209,7 +209,6 @@ namespace super_toolbox
             { "DXBC2HLSL", ("其他档案", "DXBC到HLSL文件的转换器,使用CMD_Decompiler反编译转换") },
             { "地雷社 - cat", ("其他档案", "激次元组合布兰+涅普缇努VS僵尸军团、神次元偶像:海王星PP和海王星U的cat专用提取器") },
             { "rad game tools - rada/binka提取器", ("音频", "rad game tools开发的音频文件专用提取器,先用Fmodel把pak和ucas文件里的uasset跟ubulk文件全部提取出来再提取rada/binka文件") },
-            { "rad game tools - rada转换器", ("音频", "rad game tools开发的rada音频转换器,可以将vgmstream不支持的rada转换成wav") },
             { "Xbox360 - god2iso打包器", ("其他档案", "xbox360 iso打包器,从god镜像格式打包成iso镜像格式") },
             { "Xbox360 - iso提取器", ("其他档案", "xbox360 iso提取器,从iso镜像里把游戏文件全部提取出来") },
             { "Dreamcast - Bin_Cue2GDI", ("其他档案", "将Dreamcast游戏的Bin/Cue镜像文件转换为GDI格式") },
@@ -267,7 +266,7 @@ namespace super_toolbox
             { "hps2wav", ("音频", "hps转换到wav的音频转换器") },
             { "idsp2wav", ("音频", "idsp转换到wav的音频转换器") },
             { "mdsp2wav", ("音频", "mdsp转换到wav的音频转换器,VGAudio库和vgmstream不支持此格式,我已经向vgmstream提交issue,希望支持此格式解码") },
-            { "mtaf2wav", ("音频", "mtaf转换到wav的音频转换器") },
+            { "mtaf2wav", ("音频", "mtaf转换到wav的音频转换器,VGAudio不支持此格式") },
             { "lopus2wav", ("音频", "lopus转换到wav的音频转换器,VGAudio不支持此格式") },
             { "dsp2adx", ("音频", "dsp转换到adx的音频转换器") },
             { "dsp2hca", ("音频", "dsp转换到hca的音频转换器") },
@@ -308,7 +307,7 @@ namespace super_toolbox
             { "wav2mdsp", ("音频", "wav转换到mdsp的音频转换器") },
             { "wav2msf1", ("音频", "wav转换到msf的音频转换器,VGAudio不支持此格式,16-bit大端序PCM编码") },
             { "wav2msf2", ("音频", "wav转换到msf的音频转换器,VGAudio不支持此格式,16-bit小端序PCM编码") },
-            { "wav2mtaf", ("音频", "wav转换到mtaf的音频转换器,VGAudio不支持此格式,Konami MTAF ADPCM编码") },
+            { "wav2mtaf", ("音频", "wav转换到mtaf的音频转换器,VGAudio不支持此格式,Konami MTAF 4-bit ADPCM编码") },
             { "wav2hca", ("音频", "wav转换到hca的音频转换器") },
             { "wav2adx", ("音频", "wav转换到adx的音频转换器") },           
             { "wav2at3", ("音频", "wav转换到at3的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
@@ -337,13 +336,19 @@ namespace super_toolbox
             { "nds - sdat", ("其他档案", "任天堂nds平台的sdat文件提取器") },
             { "wav2asf1", ("音频", "wav转换到asf的音频转换器,电子艺界EA-XA 4-bit ADPCM v1编码") },
             { "wav2asf2", ("音频", "wav转换到asf的音频转换器,电子艺界EA-XA 4-bit ADPCM v2编码") },
+            { "wav2binka", ("音频", "wav转换到binka的音频转换器,VGAudio库不支持此格式,目前仅支持编码为ABEU文件头的标准binka格式") },
+            { "binka2wav", ("音频", "binka转换到wav的音频转换器,VGAudio库不支持此格式,目前仅支持解码ABEU文件头的标准binka格式") },
+            { "wav2rada", ("音频", "wav转换到rada的音频转换器,VGAudio库不支持此格式") },
+            { "rada2wav", ("音频", "rada转换到wav的音频转换器,VGAudio库不支持此格式") },
             { "Artemis - pfs", ("其他档案", "阿尔特弥斯引擎游戏的pfs文件提取器,测试游戏虚之少女") },
             { "NekoPack - dat", ("其他档案", "NekoPack引擎游戏的dat文件提取器,测试游戏Really Really!") },
             { "Innocent Grey - dat", ("其他档案", "Innocent Grey游戏的dat文件提取器,测试游戏恋狱月狂病") },
             { "PSV欲望之拳 - lzs", ("其他档案", "PSV欲望之拳的lzs专用提取器,参考quickbms源码修改而来") },
+            { "PS2吟游默示录 - NKP", ("其他档案", "PS2吟游默示录的NPK专用提取器") },
             { "任天堂 - bwav", ("音频", "任天堂的bwav音频提取器,用于塞尔达传说:王国之泪等游戏") },
             { "塞尔达传说:王国之泪 - zs", ("其他档案", "塞尔达传说:王国之泪的zs文件专用解包器") },
             { "任天堂 - bnsh提取器", ("其他档案", "任天堂游戏的bnsh着色器文件提取器,可从bfsha等文件里面提取出bnsh文件,比如塞尔达传说:王国之泪") },
+            { "msbt2json", ("其他档案", "msbt转换到json的转换器,适用于塞尔达传说:王国之泪等游戏") },
         };
         public SuperToolbox()
         {
@@ -452,8 +457,8 @@ namespace super_toolbox
         private readonly HashSet<string> _converters = new HashSet<string>
         {
          "Gnf2Png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav","bfstm2wav","brstm2wav","wav2bcstm_8-bit有符号PCM","wav2bcstm_16-bit小端序PCM","wav2bcstm_任天堂DSP ADPCM","wav2bfstm_8-bit有符号PCM","wav2bfstm_16-bit大端序PCM","wav2bfstm_任天堂DSP ADPCM","wav2brstm_8-bit有符号PCM","wav2brstm_16-bit大端序PCM","wav2brstm_任天堂DSP ADPCM","wav2opus","opus2wav","wav2at3","at32wav","at92wav","wav2at9","wav2swav_8-bit有符号PCM","wav2swav_16-bit小端序PCM","wav2swav_IMA 4-bit ADPCM","swav2wav","wav2asf1","wav2asf2","wav2msf1","wav2msf2","msf2wav","hps2wav","wav2hps","wav2mtaf","mtaf2wav","ogg2wem",
-         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rad game tools - rada转换器","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav","wav2hca", "wav2adx","dsp2adx","dsp2hca","dsp2wav","wav2dsp","wav2vag","vag2wav","wav2wem","wem2wav","xwma2wav","wav2xwma","wav2lopus","lopus2wav","wav2bcwav_16-bit小端序PCM","wav2bcwav_8-bit有符号PCM","wav2bfwav_16-bit小端序PCM","wav2bfwav_8-bit有符号PCM","wav2brwav_16-bit大端序PCM","wav2brwav_8-bit有符号PCM","wav2bcwav_任天堂DSP ADPCM","wav2bcwav_IMA 4-bit ADPCM","wav2bfwav_任天堂DSP ADPCM","wav2brwav_任天堂DSP ADPCM",
-         "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml","任天堂stream/wave","wav2idsp","wav2mdsp","idsp2wav","mdsp2wav","bcwav2wav","bfwav2wav","brwav2wav","wav2xma1","wav2xma2","wav2xma3","wav2xma4","xma2wav1","xma2wav2","xma2wav3","wav2xma5","xma2wav4"
+         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rada2wav","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav","wav2hca", "wav2adx","dsp2adx","dsp2hca","dsp2wav","wav2dsp","wav2vag","vag2wav","wav2wem","wem2wav","xwma2wav","wav2xwma","wav2lopus","lopus2wav","wav2bcwav_16-bit小端序PCM","wav2bcwav_8-bit有符号PCM","wav2bfwav_16-bit小端序PCM","wav2bfwav_8-bit有符号PCM","wav2brwav_16-bit大端序PCM","wav2brwav_8-bit有符号PCM","wav2bcwav_任天堂DSP ADPCM","wav2bcwav_IMA 4-bit ADPCM","wav2bfwav_任天堂DSP ADPCM","wav2brwav_任天堂DSP ADPCM","wav2binka","binka2wav","wav2rada",
+         "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml","任天堂stream/wave","wav2idsp","wav2mdsp","idsp2wav","mdsp2wav","bcwav2wav","bfwav2wav","brwav2wav","wav2xma1","wav2xma2","wav2xma3","wav2xma4","xma2wav1","xma2wav2","xma2wav3","wav2xma5","xma2wav4","msbt2json",
         };
         private bool IsConverter(string formatName) => _converters.Contains(formatName);
         private async void btnExtract_Click(object sender, EventArgs e)
@@ -870,7 +875,7 @@ namespace super_toolbox
                 case "DXBC2HLSL": return new DXBC2HLSL_Converter();
                 case "地雷社 - cat": return new CatExtractor();
                 case "rad game tools - rada/binka提取器": return new Radgametools_Audio_Extractor();
-                case "rad game tools - rada转换器": return new Rada2wav_Converter();
+                
                 case "Xbox360 - god2iso打包器": return new Xbox360_iso_packer();
                 case "Xbox360 - iso提取器": return new Xbox360_iso_Extractor();
                 case "Dreamcast - Bin_Cue2GDI": return new BinCue2GDI_Converter();
@@ -998,6 +1003,10 @@ namespace super_toolbox
                 case "nds - sdat": return new Nds_Sdat_Extractor();
                 case "wav2asf1": return new Wav2asf1_Converter();
                 case "wav2asf2": return new Wav2asf2_Converter();
+                case "wav2binka": return new Wav2binka_Converter();
+                case "wav2rada": return new Wav2rada_Converter();
+                case "rada2wav": return new Rada2wav_Converter();
+                case "binka2wav": return new Binka2wav_Converter();
                 case "Artemis - pfs": return new Artemis_pfs_Extractor();
                 case "NekoPack - dat": return new NekoPack_dat_Extractor();
                 case "Innocent Grey - dat": return new PACKDAT_Extractor();
@@ -1005,6 +1014,8 @@ namespace super_toolbox
                 case "任天堂 - bwav": return new Bwav_Extractor();
                 case "塞尔达传说:王国之泪 - zs": return new TOTK_zs_Extractor();
                 case "任天堂 - bnsh提取器": return new Bnsh_Extractor();
+                case "PS2吟游默示录 - NKP": return new NKP_Extractor();
+                case "msbt2json": return new Msbt2json_Converter();
                 default: throw new NotSupportedException($"不支持的格式:{formatName}");
             }
         }
