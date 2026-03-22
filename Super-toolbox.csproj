@@ -100,9 +100,6 @@
 		<EmbeddedResource Include="plugins\HLSLDecompiler.dll">
 			<LogicalName>embedded.HLSLDecompiler.dll</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\radadec.exe">
-			<LogicalName>embedded.radadec.exe</LogicalName>
-		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\exiso.dll">
 			<LogicalName>embedded.exiso.dll</LogicalName>
 		</EmbeddedResource>
@@ -156,6 +153,9 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\BinkAudioCodec.dll">
 			<LogicalName>embedded.BinkAudioCodec.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\binka_encode.exe">
+			<LogicalName>embedded.binka_encode.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\RadAudioCodec.dll">
 			<LogicalName>embedded.RadAudioCodec.dll</LogicalName>
