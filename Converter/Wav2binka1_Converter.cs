@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace super_toolbox
 {
-    public class Wav2binka_Converter : BaseExtractor
+    public class Wav2binka1_Converter : BaseExtractor
     {
         private static string? _tempDllPath;
         private static bool _dllLoaded;
@@ -14,7 +14,7 @@ namespace super_toolbox
         public event EventHandler<string>? ConversionProgress;
         public event EventHandler<string>? ConversionError;
 
-        static Wav2binka_Converter()
+        static Wav2binka1_Converter()
         {
             try
             {
