@@ -1,8 +1,10 @@
-using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using VGAudio.Formats;
+using VGAudio.Formats.Pcm16;
+using VGAudio.Containers.Wave;
 
 namespace super_toolbox
 {
@@ -84,6 +86,36 @@ namespace super_toolbox
             }
         }
 
+        private short[][] ResampleSamples(short[][] channels, double ratio)
+        {
+            int newLength = (int)(channels[0].Length * ratio);
+            short[][] result = new short[channels.Length][];
+
+            for (int ch = 0; ch < channels.Length; ch++)
+            {
+                result[ch] = new short[newLength];
+
+                for (int i = 0; i < newLength; i++)
+                {
+                    double srcPos = i / ratio;
+                    int srcIdx = (int)srcPos;
+                    double frac = srcPos - srcIdx;
+
+                    if (srcIdx + 1 >= channels[ch].Length)
+                    {
+                        result[ch][i] = channels[ch][srcIdx];
+                    }
+                    else
+                    {
+                        double sample = channels[ch][srcIdx] * (1.0 - frac) + channels[ch][srcIdx + 1] * frac;
+                        result[ch][i] = (short)Math.Round(sample);
+                    }
+                }
+            }
+
+            return result;
+        }
+
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
@@ -113,6 +145,7 @@ namespace super_toolbox
 
                     TotalFilesToConvert = wavFiles.Length;
                     int successCount = 0;
+                    List<string> tempFiles = new List<string>();
 
                     if (wavFiles.Length == 0)
                     {
@@ -132,11 +165,47 @@ namespace super_toolbox
 
                         string fileDirectory = Path.GetDirectoryName(wavFilePath) ?? string.Empty;
                         string lopusFilePath = Path.Combine(fileDirectory, $"{fileName}.lopus");
+                        string processedWavPath = wavFilePath;
 
                         try
                         {
+                            var wavReader = new WaveReader();
+                            AudioData audioData;
+
+                            using (var wavStream = File.OpenRead(wavFilePath))
+                            {
+                                audioData = wavReader.Read(wavStream);
+                            }
+
+                            var pcmFormat = audioData.GetFormat<Pcm16Format>();
+                            int sampleRate = pcmFormat.SampleRate;
+
+                            if (sampleRate != 48000 && sampleRate != 24000 && sampleRate != 16000 && sampleRate != 12000 && sampleRate != 8000)
+                            {
+                                ConversionProgress?.Invoke(this, $"重采样:{sampleRate}Hz->48000Hz");
+
+                                int targetRate = 48000;
+                                double ratio = (double)targetRate / sampleRate;
+
+                                short[][] originalSamples = pcmFormat.Channels;
+                                short[][] resampledSamples = ResampleSamples(originalSamples, ratio);
+
+                                var newPcmFormat = new Pcm16Format(resampledSamples, targetRate);
+                                var newAudioData = new AudioData(newPcmFormat);
+
+                                processedWavPath = Path.Combine(Path.GetTempPath(), $"temp_{Guid.NewGuid()}.wav");
+
+                                using (var tempStream = File.Create(processedWavPath))
+                                {
+                                    var wavWriter = new WaveWriter();
+                                    wavWriter.WriteToStream(newAudioData, tempStream);
+                                }
+
+                                tempFiles.Add(processedWavPath);
+                            }
+
                             StringBuilder errorMsg = new StringBuilder(256);
-                            int result = _encodeFunc!(wavFilePath, lopusFilePath, errorMsg, errorMsg.Capacity);
+                            int result = _encodeFunc!(processedWavPath, lopusFilePath, errorMsg, errorMsg.Capacity);
 
                             if (result == 0 && File.Exists(lopusFilePath))
                             {
@@ -155,6 +224,16 @@ namespace super_toolbox
                             ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
                             OnConversionFailed($"{fileName}.wav处理错误:{ex.Message}");
                         }
+                    }
+
+                    foreach (var tempFile in tempFiles)
+                    {
+                        try
+                        {
+                            if (File.Exists(tempFile))
+                                File.Delete(tempFile);
+                        }
+                        catch { }
                     }
 
                     ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件");
