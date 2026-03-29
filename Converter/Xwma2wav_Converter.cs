@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace super_toolbox
 {
@@ -71,37 +70,36 @@ namespace super_toolbox
             {
                 await Task.Run(() =>
                 {
-                    var xwmaFiles = Directory.GetFiles(directoryPath, "*.xwma", SearchOption.AllDirectories)
-                        .Union(Directory.GetFiles(directoryPath, "*.xwm", SearchOption.AllDirectories))
-                        .OrderBy(f =>
-                        {
-                            string fileName = Path.GetFileNameWithoutExtension(f);
-                            var match = Regex.Match(fileName, @"_(\d+)$");
-                            if (match.Success && int.TryParse(match.Groups[1].Value, out int num))
-                                return num;
-                            return int.MaxValue;
-                        })
-                        .ThenBy(f => Path.GetFileNameWithoutExtension(f))
+                    var xwmaFiles = Directory.GetFiles(directoryPath, "*.xwma", SearchOption.TopDirectoryOnly)
+                        .Union(Directory.GetFiles(directoryPath, "*.xwm", SearchOption.TopDirectoryOnly))
                         .ToArray();
+                    if (xwmaFiles.Length == 0 && File.Exists(directoryPath))
+                    {
+                        string ext = Path.GetExtension(directoryPath).ToLower();
+                        if (ext == ".xwma" || ext == ".xwm")
+                        {
+                            xwmaFiles = new string[] { directoryPath };
+                        }
+                    }
 
                     TotalFilesToConvert = xwmaFiles.Length;
                     int successCount = 0;
 
                     if (xwmaFiles.Length == 0)
                     {
-                        ConversionError?.Invoke(this, "未找到需要转换的xWMA/xwm文件");
-                        OnConversionFailed("未找到需要转换的xWMA/xwm文件");
+                        ConversionError?.Invoke(this, "未找到需要转换的xwma/xwm文件");
+                        OnConversionFailed("未找到需要转换的xwma/xwm文件");
                         return;
                     }
 
-                    ConversionStarted?.Invoke(this, $"开始转换xWMA到WAV,共{TotalFilesToConvert}个文件");
+                    ConversionStarted?.Invoke(this, $"开始转换xwma到WAV,共{TotalFilesToConvert}个文件");
 
                     foreach (var xwmaFilePath in xwmaFiles)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
                         string fileName = Path.GetFileNameWithoutExtension(xwmaFilePath);
-                        ConversionProgress?.Invoke(this, $"正在转换:{fileName}.xwma");
+                        ConversionProgress?.Invoke(this, $"正在转换:{fileName}");
 
                         string fileDirectory = Path.GetDirectoryName(xwmaFilePath) ?? string.Empty;
                         string wavFilePath = Path.Combine(fileDirectory, $"{fileName}.wav");
@@ -119,14 +117,14 @@ namespace super_toolbox
                             }
                             else
                             {
-                                ConversionError?.Invoke(this, $"{fileName}.xwma转换失败");
-                                OnConversionFailed($"{fileName}.xwma转换失败");
+                                ConversionError?.Invoke(this, $"{fileName}转换失败");
+                                OnConversionFailed($"{fileName}转换失败");
                             }
                         }
                         catch (Exception ex)
                         {
                             ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
-                            OnConversionFailed($"{fileName}.xwma处理错误:{ex.Message}");
+                            OnConversionFailed($"{fileName}处理错误:{ex.Message}");
                         }
                     }
 
