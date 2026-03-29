@@ -279,47 +279,55 @@ namespace super_toolbox
 
             Span<byte> magic = new Span<byte>(buffer, position + 0x10, 6);
 
-            if (magic.SequenceEqual(new byte[] { 0x08, 0x00, 0x00, 0x00, 0x64, 0x00 }))
-                return "bank";
+            var formatPatterns = new Dictionary<string, List<byte[]>>
+            {
+                ["bank"] = new List<byte[]>
+                {
+                new byte[] { 0x08, 0x00, 0x00, 0x00, 0x64, 0x00 }
+                },
+                ["at3"] = new List<byte[]>
+                {
+                new byte[] { 0x20, 0x00, 0x00, 0x00, 0x70, 0x02 }
+                },
+                ["at9"] = new List<byte[]>
+                {
+                new byte[] { 0x34, 0x00, 0x00, 0x00, 0xFE, 0xFF }
+                },
+                ["xma"] = new List<byte[]>
+                {
+                new byte[] { 0x34, 0x00, 0x00, 0x00, 0x66, 0x01 },
+                new byte[] { 0x14, 0x00, 0x00, 0x00, 0x69, 0x00 },
+                new byte[] { 0x20, 0x00, 0x00, 0x00, 0x65, 0x01 },
+                new byte[] { 0x00, 0x90, 0x01, 0x00, 0x2C, 0x00 },
+                new byte[] { 0x32, 0x00, 0x00, 0x00, 0x02, 0x00 }
+                },
+                ["pcm"] = new List<byte[]>
+                {
+                new byte[] { 0x14, 0x00, 0x00, 0x00, 0x11, 0x00 }
+                },
+                ["wem"] = new List<byte[]>
+                {
+                new byte[] { 0x42, 0x00, 0x00, 0x00, 0xFF, 0xFF },
+                new byte[] { 0x18, 0x00, 0x00, 0x00, 0x02, 0x00 },
+                new byte[] { 0x18, 0x00, 0x00, 0x00, 0x11, 0x83 },
+                new byte[] { 0x18, 0x00, 0x00, 0x00, 0xFE, 0xFF },
+                new byte[] { 0x28, 0x00, 0x00, 0x00, 0x39, 0x30 },
+                new byte[] { 0x10, 0x00, 0x00, 0x00, 0xFE, 0xFF }
+                },
+                ["wav"] = new List<byte[]>
+                {
+                new byte[] { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00 }
+                }
+            };
 
-            if (magic.SequenceEqual(new byte[] { 0x20, 0x00, 0x00, 0x00, 0x70, 0x02 }))
-                return "at3";
-
-            if (magic.SequenceEqual(new byte[] { 0x34, 0x00, 0x00, 0x00, 0xFE, 0xFF }))
-                return "at9";
-
-            if (magic.SequenceEqual(new byte[] { 0x34, 0x00, 0x00, 0x00, 0x66, 0x01 }))
-                return "xma";
-
-            if (magic.SequenceEqual(new byte[] { 0x14, 0x00, 0x00, 0x00, 0x69, 0x00 }))
-                return "xma";
-
-            if (magic.SequenceEqual(new byte[] { 0x20, 0x00, 0x00, 0x00, 0x65, 0x01 }))
-                return "xma";
-
-            if (magic.SequenceEqual(new byte[] { 0x00, 0x90, 0x01, 0x00, 0x2C, 0x00 }))
-                return "xma";
-
-            if (magic.SequenceEqual(new byte[] { 0x14, 0x00, 0x00, 0x00, 0x11, 0x00 }))
-                return "pcm";
-
-            if (magic.SequenceEqual(new byte[] { 0x32, 0x00, 0x00, 0x00, 0x02, 0x00 }))
-                return "xwm";
-
-            if (magic.SequenceEqual(new byte[] { 0x42, 0x00, 0x00, 0x00, 0xFF, 0xFF }))
-                return "wem";
-
-            if (magic.SequenceEqual(new byte[] { 0x18, 0x00, 0x00, 0x00, 0x02, 0x00 }))
-                return "wem";
-
-            if (magic.SequenceEqual(new byte[] { 0x18, 0x00, 0x00, 0x00, 0x11, 0x83 }))
-                return "wem";
-
-            if (magic.SequenceEqual(new byte[] { 0x18, 0x00, 0x00, 0x00, 0xFE, 0xFF }))
-                return "wem";
-
-            if (magic.SequenceEqual(new byte[] { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00 }))
-                return "wav";
+            foreach (var format in formatPatterns)
+            {
+                foreach (var pattern in format.Value)
+                {
+                    if (magic.SequenceEqual(pattern))
+                        return format.Key;
+                }
+            }
 
             return null;
         }
