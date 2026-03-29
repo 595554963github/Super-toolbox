@@ -29,6 +29,8 @@ namespace super_toolbox
             richTextBox1 = new RichTextBox();
             btnClear = new Button();
             toolTip1 = new ToolTip(components);
+            btnAbout = new Button();
+            btnAudioPlayer = new Button();
             treeViewContextMenu.SuspendLayout();
             SuspendLayout();
             // 
@@ -138,7 +140,6 @@ namespace super_toolbox
             //
             // btnAbout
             //
-            btnAbout = new Button();
             btnAbout.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnAbout.ForeColor = Color.Blue;
             btnAbout.Location = new Point(579, 46);
@@ -148,12 +149,27 @@ namespace super_toolbox
             btnAbout.Text = "关于超级工具箱";
             toolTip1.SetToolTip(btnAbout, "关于此工具的说明");
             btnAbout.UseVisualStyleBackColor = true;
+            btnAbout.Click += BtnAbout_Click;
+            // 
+            // btnAudioPlayer
+            // 
+            btnAudioPlayer.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnAudioPlayer.ForeColor = Color.Green;
+            btnAudioPlayer.Location = new Point(488, 46);
+            btnAudioPlayer.Name = "btnAudioPlayer";
+            btnAudioPlayer.Size = new Size(85, 28);
+            btnAudioPlayer.TabIndex = 7;
+            btnAudioPlayer.Text = "音频播放器";
+            toolTip1.SetToolTip(btnAudioPlayer, "打开音频播放器");
+            btnAudioPlayer.UseVisualStyleBackColor = true;
+            btnAudioPlayer.Click += BtnAudioPlayer_Click;
             // 
             // SuperToolbox
             // 
             AutoScaleDimensions = new SizeF(7F, 17F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(888, 571);
+            Controls.Add(btnAudioPlayer);
             Controls.Add(btnAbout);
             Controls.Add(btnClear);
             Controls.Add(richTextBox1);
@@ -183,5 +199,6 @@ namespace super_toolbox
         private System.Windows.Forms.ToolStripMenuItem moveToCategoryMenuItem;
         private ToolTip toolTip1;
         private Button btnAbout;
+        private Button btnAudioPlayer;
     }
 }

@@ -1507,5 +1507,13 @@ namespace super_toolbox
                 preferences.Save();
             }
         }
+        private void BtnAudioPlayer_Click(object? sender, EventArgs e)
+        {
+            using (var playerForm = new AudioPlayerForm())
+            {
+                playerForm.StartPosition = FormStartPosition.CenterParent;
+                playerForm.ShowDialog(this);
+            }
+        }
     }
 }
