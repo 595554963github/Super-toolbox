@@ -99,7 +99,7 @@ namespace super_toolbox
                 "目前支持的所有格式",
                 "adx","ahx","at3","at9","bcstm","bcwav","bfstm","bfwav",
                 "binka","brstm","brwav","dsp","hca","hps","idsp","lopus",
-                "mdsp","msf","mtaf","opus","qoa","rada","swav","vag",
+                "mdsp","msf","mtaf","opus","qoa","rada","swav","vag","wav",
                 "wem","xma","xwma"
             });
             cboFormat.SelectedIndex = 0;
@@ -242,7 +242,7 @@ namespace super_toolbox
         {
             string ext = Path.GetExtension(filePath).ToLower().TrimStart('.');
             string[] supported = {"hca","adx","bcstm","bfstm","brstm","dsp","hps","idsp","mdsp",
-        "bcwav","bfwav","brwav","wem","xma","ahx","at3","at9","opus","lopus","binka","rada",
+        "bcwav","bfwav","brwav","wav","wem","xma","ahx","at3","at9","opus","lopus","binka","rada",
         "xwma","msf","mtaf","qoa","swav","vag"};
             return supported.Contains(ext);
         }
@@ -257,14 +257,14 @@ namespace super_toolbox
         {
             _playlist.Clear();
             string[] exts = {"*.hca","*.adx","*.bcstm","*.bfstm","*.brstm","*.dsp","*.hps","*.idsp","*.mdsp",
-        "*.bcwav","*.bfwav","*.brwav","*.wem","*.xma","*.ahx","*.at3","*.at9","*.opus","*.lopus","*.binka","*.rada",
+        "*.bcwav","*.bfwav","*.brwav","wav","*.wem","*.xma","*.ahx","*.at3","*.at9","*.opus","*.lopus","*.binka","*.rada",
         "*.xwma","*.msf","*.mtaf","*.qoa","*.swav","*.vag"};
             foreach (var ext in exts)
             {
                 try { _playlist.AddRange(Directory.GetFiles(folderPath, ext, SearchOption.AllDirectories)); } catch { }
             }
             RefreshPlaylist();
-            lblStatus.Text = _playlist.Count > 0 ? $"已加载{_playlist.Count}个音频":"未找到已支持的音频文件";
+            lblStatus.Text = _playlist.Count > 0 ? $"已加载{_playlist.Count}个音频" : "未找到已支持的音频文件";
             UpdateButtonStates();
         }
 
@@ -440,6 +440,17 @@ namespace super_toolbox
 
         private async Task<MemoryStream> DecodeToWavStream(string path, string fmt, CancellationToken ct)
         {
+            if (fmt == "wav")
+            {
+                var ms = new MemoryStream();
+                using (var fs = File.OpenRead(path))
+                {
+                    await fs.CopyToAsync(ms, ct);
+                }
+                ms.Position = 0;
+                return ms;
+            }
+
             switch (fmt)
             {
                 case "hca":
@@ -483,6 +494,19 @@ namespace super_toolbox
 
         private async Task<MemoryStream> DecodeWithTempFile(string path, string fmt, CancellationToken ct)
         {
+            if (fmt == "binka")
+            {
+                byte[] header = new byte[4];
+                using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read))
+                {
+                    if (fs.Length < 4) throw new Exception("无效的binka文件");
+                    fs.Read(header, 0, 4);
+                }
+                if (!header.SequenceEqual(new byte[] { 0x41, 0x42, 0x45, 0x55 }))
+                {
+                    throw new Exception("该binka格式不支持解码,请使用vgmstream或foobar2000");
+                }
+            }
             if (fmt == "xma")
             {
                 byte[] sig = new byte[6];

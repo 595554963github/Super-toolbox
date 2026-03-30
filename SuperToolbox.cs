@@ -318,6 +318,7 @@ namespace super_toolbox
             { "wav2swav_16-bit小端序PCM", ("音频", "wav转换到swav的音频转换器,VGAudio不支持此格式,16-bit小端序PCM编码") },
             { "wav2swav_IMA 4-bit ADPCM", ("音频", "wav转换到swav的音频转换器,VGAudio不支持此格式,IMA 4-bit ADPCM编码") },
             { "wav2vag", ("音频", "wav转换到vag的音频转换器,VGAudio不支持此格式") },
+            { "wav2snr", ("音频", "wav转换到snr的音频转换器,VGAudio不支持此格式,电子艺界EA-XAS 4-bit ADPCM v1编码,请使用vgmstream或foobar2000解码") },
             { "wav2xma1", ("音频", "wav转换到xma的音频转换器,编码为xma1,VGAudio不支持此格式,使用微软官方工具实现转换") },
             { "wav2xma2", ("音频", "wav转换到xma的音频转换器,编码为xma2,VGAudio不支持此格式,使用微软官方工具实现转换") },
             { "wav2xma3", ("音频", "wav转换到xma的音频转换器,编码为Xbox 4-bit IMA ADPCM,VGAudio不支持此格式,") },
@@ -334,8 +335,9 @@ namespace super_toolbox
             { "任天堂stream/wave", ("音频", "bcwav、bcstm、bfwav、bfstm、brwav、brstm到wav的转换器") },          
             { "Bethesda Archive - bsa", ("其他档案", "Bethesda Game Studios的bsa档案提取器,如上古卷轴5:天际重制版") },
             { "nds - sdat", ("其他档案", "任天堂nds平台的sdat文件提取器") },
-            { "wav2asf1", ("音频", "wav转换到asf的音频转换器,电子艺界EA-XA 4-bit ADPCM v1编码") },
-            { "wav2asf2", ("音频", "wav转换到asf的音频转换器,电子艺界EA-XA 4-bit ADPCM v2编码") },
+            { "wav2asf1", ("音频", "wav转换到asf的音频转换器,VGAudio不支持此格式,电子艺界EA-XA 4-bit ADPCM v1编码") },
+            { "wav2asf2", ("音频", "wav转换到asf的音频转换器,VGAudio不支持此格式,电子艺界EA-XA 4-bit ADPCM v2编码") },
+            { "wav2MaxisXa", ("音频", "wav转换到MaxisXa的音频转换器,VGAudio不支持此格式,Maxis EA-XA 4-bit ADPCM编码,请使用vgmstream或foobar2000解码") },
             { "wav2binka1", ("音频", "wav转换到binka的音频转换器,VGAudio库不支持此格式,目前仅支持编码文件头为ABEU的标准binka格式,binka是rad game tools开发的一种音频格式,主要用于虚幻4和虚幻5游戏") },
             { "wav2binka2", ("音频", "wav转换到binka的音频转换器,VGAudio库不支持此格式,这是文件头为1FCB的binka转换器,和ABEU的完全不同,当前不支持解码,如果需要解码请使用vgmstream或foobar2000") },
             { "binka2wav", ("音频", "binka转换到wav的音频转换器,VGAudio库不支持此格式,目前仅支持解码ABEU文件头的标准binka格式") },
@@ -458,7 +460,7 @@ namespace super_toolbox
         private readonly HashSet<string> _converters = new HashSet<string>
         {
          "Gnf2Png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav","bfstm2wav","brstm2wav","wav2bcstm_8-bit有符号PCM","wav2bcstm_16-bit小端序PCM","wav2bcstm_任天堂DSP ADPCM","wav2bfstm_8-bit有符号PCM","wav2bfstm_16-bit大端序PCM","wav2bfstm_任天堂DSP ADPCM","wav2brstm_8-bit有符号PCM","wav2brstm_16-bit大端序PCM","wav2brstm_任天堂DSP ADPCM","wav2opus","opus2wav","wav2at3","at32wav","at92wav","wav2at9","wav2swav_8-bit有符号PCM","wav2swav_16-bit小端序PCM","wav2swav_IMA 4-bit ADPCM","swav2wav","wav2asf1","wav2asf2","wav2msf1","wav2msf2","msf2wav","hps2wav","wav2hps","wav2mtaf","mtaf2wav","ogg2wem",
-         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rada2wav","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav","wav2hca", "wav2adx","dsp2adx","dsp2hca","dsp2wav","wav2dsp","wav2vag","vag2wav","wav2wem","wem2wav","xwma2wav","wav2xwma","wav2lopus","lopus2wav","wav2bcwav_16-bit小端序PCM","wav2bcwav_8-bit有符号PCM","wav2bfwav_16-bit小端序PCM","wav2bfwav_8-bit有符号PCM","wav2brwav_16-bit大端序PCM","wav2brwav_8-bit有符号PCM","wav2bcwav_任天堂DSP ADPCM","wav2bcwav_IMA 4-bit ADPCM","wav2bfwav_任天堂DSP ADPCM","wav2brwav_任天堂DSP ADPCM","wav2binka1","binka2wav","wav2binka2","wav2rada",
+         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rada2wav","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav","wav2hca", "wav2adx","dsp2adx","dsp2hca","dsp2wav","wav2dsp","wav2vag","vag2wav","wav2wem","wem2wav","xwma2wav","wav2xwma","wav2lopus","lopus2wav","wav2bcwav_16-bit小端序PCM","wav2bcwav_8-bit有符号PCM","wav2bfwav_16-bit小端序PCM","wav2bfwav_8-bit有符号PCM","wav2brwav_16-bit大端序PCM","wav2brwav_8-bit有符号PCM",
          "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml","任天堂stream/wave","wav2idsp","wav2mdsp","idsp2wav","mdsp2wav","bcwav2wav","bfwav2wav","brwav2wav","wav2xma1","wav2xma2","wav2xma3","wav2xma4","xma2wav1","xma2wav2","xma2wav3","wav2xma5","xma2wav4","msbt2json",
         };
         private bool IsConverter(string formatName) => _converters.Contains(formatName);
@@ -986,6 +988,7 @@ namespace super_toolbox
                 case "wav2swav_16-bit小端序PCM": return new Wav2swav2_Converter();
                 case "wav2swav_IMA 4-bit ADPCM": return new Wav2swav3_Converter();
                 case "wav2vag": return new Wav2vag_Converter();
+                case "wav2snr": return new Wav2snr_Converter();
                 case "wav2xma1": return new Wav2xma1_Converter();
                 case "wav2xma2": return new Wav2xma2_Converter();
                 case "wav2xma3": return new Wav2xma3_Converter();
@@ -1004,11 +1007,12 @@ namespace super_toolbox
                 case "nds - sdat": return new Nds_Sdat_Extractor();
                 case "wav2asf1": return new Wav2asf1_Converter();
                 case "wav2asf2": return new Wav2asf2_Converter();
+                case "wav2MaxisXa": return new Wav2MaxisXa_Converter();
                 case "wav2binka1": return new Wav2binka1_Converter();
                 case "wav2binka2": return new Wav2binka2_Converter();
                 case "wav2rada": return new Wav2rada_Converter();
                 case "rada2wav": return new Rada2wav_Converter();
-                case "binka2wav": return new Binka2wav_Converter();              
+                case "binka2wav": return new Binka2wav_Converter();
                 case "Artemis - pfs": return new Artemis_pfs_Extractor();
                 case "NekoPack - dat": return new NekoPack_dat_Extractor();
                 case "Innocent Grey - dat": return new PACKDAT_Extractor();
