@@ -17,7 +17,7 @@ namespace super_toolbox
 
         static Wav2asf2_Converter()
         {
-            _tempDllPath = LoadEmbeddedDll("embedded.EA_XA-ADPCM.dll", "EA_XA-ADPCM.dll");
+            _tempDllPath = LoadEmbeddedDll("embedded.EA_XA-ADPCM.dll", "EA_XA-ADPCM2.dll");
         }
 
         [DllImport("kernel32.dll", SetLastError = true)]

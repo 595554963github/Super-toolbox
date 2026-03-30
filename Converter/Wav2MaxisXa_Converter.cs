@@ -7,7 +7,7 @@ using VGAudio.Formats.Pcm8;
 
 namespace super_toolbox
 {
-    public class Wav2asf1_Converter : BaseExtractor
+    public class Wav2MaxisXa_Converter : BaseExtractor
     {
         public event EventHandler<string>? ConversionStarted;
         public event EventHandler<string>? ConversionProgress;
@@ -15,9 +15,9 @@ namespace super_toolbox
 
         private static string _tempDllPath;
 
-        static Wav2asf1_Converter()
+        static Wav2MaxisXa_Converter()
         {
-            _tempDllPath = LoadEmbeddedDll("embedded.EA_XA-ADPCM.dll", "EA_XA-ADPCM1.dll");
+            _tempDllPath = LoadEmbeddedDll("embedded.EA_XA-ADPCM.dll", "EA_XA-ADPCM4.dll");
         }
 
         [DllImport("kernel32.dll", SetLastError = true)]
@@ -29,7 +29,7 @@ namespace super_toolbox
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
 
-        private delegate int ConvertWavToAsfDelegate(string inputPath, string outputPath);
+        private delegate int ConvertWavToMaxisXaDelegate(string inputPath, string outputPath);
 
         private new static string LoadEmbeddedDll(string resourceName, string outputFileName)
         {
@@ -59,7 +59,7 @@ namespace super_toolbox
             return tempPath;
         }
 
-        private int CallDllFunction(string wavFilePath, string asfFilePath)
+        private int CallDllFunction(string wavFilePath, string xaFilePath)
         {
             IntPtr hModule = IntPtr.Zero;
             try
@@ -68,12 +68,12 @@ namespace super_toolbox
                 if (hModule == IntPtr.Zero)
                     throw new Exception($"无法加载DLL,错误代码:{Marshal.GetLastWin32Error()}");
 
-                IntPtr pFunc = GetProcAddress(hModule, "ConvertWavToAsfR1");
+                IntPtr pFunc = GetProcAddress(hModule, "ConvertWavToMaxisXa");
                 if (pFunc == IntPtr.Zero)
-                    throw new Exception("找不到函数ConvertWavToAsfR1");
+                    throw new Exception("找不到函数ConvertWavToMaxisXa");
 
-                ConvertWavToAsfDelegate convertFunc = Marshal.GetDelegateForFunctionPointer<ConvertWavToAsfDelegate>(pFunc);
-                return convertFunc(wavFilePath, asfFilePath);
+                ConvertWavToMaxisXaDelegate convertFunc = Marshal.GetDelegateForFunctionPointer<ConvertWavToMaxisXaDelegate>(pFunc);
+                return convertFunc(wavFilePath, xaFilePath);
             }
             finally
             {
@@ -131,7 +131,7 @@ namespace super_toolbox
             }
         }
 
-        private async Task<bool> ConvertWAVToASF(string wavFilePath, string asfFilePath, CancellationToken cancellationToken)
+        private async Task<bool> ConvertWAVToMaxisXa(string wavFilePath, string xaFilePath, CancellationToken cancellationToken)
         {
             string tempPcmWav = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + "_pcm.wav");
 
@@ -142,7 +142,7 @@ namespace super_toolbox
 
                 return await Task.Run(() =>
                 {
-                    int result = CallDllFunction(tempPcmWav, asfFilePath);
+                    int result = CallDllFunction(tempPcmWav, xaFilePath);
 
                     if (result != 0)
                     {
@@ -162,6 +162,40 @@ namespace super_toolbox
             {
                 try { if (File.Exists(tempPcmWav)) File.Delete(tempPcmWav); }
                 catch { }
+            }
+        }
+
+        public async Task ExtractSingleAsync(string wavFilePath, string outputPath, CancellationToken cancellationToken = default)
+        {
+            if (!File.Exists(wavFilePath))
+            {
+                ConversionError?.Invoke(this, $"源文件{wavFilePath}不存在");
+                OnConversionFailed($"源文件{wavFilePath}不存在");
+                return;
+            }
+
+            ConversionStarted?.Invoke(this, $"开始处理:{Path.GetFileName(wavFilePath)}");
+
+            try
+            {
+                bool success = await ConvertWAVToMaxisXa(wavFilePath, outputPath, cancellationToken);
+
+                if (success && File.Exists(outputPath))
+                {
+                    ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(outputPath)}");
+                    OnFileConverted(outputPath);
+                    OnConversionCompleted();
+                }
+                else
+                {
+                    ConversionError?.Invoke(this, $"{Path.GetFileName(wavFilePath)}转换失败");
+                    OnConversionFailed($"{Path.GetFileName(wavFilePath)}转换失败");
+                }
+            }
+            catch (Exception ex)
+            {
+                ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
+                OnConversionFailed($"{Path.GetFileName(wavFilePath)}处理错误:{ex.Message}");
             }
         }
 
@@ -199,17 +233,17 @@ namespace super_toolbox
                     ConversionProgress?.Invoke(this, $"正在处理:{fileName}.wav");
 
                     string fileDirectory = Path.GetDirectoryName(wavFilePath) ?? string.Empty;
-                    string asfFilePath = Path.Combine(fileDirectory, $"{fileName}.asf");
+                    string xaFilePath = Path.Combine(fileDirectory, $"{fileName}.xa");
 
                     try
                     {
-                        bool conversionSuccess = await ConvertWAVToASF(wavFilePath, asfFilePath, cancellationToken);
+                        bool conversionSuccess = await ConvertWAVToMaxisXa(wavFilePath, xaFilePath, cancellationToken);
 
-                        if (conversionSuccess && File.Exists(asfFilePath))
+                        if (conversionSuccess && File.Exists(xaFilePath))
                         {
                             successCount++;
-                            ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(asfFilePath)}");
-                            OnFileConverted(asfFilePath);
+                            ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(xaFilePath)}");
+                            OnFileConverted(xaFilePath);
                         }
                         else
                         {

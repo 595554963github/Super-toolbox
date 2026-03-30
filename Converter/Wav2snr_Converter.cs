@@ -7,7 +7,7 @@ using VGAudio.Formats.Pcm8;
 
 namespace super_toolbox
 {
-    public class Wav2asf1_Converter : BaseExtractor
+    public class Wav2snr_Converter : BaseExtractor
     {
         public event EventHandler<string>? ConversionStarted;
         public event EventHandler<string>? ConversionProgress;
@@ -15,9 +15,9 @@ namespace super_toolbox
 
         private static string _tempDllPath;
 
-        static Wav2asf1_Converter()
+        static Wav2snr_Converter()
         {
-            _tempDllPath = LoadEmbeddedDll("embedded.EA_XA-ADPCM.dll", "EA_XA-ADPCM1.dll");
+            _tempDllPath = LoadEmbeddedDll("embedded.EA_XA-ADPCM.dll", "EA_XA-ADPCM3.dll");
         }
 
         [DllImport("kernel32.dll", SetLastError = true)]
@@ -29,7 +29,7 @@ namespace super_toolbox
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
 
-        private delegate int ConvertWavToAsfDelegate(string inputPath, string outputPath);
+        private delegate int ConvertWavToXasDelegate(string inputPath, string outputPath, int loop);
 
         private new static string LoadEmbeddedDll(string resourceName, string outputFileName)
         {
@@ -59,7 +59,7 @@ namespace super_toolbox
             return tempPath;
         }
 
-        private int CallDllFunction(string wavFilePath, string asfFilePath)
+        private int CallDllFunction(string wavFilePath, string xasFilePath, int loop)
         {
             IntPtr hModule = IntPtr.Zero;
             try
@@ -68,12 +68,12 @@ namespace super_toolbox
                 if (hModule == IntPtr.Zero)
                     throw new Exception($"无法加载DLL,错误代码:{Marshal.GetLastWin32Error()}");
 
-                IntPtr pFunc = GetProcAddress(hModule, "ConvertWavToAsfR1");
+                IntPtr pFunc = GetProcAddress(hModule, "ConvertWavToXas");
                 if (pFunc == IntPtr.Zero)
-                    throw new Exception("找不到函数ConvertWavToAsfR1");
+                    throw new Exception("找不到函数ConvertWavToXas");
 
-                ConvertWavToAsfDelegate convertFunc = Marshal.GetDelegateForFunctionPointer<ConvertWavToAsfDelegate>(pFunc);
-                return convertFunc(wavFilePath, asfFilePath);
+                ConvertWavToXasDelegate convertFunc = Marshal.GetDelegateForFunctionPointer<ConvertWavToXasDelegate>(pFunc);
+                return convertFunc(wavFilePath, xasFilePath, loop);
             }
             finally
             {
@@ -131,7 +131,7 @@ namespace super_toolbox
             }
         }
 
-        private async Task<bool> ConvertWAVToASF(string wavFilePath, string asfFilePath, CancellationToken cancellationToken)
+        private async Task<bool> ConvertWAVToXAS(string wavFilePath, string xasFilePath, int loop, CancellationToken cancellationToken)
         {
             string tempPcmWav = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + "_pcm.wav");
 
@@ -142,7 +142,7 @@ namespace super_toolbox
 
                 return await Task.Run(() =>
                 {
-                    int result = CallDllFunction(tempPcmWav, asfFilePath);
+                    int result = CallDllFunction(tempPcmWav, xasFilePath, loop);
 
                     if (result != 0)
                     {
@@ -162,6 +162,40 @@ namespace super_toolbox
             {
                 try { if (File.Exists(tempPcmWav)) File.Delete(tempPcmWav); }
                 catch { }
+            }
+        }
+
+        public async Task ExtractSingleAsync(string wavFilePath, string outputPath, int loop = 0, CancellationToken cancellationToken = default)
+        {
+            if (!File.Exists(wavFilePath))
+            {
+                ConversionError?.Invoke(this, $"源文件{wavFilePath}不存在");
+                OnConversionFailed($"源文件{wavFilePath}不存在");
+                return;
+            }
+
+            ConversionStarted?.Invoke(this, $"开始处理:{Path.GetFileName(wavFilePath)}");
+
+            try
+            {
+                bool success = await ConvertWAVToXAS(wavFilePath, outputPath, loop, cancellationToken);
+
+                if (success && File.Exists(outputPath))
+                {
+                    ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(outputPath)}");
+                    OnFileConverted(outputPath);
+                    OnConversionCompleted();
+                }
+                else
+                {
+                    ConversionError?.Invoke(this, $"{Path.GetFileName(wavFilePath)}转换失败");
+                    OnConversionFailed($"{Path.GetFileName(wavFilePath)}转换失败");
+                }
+            }
+            catch (Exception ex)
+            {
+                ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
+                OnConversionFailed($"{Path.GetFileName(wavFilePath)}处理错误:{ex.Message}");
             }
         }
 
@@ -199,17 +233,17 @@ namespace super_toolbox
                     ConversionProgress?.Invoke(this, $"正在处理:{fileName}.wav");
 
                     string fileDirectory = Path.GetDirectoryName(wavFilePath) ?? string.Empty;
-                    string asfFilePath = Path.Combine(fileDirectory, $"{fileName}.asf");
+                    string xasFilePath = Path.Combine(fileDirectory, $"{fileName}.snr");
 
                     try
                     {
-                        bool conversionSuccess = await ConvertWAVToASF(wavFilePath, asfFilePath, cancellationToken);
+                        bool conversionSuccess = await ConvertWAVToXAS(wavFilePath, xasFilePath, 0, cancellationToken);
 
-                        if (conversionSuccess && File.Exists(asfFilePath))
+                        if (conversionSuccess && File.Exists(xasFilePath))
                         {
                             successCount++;
-                            ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(asfFilePath)}");
-                            OnFileConverted(asfFilePath);
+                            ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(xasFilePath)}");
+                            OnFileConverted(xasFilePath);
                         }
                         else
                         {
