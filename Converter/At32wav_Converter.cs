@@ -174,13 +174,12 @@ namespace super_toolbox
                 string error = process.StandardError.ReadToEnd();
                 process.WaitForExit();
 
-                if (process.ExitCode != 0)
+                if (process.ExitCode == 0 && File.Exists(wavFilePath))
                 {
-                    ConversionError?.Invoke(this, $"PS3_at3tool错误:{error}");
-                    return false;
+                    return true;
                 }
 
-                return File.Exists(wavFilePath);
+                return false;
             }
             catch (Exception ex)
             {
