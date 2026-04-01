@@ -29,7 +29,6 @@ namespace super_toolbox
             txtFolderPath.DragEnter += TxtFolderPath_DragEnter;
             txtFolderPath.DragDrop += TxtFolderPath_DragDrop;
             txtFolderPath.DragLeave += TxtFolderPath_DragLeave;
-            btnAbout.Click += BtnAbout_Click;
             preferences = Preferences.Load();
             statusStrip1 = new StatusStrip();
             lblStatus = new ToolStripStatusLabel { Text = "就绪" };
@@ -796,11 +795,10 @@ namespace super_toolbox
         {
             try
             {
-                using (var aboutForm = new AboutForm())
-                {
-                    aboutForm.StartPosition = FormStartPosition.CenterParent;
-                    aboutForm.ShowDialog(this);
-                }
+                AboutForm aboutForm = new AboutForm();
+                aboutForm.StartPosition = FormStartPosition.CenterParent;
+                aboutForm.ShowDialog(this);
+                aboutForm.Dispose();
             }
             catch (Exception ex)
             {
