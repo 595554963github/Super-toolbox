@@ -39,7 +39,7 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\exlnk4.exe">
 			<LogicalName>embedded.exlnk4.exe</LogicalName>
-		</EmbeddedResource>		
+		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\ToBTools.exe">
 			<LogicalName>embedded.ToBTools.exe</LogicalName>
 		</EmbeddedResource>
@@ -159,6 +159,12 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\RadAudioCodec.dll">
 			<LogicalName>embedded.RadAudioCodec.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\flac.exe">
+			<LogicalName>embedded.flac.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\ttaenc.exe">
+			<LogicalName>embedded.ttaenc.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\zs.zsdic">
 			<LogicalName>embedded.zs.zsdic</LogicalName>

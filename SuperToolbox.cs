@@ -22,338 +22,6 @@ namespace super_toolbox
         private ToolStripStatusLabel lblFileCount;
         private Preferences preferences;
         private Dictionary<string, bool> categoryExpansionState = new Dictionary<string, bool>();
-        private readonly Dictionary<string, (string category, string description)> defaultCategories = new Dictionary<string, (string, string)>
-        {
-            { "RIFF - RIFF/RIFX音频", ("音频", "RIFF/RIFX资源交换文件格式家族的音频提取器,支持提取Fmod的bank、wwise的wem、索尼的at3/at9、微软的xwm、xma和xwma,常见的wav和RIFX的wem格式") },
-            { "RIFF - cdxa - xa", ("音频", "专门从PlayStation游戏的XA文件中提取xa音频,需注意区分大小写,XA是打包多个xa音频的容器文件,该工具可从RIFF头XA文件里提取xa格式的音频") },
-            { "Criware - adx", ("音频", "以二进制形式从cpk、afs、awb、acb甚至uasset、uexp等多种文件中提取adx文件") },
-            { "Criware - ahx", ("音频", "以二进制形式从cpk、afs等文件中提取ahx文件") },
-            { "Fmod - fsb5", ("音频", "可从Fmod的bank中提取fsb文件,也支持从steam游戏永恒轮回和女神异闻录5对决_幽灵先锋的resources.resource中提取fsb,正当防卫4的arc文件专用fsb提取器") },
-            { "Xiph.Org - Ogg", ("音频", "ogg音频专用提取器") },
-            { "Criware - hca", ("音频", "以二进制形式从cpk、awb、acb或者uexp等文件中提取打包的hca音频文件。若提取的是加密hca文件,会自带enc后缀名（如enc.hca）,方便用户识别处理") },
-            { "任天堂 - libopus - lopus", ("音频", "任天堂switch平台专用音频提取器,代表作为月姬重制版。其提取的音频文件头为OPUS,实际是libopus编码的lopus格式,与普通opus不同,本工具可精准提取此类特殊格式") },
-            { "光荣特库摩 - kvs/ktss", ("音频", "提取光荣特库摩游戏的kvs和ktss音频格式,主要支持从switch平台提取kns、steam平台的kvs格式,同时兼容PS4平台的at3格式,适配多平台同类游戏音频提取") },
-            { "RIFF - Google - webp", ("图片", "基于RIFF资源交换文件格式,提取Google开发的WebP格式图片") },
-            { "联合图像专家组 - JPEG/JPG", ("图片", "以二进制形式从游戏文件中提取jpg图片,jpg是标准计算机文件,有固定文件头和文件尾") },
-            { "便携式网络图形 - PNG", ("图片", "以二进制形式从游戏文件中提取png图片,png是标准计算机文件,具有固定文件头和文件尾") },
-            { "位图图像文件 - BMP", ("图片", "以二进制形式从游戏文件中提取bmp图片,bmp是标准计算机文件,具有固定文件头") },
-            { "标记图形文件 - TGA", ("图片", "以二进制形式从游戏文件中提取tga图片") },
-            { "索尼 - gxt转换器", ("图片", "将PlayStation游戏的gxt格式转换为png格式的工具,支持批量转换。与gxt提取器不同,该工具专注于格式转换") },
-            { "ENDILTLE - apk", ("其他档案", "文件头为ENDILTLE的apk提取器,此类apk非安卓apk,代表游戏包括Artdink开发的龙珠Z_终极之战、万代南梦宫的刀剑神域失落之歌等") },
-            { "东方天空竞技场 - gpk", ("其他档案", "东方天空竞技场_幻想乡空战姬的专用解包器") },
-            { "GxArchivedFile - dat", ("其他档案", "Mizuchi引擎开发的游戏档案专用提取器,广泛用于地雷社游戏,如死亡终局轮回试炼系列、神狱塔断罪玛丽最终篇等") },
-            { "苍之彼方的四重奏EXTRA2 - dat", ("其他档案", "苍之彼方的四重奏2 Extra的专用提取器") },
-            { "Lightvn galgame - mcdat/vndat", ("其他档案", "Light.vn galgame引擎的提取器,可解包宝石少女1st的mcdat和爱你,我的英雄！的vndat文件") },
-            { "Criware - afs提取器", ("其他档案", "用于解包criware的afs档案,该文件在任天堂、索尼、世嘉和xbox360平台较为常见") },
-            { "Criware - cpk", ("其他档案", "用于解包CRIWARE的cpk格式档案,该格式应用广泛,可存储多种类型资源") },
-            { "IdeaFactory - tid", ("图片", "地雷社海王星系列tid文件转换器,可将tid转换为dds格式,且支持BC7纹理的tid文件") },
-            { "第七史诗 - sct", ("图片", "第七史诗的sct转换器,支持批量将sct格式转换为png格式") },
-            { "万代南梦宫 - bnsf", ("音频", "万代南梦宫的bnsf音频提取器,以二进制形式从TLFILE.TLDAT文件中提取。可解析情热传说和PS3平台的狂战传说中的音频,注意狂战传说steam版因加密无法提取") },
-            { "索尼 - gxt提取器", ("图片", "从索尼的PSV、PSP等平台游戏中提取gxt文件") },
-            { "直接绘制表面 - DDS", ("图片", "以二进制形式从游戏文件中提取dds图片,亲测适用于战场女武神4等游戏,支持一般的dds和DX10纹理的dds格式") },
-            { "Filename小端序 - pck/sdat", ("其他档案", "steam和switch平台的超女神信仰诺瓦露、steam和PSV的约战凛绪轮回、steam白色相簿编缀的冬日回忆、\r\nsteam和PSV传颂之物虚伪的假面、steam和PSV和switch传颂之物致逝者的摇篮曲、steam和PSV传颂之物二人的白皇的专用解包工具\r\nsteam和PSV黑蝶幻境") },
-            { "Filename大端序 - pck", ("其他档案", "PS3约会大作战凛祢理想乡和约会大作战或守安装、白色相簿的专用解包工具") },
-            { "地雷社和AQUAPLUS纹理 - tex", ("图片", "超女神信仰诺瓦露、黑蝶幻境、白色相簿系列、约会大作战系列、传颂之物系列tex转换器,目前PSV平台不完美支持,steam和switch正常") },
-            { "PS3苍翼默示录_刻之幻影 - bin", ("其他档案", "PS3平台的苍翼默示录_刻之幻影专用bin文件解包工具,可提取其中包含的所有pac文件") },
-            { "PS3苍翼默示录_刻之幻影 - pac", ("其他档案", "PS3平台的苍翼默示录_刻之幻影的专用解包工具,无法用于PSV版和苍翼默示录_神观之梦") },
-            { "PSV苍翼默示录_刻之幻影 - pac", ("其他档案", "PSV平台的苍翼默示录_刻之幻影的专用解包工具,无法用于PS3版和苍翼默示录_神观之梦") },
-            { "PSV苍翼默示录_连续变换 - pac", ("其他档案", "PSV平台的苍翼默示录_连续变换的专用解包工具,无法用于苍翼默示录_刻之幻影和苍翼默示录_神观之梦") },
-            { "苍翼默示录_神观之梦 - pac", ("其他档案", "苍翼默示录_神观之梦的专用解包工具,支持解包压缩的pac文件和普通pac文件,经测试也可以解包switch平台的赛马娘") },
-            { "断罪的玛利亚 - dat", ("其他档案", "PS3游戏断罪的玛利亚专用提取器,可解包data.dat文件,提取其中的视频、音频和图片") },
-            { "进击的巨人_自由之翼 - bin", ("其他档案", "进击的巨人_自由之翼提取器,能从LINKDATA.bin文件中提取出g1t、g1m等文件") },
-            { "PlayStation 4 bit ADPCM - vag", ("音频", "以二进制形式从PlayStation游戏文件中提取vag音频文件,vag是采用PlayStation 4 bit ADPCM编码的音频格式") },
-            { "零_濡鸦之巫女 - fmsg", ("其他档案", "零濡鸦之巫女的fmsg转换器,可将fmsg文件转换为txt文本") },
-            { "零_濡鸦之巫女 - kscl", ("图片", "零濡鸦之巫女的kscl转换器,能将kscl文件转换为dds图片") },
-            { "PhyreEngine Texture - phyre", ("图片", "从phyre引擎的phyre文件中提取dds图片的提取器,适用于刀剑神域虚空断章、彼岸游境、东京幻都EX等采用该引擎的游戏") },
-            { "PhyreEngine package - pkg", ("其他档案", "phyre引擎的pkg文件提取器,适配东京幻都EX、闪之轨迹、创之轨迹等采用该引擎的游戏,可提取pkg文件中的各类资源") },
-            { "女神异闻录5对决_幽灵先锋 - bin", ("其他档案", "女神异闻录5对决_幽灵先锋的专用wmv提取器,能从movie文件夹的bin文件中提取上百个wmv视频") },
-            { "MPEG-4 - mp4", ("其他档案", "从游戏文件中提取mp4视频文件。尽管mp4文件头前四字节不固定,但后4字节固定,工具可依据此特征轻松提取合法mp4视频") },
-            { "IdeaFactory - bra", ("其他档案", "bra提取器,适用于地雷社妖精剑士F和Falcome的东京幻都EX等游戏") },
-            { "任天堂 - 3DS/WII/WIIU sound", ("音频", "任天堂wii、wiiu和3ds平台的音频提取器,能从brsar、bfsar和bcsar文件中提取出br/bf/bc前缀的wav波形音频文件") },
-            { "Binary Audio Archive - baa", ("其他档案", "一种未知的音频档案格式提取工具。aw文件因不包含头部信息、文件大小等标识数据而依赖baa索引文件,代表作有wiiu平台的塞尔达传说黄昏公主HD") },
-            { "Audio Archive - aw", ("音频", "baa文件配套提取器,用于从baa文件中提取wsys文件。无wsys文件则无法解包aw文件,且需将wsys文件放入aw文件夹才能提取wav,目前vgmstream已支持解码aw/baa") },
-            { "反恐精英OL - pak", ("其他档案", "反恐精英ol的pak提取器") },
-            { "反恐精英OL - nar", ("其他档案", "反恐精英ol的nar提取器") },
-            { "IdeaFactory - pac提取器", ("其他档案", "地雷社游戏的pac提取器,此pac格式常用于海王星系列游戏") },
-            { "IdeaFactory - pac打包器", ("其他档案", "地雷社游戏的pac打包器,能将文件夹重新打包成pac文件") },
-            { "光荣特库摩 - gz/exlilr", ("其他档案", "光荣特库摩的gz和elixir文件解压器,适用于蓝色反射_帝、幻舞少女之剑、无夜之国等游戏") },
-            { "光荣特库摩 - ebm", ("其他档案", "光荣特库摩的ebm文件提取器,适配蓝色反射_帝、幻舞少女之剑、无夜之国等游戏") },
-            { "光荣特库摩 - g1t", ("图片", "光荣特库摩的g1t文件提取器,可提取出dds图片,适用于fate系列、无夜之国2等游戏") },
-            { "光荣特库摩 - gmpk", ("其他档案", "光荣特库摩的gmpk文件提取器,适用于零系列的濡鸦之巫女等游戏,可提取出g1m和g1t文件") },
-            { "光荣特库摩 - gapk", ("其他档案", "光荣特库摩的gapk文件提取器,适用于零系列的濡鸦之巫女等游戏,可提取出g1a文件") },
-            { "光荣特库摩 - gepk", ("其他档案", "光荣特库摩的gepk文件提取器,适用于零系列的濡鸦之巫女等游戏") },
-            { "光荣特库摩 - gspk", ("其他档案", "光荣特库摩的gspk和trd文件提取器,适用于零系列的濡鸦之巫女等游戏,提取出来的g2s文件里面包含DXBC着色器文件") },
-            { "光荣特库摩 - pak", ("其他档案", "光荣特库摩的pak文件提取器,适用于蓝色反射_帝、幻舞少女之剑、苏菲的炼金工房2等游戏") },
-            { "逆战 - upk", ("其他档案", "逆战upk提取器") },
-            { "战争传说 - pak", ("其他档案", "战争传说的pak解包工具,基于bms脚本改写成c#语言,解决了原PAKTool易出现非法字符报错的问题,可彻底解包该游戏所有pak文件") },
-            { "IdeaFactory - cl3", ("其他档案", "地雷社游戏的CL3提取器,可从CL3文件中提取dat、tid等文件,已测试妖精剑士F,解决了stcm-editor.exe工具使用不便的问题") },
-            { "5pb - LNK4档案 - dat", ("其他档案", "5pb的LNK4文件头的dat解包工具,可解xbox360游戏11只眼_交错的视线等采用该格式的文件") },
-            { "情热传说 - dat", ("其他档案", "万代南梦宫的情热传说TLDAT解包工具,也可解狂战传说的相关文件,但仅支持PS3平台,不支持加密的steam平台版本") },
-            { "Allz - allz_compress", ("压缩", "使用Allz算法批量压缩文件") },
-            { "Allz - allz_decompress", ("解压", "使用Allz算法批量解压文件") },
-            { "Brotli - brotli_compress", ("压缩", "使用Brotli算法批量压缩文件") },
-            { "Brotli - brotli_decompress", ("解压", "使用Brotli算法批量解压文件") },
-            { "Gzip - gzip_compress", ("压缩", "使用Gzip算法批量压缩文件") },
-            { "Gzip - gzip_decompress", ("解压", "使用Gzip算法批量解压文件") },
-            { "Huffman - huffman_compress", ("压缩", "使用Huffman算法批量压缩文件") },
-            { "Huffman - huffman_decompress", ("解压", "使用Huffman算法批量解压文件") },
-            { "HUF20 - huf20_compress", ("压缩", "使用huf20算法批量压缩文件") },
-            { "HUF20 - huf20_decompress", ("解压", "使用huf20算法批量解压文件") },
-            { "Lz4 - lz4_compress", ("压缩", "使用Lz4算法批量压缩文件") },
-            { "Lz4 - lz4_decompress", ("解压", "使用Lz4算法批量解压文件") },
-            { "LZ10 - lz10_compress", ("压缩", "使用Lz10算法批量压缩文件") },
-            { "LZ10 - lz10_decompress", ("解压", "使用Lz10算法批量解压文件") },
-            { "LZ11 - lz11_compress", ("压缩", "使用Lz11算法批量压缩文件") },
-            { "LZ11 - lz11_decompress", ("解压", "使用Lz11算法批量解压文件") },
-            { "LZ77 - lz77_compress", ("压缩", "使用Lz77算法批量压缩文件") },
-            { "LZ77 - lz77_decompress", ("解压", "使用Lz77算法批量解压文件") },
-            { "LZMA - 7-zip_lzma_compress", ("压缩", "使用Lzma算法批量压缩文件") },
-            { "LZMA - 7-zip_lzma_decompress", ("解压", "使用Lzma算法批量解压文件") },
-            { "LZO - lzo_compress", ("压缩", "使用Lzo算法批量压缩文件") },
-            { "LZO - lzo_decompress", ("解压", "使用Lzon算法批量解压文件") },
-            { "LZOn - lzon_compress", ("压缩", "使用Lzon算法批量压缩文件") },
-            { "LZOn - lzon_decompress", ("解压", "使用Lzo算法批量解压文件") },
-            { "LZSS - lzss自定义压缩", ("压缩", "使用自定义Lzss算法批量压缩文件,基于c++代码修改而来") },
-            { "LZSS - lzss自定义解压", ("解压", "使用自定义Lzss算法批量解压文件,基于c++代码修改而来") },
-            { "LZSS - lzss标准压缩", ("压缩", "使用标准Lzss算法批量压缩文件") },
-            { "LZSS - lzss标准解压", ("解压", "使用标准Lzss算法批量解压文件") },
-            { "LZX - lzx_compress", ("压缩", "使用Lzx算法批量压缩文件") },
-            { "LZX - lzx_decompress", ("解压", "使用Lzx算法批量解压文件") },
-            { "Lzham - lzham自定义压缩", ("压缩", "使用自定义Lzham算法批量压缩文件") },
-            { "Lzham - lzham自定义解压", ("解压", "使用自定义Lzham算法批量解压文件") },
-            { "Lzham - Lzham标准压缩", ("压缩", "使用标准Lzham算法批量压缩文件") },
-            { "Lzham - Lzham标准解压", ("解压", "使用标准Lzham算法批量解压文件") },
-            { "Mio0 - mio0自定义压缩", ("压缩", "使用Mio0自定义算法批量压缩文件") },
-            { "Mio0 - mio0自定义解压", ("解压", "使用Mio0自定义算法批量解压文件") },
-            { "Mio0 - mio0标准压缩", ("压缩", "使用Mio0标准算法批量压缩文件") },
-            { "Mio0 - mio0标准解压", ("解压", "使用Mio0标准算法批量解压文件") },
-            { "Microsoft - lzms_compress", ("压缩", "使用微软API批量压缩文件") },
-            { "Microsoft - lzms_decompress", ("解压", "使用微软API批量解压文件") },
-            { "Microsoft - lznt1_compress", ("压缩", "使用微软API批量压缩文件") },
-            { "Microsoft - lznt1_decompress", ("解压", "使用微软API批量解压文件") },
-            { "Microsoft - microsoft_compress", ("压缩", "使用微软API批量压缩文件") },
-            { "Microsoft - microsoft_decompress", ("解压", "使用微软API批量解压文件") },
-            { "Microsoft - mszip_compress", ("压缩", "使用微软API批量压缩文件") },
-            { "Microsoft - mszip_decompress", ("解压", "使用微软API批量解压文件") },
-            { "Microsoft - xpress_compress", ("压缩", "使用微软API批量压缩文件") },
-            { "Microsoft - xpress_decompress", ("解压", "使用微软API批量解压文件") },
-            { "Microsoft - xpresshuff_compress", ("压缩", "使用微软API批量压缩文件") },
-            { "Microsoft - xpresshuff_decompress", ("解压", "使用微软API批量解压文件") },
-            { "Oodle - oodle_compress", ("压缩", "使用Oodle算法批量压缩文件") },
-            { "Oodle - oodle_decompress", ("解压", "使用Oodle算法批量解压文件") },
-            { "Prs - prs_compress", ("压缩", "使用Prs算法批量压缩文件") },
-            { "Prs - prs_decompress", ("解压", "使用Prs算法批量解压文件") },
-            { "Snappy - snappy_compress", ("压缩", "使用Snappy算法批量压缩文件") },
-            { "Snappy - snappy_decompress", ("解压", "使用Snappy算法批量解压文件") },
-            { "Wflz - wflz_compress", ("压缩", "使用Wflz算法批量压缩文件") },
-            { "Wflz - wflz_decompress", ("解压", "使用Wflz算法批量解压文件") },
-            { "Yay0 - yay0_compress", ("压缩", "使用Yay0算法批量压缩文件") },
-            { "Yay0 - yay0_decompress", ("解压", "使用Yay0算法批量解压文件") },
-            { "Yaz0 - yaz0_compress", ("压缩", "使用Yaz0算法批量压缩文件") },
-            { "Yaz0 - yaz0_decompress", ("解压", "使用Yaz0算法批量解压文件") },
-            { "Zlib - zlib_compress", ("压缩", "使用Zlib算法批量压缩文件") },
-            { "Zlib - zlib_decompress", ("解压", "使用Zlib算法批量解压文件") },
-            { "ZSTD - zstd_compress", ("压缩", "使用Zstd算法批量压缩文件") },
-            { "ZSTD - zstd_decompress", ("解压", "使用Zstd算法批量解压文件") },
-            { "Wiiu - h3/app", ("其他档案", "任天堂wiiu平台的rom解包器,能将wiiu平台的h3、app文件转换成loadiine格式,方便用户解包") },
-            { "nds - nds提取器", ("其他档案", "任天堂nds平台的rom解包工具,可解包nds rom文件,提取其中的各类资源") },
-            { "nds - nds打包器", ("其他档案", "任天堂nds平台的rom打包器,能将解包的nds文件夹重新打包成nds rom文件") },
-            { "3ds - darc", ("其他档案", "任天堂3ds平台的darc解包工具,代表作为美妙旋律七彩演唱会闪耀设计,可提取darc文件中的资源") },
-            { "nds - narc", ("其他档案", "任天堂nds平台的narc文件提取器,代表作为口袋妖怪(nds),可提取narc文件中的资源") },
-            { "PS3 - psarc提取器", ("其他档案", "索尼PS3平台的psarc解包工具,代表作为第二次超级机器人大战OG,也可解包无人深空的pak文件") },
-            { "PS3 - psarc打包器", ("其他档案", "索尼PS3平台的psarc打包器,能将一个文件夹重新打包成psarc文件") },
-            { "PS3 - sdat", ("其他档案", "索尼PS3平台的sdat加密文件破解器,已测试约会大作战或守安装、约会大作战凛弥理想乡") },
-            { "Criware - afs打包器", ("其他档案", "CRIware的afs档案打包器,可将一个文件夹及子文件夹里的所有文件重新打包成afs文件") },
-            { "Mages - mpk提取器", ("其他档案", "Mages的mpk解包工具,代表作为命运石之门,可提取mpk文件中的各类资源") },
-            { "Mages - mpk打包器", ("其他档案", "Mages的mpk打包器,能将一个文件夹及子文件夹里的所有文件重新打包成mpk文件") },
-            { "Gnf2Png", ("图片", "PS4平台的gnf到png的转换器,支持批量转换,解决了GFDstudio手动转换的繁琐问题") },
-            { "wav2qoa", ("音频", "wav到qoa的音频转换器,VGAudio不支持此格式,") },
-            { "qoa2wav", ("音频", "qoa到wav的音频转换器,VGAudio不支持此格式,") },
-            { "SRPG_Studio - dts", ("其他档案", "SRPG Studio的dts提取器,代表作为刻印战记2_七圣英雄,可提取dts文件中的资源") },
-            { "XACT Wave Bank - xwb打包器", ("其他档案", "XWB打包器,能将一个文件夹里的所有wav打包成xwb文件,为了打包成功建议使用pcm_s16le的wav文件,有些编码不支持") },
-            { "hip2png", ("图片", "hip到png的转换器,代表作为switch平台的赛马娘,可批量处理该格式转换成png") },
-            { "双截龙彩虹 - pak", ("其他档案", "双截龙彩虹的专用pak提取器") },
-            { "CFSI - cfsi提取器", ("其他档案", "cfsi文件专用提取器,适用于极限脱出3_零时困境和Re_从零开始的异世界生活虚假的王选候补等游戏") },
-            { "CFSI - cfsi打包器", ("其他档案", "cfsi打包器,可将一个文件夹及子文件夹里的所有文件重新打包成cfsi文件") },
-            { "消逝的光芒 - rpack", ("其他档案", "消逝的光芒rpack专用提取器") },
-            { "消逝的光芒 - csb", ("其他档案", "消逝的光芒csb专用提取器") },
-            { "PlayStation MultiStream File - msf", ("音频", "以二进制形式从索尼游戏中提取msf音频文件") },
-            { "PlayStation - pssg", ("图片", "PlayStation pssg档案提取器,可提取该档案中的图片资源") },
-            { "Terminal Reality - pod/epd", ("其他档案", "Terminal Reality工作室的pod档案提取器,代表作为星球大战原力释放2,可提取pod/epd档案中的资源") },
-            { "PlayStation - GPDA Header", ("其他档案", "索尼PSP平台上常见的GPDA档案的专用提取器,例如我的妹妹不可能那么可爱、凉宫春日的追忆等游戏") },
-            { "暗影狂奔 - data/toc档案", ("其他档案", "Xbox360游戏暗影狂奔和皇牌空战6解放之战火的专用提取器,可解data/toc这种组合打包的档案") },
-            { "ahx2wav", ("音频", "ahx到wav的音频转换器") },
-            { "异度之刃2 - ard/arh档案", ("其他档案", "switch游戏异度之刃2的提取器,可解包ard/arh这种组合打包的档案") },
-            { "异度之刃3 - ard/arh档案", ("其他档案", "switch游戏异度之刃3的提取器,可解包ard/arh这种组合打包的档案") },
-            { "异度之刃 - LBIM2DDS", ("图片", "异度之刃系列的LBIM转换器,可将文件尾为LBIM的文件转换成dds图像,如果是wismda文件该工具会先拆分xbc1文件,如果是xbc1文件会先移除前48字节,随后zlib解压,然后转换成dds图片,一步到位") },
-            { "异度之刃 - arc", ("其他档案", "从3ds平台的异度之刃arc文件里面提取tpl文件") },
-            { "异度之刃 - BC Header", ("其他档案", "从异度之刃系列游戏提取BC动画文件,这些文件包含ANIM签名") },
-            { "异度之刃 - tpl2bclim", ("图片", "将3ds平台异度之刃的tpl文件转换成bclim文件") },
-            { "任天堂 - bclim", ("图片", "3ds平台的bclim文件转换png的工具") },
-            { "异度之刃 - bdat提取器", ("其他档案", "异度之刃系列游戏的bdat提取器,不支持3ds平台,异度之刃2的部分bdat无法正常提取,即使zlib解压后也不行") },
-            { "异度之刃 - bdat打包器", ("其他档案", "将json文件夹重新打包为bdat文件,目录必须为解包后的文件夹结构(包含bschema文件和json文件夹)") },
-            { "异度之刃 - MXTX Footer", ("其他档案", "异度之刃系列游戏的MTXT提取器,从casmt、caevd、camdo、casmda、bmn、caavp等文件里面提取mtxt文件,然后你再用转换器转换成dds") },
-            { "异度之刃 - LBIM Footer", ("其他档案", "表面上看这是个异度之刃系列的LBIM提取器,实际上它是xbc1专用分解器,从pcsmt、mot、wismt、wifnt、winvda、wismda、wilay等文件里面提取出各种文件,提取出来后有些文件还能再用它二次提取") },
-            { "异度之刃 - pcbeb", ("其他档案", "异度之刃终极版的pcbeb解包器,拆分、删除垃圾字节、解压再解压") },
-            { "异度之刃 - MXTX2DDS", ("图片", "异度之刃系列游戏的MTXT转换器,可以把MTXT纹理转换成dds图像") },
-            { "异度之刃 - map.pkb", ("其他档案", "wii平台异度之刃的map.pkb专用器") },
-            { "异度之刃 - sar", ("其他档案", "wiiu平台异度之刃x的sar解包器,可提取出里面的hkt文件,它也是switch平台异度之刃终极版的提取器,可提取mcapk和chr文件里面的数据") },
-            { "Fate Extella/Link - pk/pfs/pkb", ("其他档案", "PSV平台的Fate Extella和Fate Extella Link专用提取器") },
-            { "白色相簿2 - dar", ("其他档案", "PS3平台的白色相簿2的data.dar专用提取器,voice.dar使用RIFF/RIFX提取器提取就可以了") },
-            { "白色相簿2 - pak", ("其他档案", "steam平台的白色相簿2的pak专用提取器,和PS3的dar完全不同") },
-            { "PlayStation - TRP奖杯文件", ("其他档案", "索尼Playstation平台的trp奖杯文件提取器,代表游戏如PS3的白色相簿、PSV的SD高达G世纪-创世") },
-            { "奥特曼格斗进化3 - bin", ("其他档案", "PS2平台的奥特曼格斗进化3专用提取器,由quickbms脚本修改而来") },
-            { "混乱特工 - vpp_pc", ("其他档案", "混乱特工的专用提取器") },
-            { "捍卫雄鹰2 - gtp", ("其他档案", "捍卫雄鹰IL-2斯大林格勒战役的gtp专用提取器") },
-            { "DXBC - DirectX Bytecode", ("其他档案", "DirectX字节码文件专用提取器") },
-            { "DXBC2HLSL", ("其他档案", "DXBC到HLSL文件的转换器,使用CMD_Decompiler反编译转换") },
-            { "地雷社 - cat", ("其他档案", "激次元组合布兰+涅普缇努VS僵尸军团、神次元偶像:海王星PP和海王星U的cat专用提取器") },
-            { "rad game tools - rada/binka提取器", ("音频", "rad game tools开发的音频文件专用提取器,先用Fmodel把pak和ucas文件里的uasset跟ubulk文件全部提取出来再提取rada/binka文件") },
-            { "Xbox360 - god2iso打包器", ("其他档案", "xbox360 iso打包器,从god镜像格式打包成iso镜像格式") },
-            { "Xbox360 - iso提取器", ("其他档案", "xbox360 iso提取器,从iso镜像里把游戏文件全部提取出来") },
-            { "Dreamcast - Bin_Cue2GDI", ("其他档案", "将Dreamcast游戏的Bin/Cue镜像文件转换为GDI格式") },
-            { "猎天使魔女pc版", ("其他档案", "steam版猎天使魔女的专用提取器,可解包dat、wtb、wmb、mod、eff5种格式") },
-            { "SEGA女武神 - hmt提取器", ("其他档案", "从PSV游戏苍蓝革命女武神的MLX文件里提取hmt文件") },
-            { "SEGA女武神 - MMF", ("其他档案", "从PSV游戏苍蓝革命女武神和战场女武神4的MMF文件里提取bin、hmd、hcm、hmt等文件") },
-            { "东京幻都 - pkg", ("其他档案", "PSV游戏东京幻都(台湾翻译为东京幻想乡)的专用pkg提取器") },
-            { "东方红魔乡/东方妖妖梦 - dat", ("其他档案", "东方红魔乡、东方妖妖梦的专用dat提取器") },
-            { "东方永夜抄/东方花映塚 - dat", ("其他档案", "东方永夜抄和东方花映塚的专用dat提取器,PBGZ头,比东方红魔乡和东方妖妖梦稍微困难些") },
-            { "东方project系列 - Thbgm.dat", ("音频", "东方project系列的Thbgm.dat提取器,如东方红魔乡、东方妖妖梦、东方永夜抄、东方花映塚,要解包此文件必须得先从普通dat文件里提取出thbgm.fmt,把它放到Thbgm.dat所在目录") },
-            { "东方project系列 - dat", ("其他档案", "th95及后续版本的专用dat提取器,可解东方文花帖、东方风神录、东方地灵殿、东方绯想天、东方星莲船、东方非想天则、东方文花帖DS、\r\n妖精大战争、东方神灵庙、东方辉针城、弹幕天邪鬼、东方绀珠传、东方天空璋、秘封噩梦日记、东方鬼形兽、东方虹龙洞、东方兽王园、东方锦上京") },
-            { "东方project系列 - cv0/cv1", ("其他档案", "东方project系列的cv0和cv1文本转换器") },
-            { "东方project系列 - cv2", ("图片", "东方project系列的cv2纹理转换器") },
-            { "东方project系列 - cv3", ("音频", "东方project系列的cv3音频转换器") },
-            { "东方project系列 - pal", ("图片", "东方project系列的pal调色板转换器") },
-            { "东方新世界 - pak/dat", ("其他档案", "东方新世界的pak和dat提取器,已测试steam和switch两个平台,均可以正常解包") },
-            { "yuris引擎 - ymv", ("其他档案", "yuris引擎的ymv解码器") },
-            { "CMVS引擎 - CPZ6", ("其他档案", "紫社cmvs引擎的cpz解包器,已测试天津罪") },
-            { "CMVS引擎 - CPZ7", ("其他档案", "紫社cmvs引擎的cpz解包器,已测试青鸟") },
-            { "CMVS引擎 - pb3", ("图片", "紫社cmvs引擎的pb3转换器,已测试青鸟、天津罪") },
-            { "CMVS引擎 - cmv", ("其他档案", "紫社cmvs引擎的视频文件提取器,已测试青鸟、天津罪") },
-            { "CMVS引擎 - jbpd", ("图片", "紫社cmv文件的png序列帧转换器,可以把cmv文件里提取出来的JBPD帧转换成png,虽然图片比较模糊,但起码比什么都提取不了强吧") },
-            { "初音未来歌姬计划 - DIVAFILE", ("其他档案", "PSV初音未来歌姬计划系列的DIVAFILE文件解包器") },
-            { "初音未来歌姬计划 - farc", ("其他档案", "PSV初音未来歌姬计划系列的farc文件解包器,F2和X两个游戏都支持") },
-            { "创意赛车族摩登赛车 - hdr/dat", ("其他档案", "创意赛车族摩登赛车的专用dat提取器") },
-            { "PSV无双大蛇2终极版 - bin/idx", ("其他档案", "PSV无双大蛇2终极版的LINKDATA专用提取器") },
-            { "光荣特库摩 - rdb.bin", ("其他档案", "steam女神异闻录5对决:幽灵先锋、卧龙苍天陨落的rdb.bin专用提取器,不适用早期游戏的rdb.bin") },
-            { "PSV弹丸论破系列 - pak", ("其他档案", "PSV弹丸论破1和2的专用pak提取器") },
-            { "索尼 - gim", ("图片", "PSP平台的专用转换器,把gim转换成png") },
-            { "GBIX_PVRT - pvr", ("图片", "世嘉和索尼平台游戏的pvr转换器") },
-            { "索尼非标准ADPCM - pcm", ("音频", "PlayStation 4-bit ADPCM,无标准文件头,多用于ps2游戏") },
-            { "CloneCD - ccd/img", ("其他档案", "CloneCD镜像专用转换器") },
-            { "索尼 - tim", ("图片", "ps1平台的专用转换器,把tim转换成png") },
-            { "Java反编译 - jar/class", ("其他档案", "java反编译器,可将jar和class文件反编译成java伪代码,使用之前请务必下载JRE或者JDK") },
-            { "任天堂 - szs/sarc", ("其他档案", "任天堂3ds/wiiu/switch平台的szs/sarc档案提取器,可提取bflan、bflyt、bfsha、bflim、bfres、bfrgp、byml等文件") },
-            { "任天堂 - tpl/brres/brlan/brlyt/mca", ("其他档案", "任天堂wii平台的提取器,可将tpl、brres、brlan、brlyt等文件从游戏里面提取出来,已测试wii平台的异度之刃") },
-            { "任天堂 - bflim", ("图片", "wiiu平台的专用转换器,把bflim转换成dds") },
-            { "任天堂 - byml", ("其他档案", "wiiu平台的byml转换器,可将byml、bygml、byaml转换为yml,已测试塞尔达传说:王国之泪") },
-            { "任天堂 - tpl", ("图片", "wii平台的专用转换器,可将tpl转换为png") },
-            { "SGGG - MRG/EFC", ("其他档案", "SEGA Dreamcast的MRG和EFC专用提取器,可提取mrg里面的所有文件") },
-            { "PS2真三国无双4猛将传 - bin/idx", ("其他档案", "PS2真三国无双4猛将传的LINKDATA专用提取器") },
-            { "索尼 - tm2", ("图片", "PlayStation平台的专用提取器,把tm2从文件里面提取出来") },
-            { "索尼 - tm2png", ("图片", "PlayStation平台的tm2到png的转换器") },
-            { "索尼 - gxp", ("其他档案", "PlayStation平台的gxp专用提取器,把gxp从文件里面提取出来,gxp是一种着色器格式") },
-            { "PS2多浪迪警官3 - vpk", ("其他档案", "PS2多浪迪警官3的vpk提取器") },
-            { "电击文库巅峰格斗 - pac", ("其他档案", "电击文库巅峰格斗的pac提取器") },
-            { "hca2adx", ("音频", "hca转换到adx的音频转换器") },
-            { "hca2wav", ("音频", "hca转换到wav的音频转换器") },
-            { "hca2dsp", ("音频", "hca转换到dsp的音频转换器") },
-            { "adx2hca", ("音频", "adx转换到hca的音频转换器") },
-            { "adx2dsp", ("音频", "adx转换到dsp的音频转换器") },
-            { "adx2wav", ("音频", "adx转换到wav的音频转换器") },
-            { "at32wav", ("音频", "at3转换到wav的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
-            { "at92wav", ("音频", "at9转换到wav的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
-            { "hps2wav", ("音频", "hps转换到wav的音频转换器") },
-            { "idsp2wav", ("音频", "idsp转换到wav的音频转换器") },
-            { "mdsp2wav", ("音频", "mdsp转换到wav的音频转换器,VGAudio库和vgmstream不支持此格式,我已经向vgmstream提交issue,希望支持此格式解码") },
-            { "mtaf2wav", ("音频", "mtaf转换到wav的音频转换器,VGAudio不支持此格式") },
-            { "lopus2wav", ("音频", "lopus转换到wav的音频转换器,VGAudio不支持此格式") },
-            { "dsp2adx", ("音频", "dsp转换到adx的音频转换器") },
-            { "dsp2hca", ("音频", "dsp转换到hca的音频转换器") },
-            { "dsp2wav", ("音频", "dsp转换到wav的音频转换器") },
-            { "bcstm2wav", ("音频", "bcstm转换到wav的音频转换器") },
-            { "bfstm2wav", ("音频", "bfstm转换到wav的音频转换器") },
-            { "brstm2wav", ("音频", "brstm转换到wav的音频转换器") },
-            { "bcwav2wav", ("音频", "将任天堂3DS平台的bcwav音频文件转换为wav格式,支持IMA 4-bit ADPCM、任天堂DSP 4-bit ADPCM、8-bit带符号PCM和16-bit小端序PCM") },
-            { "bfwav2wav", ("音频", "将任天堂WiiU平台的bfwav音频文件转换为wav格式,支持8-bit带符号PCM、16-bit小端序PCM和任天堂DSP 4-bit ADPCM解码") },
-            { "brwav2wav", ("音频", "将任天堂Wii平台的brwav音频文件转换为wav格式,16-bit大端序PCM和任天堂DSP 4-bit ADPCM完美支持,8-bit带符号PCM的建议改用vgmstream或foobar2000,因为VGAudio不完美支持") },
-            { "ogg2wem", ("音频", "ogg转换到wem的音频转换器,NAudio和VGAudio不支持此格式,16-bit小端序PCM编码") },
-            { "opus2wav", ("音频", "opus转换到wav的音频转换器,VGAudio不支持此格式,") },
-            { "swav2wav", ("音频", "swav转换到wav的音频转换器,VGAudio不支持此格式,实现了8-bit带符号PCM、16-bit小端序PCM和IMA 4-bit ADPCM的解码") },
-            { "vag2wav", ("音频", "vag转换到wav的音频转换器,VGAudio不支持此格式") },
-            { "msf2wav", ("音频", "mfs转换到wav的音频转换器,VGAudio不支持此格式,无论大小端序的msf都支持转换") },
-            { "wav2bcstm_8-bit有符号PCM", ("音频", "wav转换到bcstm的音频转换器,8-bit带符号PCM编码") },
-            { "wav2bcstm_16-bit小端序PCM", ("音频", "wav转换到bcstm的音频转换器,16-bit小端序PCM编码") },
-            { "wav2bcstm_任天堂DSP ADPCM", ("音频", "wav转换到bcstm的音频转换器,任天堂DSP 4-bit ADPCM编码") },
-            { "wav2bfstm_8-bit有符号PCM", ("音频", "wav转换到bfstm的音频转换器,8-bit带符号PCM编码") },
-            { "wav2bfstm_16-bit大端序PCM", ("音频", "wav转换到bfstm的音频转换器,16-bit大端序PCM编码") },
-            { "wav2bfstm_任天堂DSP ADPCM", ("音频", "wav转换到brftm的音频转换器,任天堂DSP 4-bit ADPCM编码") },
-            { "wav2brstm_8-bit有符号PCM", ("音频", "wav转换到brstm的音频转换器,8-bit带符号PCM编码") },
-            { "wav2brstm_16-bit大端序PCM", ("音频", "wav转换到brstm的音频转换器,16-bit大端序PCM编码") },
-            { "wav2brstm_任天堂DSP ADPCM", ("音频", "wav转换到brstm的音频转换器,任天堂DSP 4-bit ADPCM编码") },
-            { "wav2bcwav_8-bit有符号PCM", ("音频", "wav转换到bcwav的音频转换器,VGAudio不支持此格式,8-bit带符号PCM编码") },
-            { "wav2bcwav_16-bit小端序PCM", ("音频", "wav转换到bcwav的音频转换器,VGAudio不支持此格式,16-bit小端序PCM编码") },
-            { "wav2bcwav_任天堂DSP ADPCM", ("音频", "wav转换到bcwav的音频转换器,VGAudio不支持此格式,任天堂DSP 4-bit ADPCM编码") },
-            { "wav2bcwav_IMA 4-bit ADPCM", ("音频", "wav转换到bcwav的音频转换器,VGAudio不支持此格式,IMA 4-bit ADPCM编码") },
-            { "wav2bfwav_8-bit有符号PCM", ("音频", "wav转换到bfwav的音频转换器,VGAudio不支持此格式,8-bit带符号PCM编码") },
-            { "wav2bfwav_16-bit小端序PCM", ("音频", "wav转换到bfwav的音频转换器,VGAudio不支持此格式,16-bit小端序PCM编码") },
-            { "wav2bfwav_任天堂DSP ADPCM", ("音频", "wav转换到bfwav的音频转换器,VGAudio不支持此格式,任天堂DSP 4-bit ADPCM编码") },
-            { "wav2brwav_8-bit有符号PCM", ("音频", "wav转换到brwav的音频转换器,VGAudio不支持此格式,使用官方sdk转换,8-bit带符号PCM编码") },
-            { "wav2brwav_16-bit大端序PCM", ("音频", "wav转换到brwav的音频转换器,VGAudio不支持此格式,使用官方sdk转换,16-bit大端序PCM编码") },
-            { "wav2brwav_任天堂DSP ADPCM", ("音频", "wav转换到brwav的音频转换器,VGAudio不支持此格式,使用官方sdk转换,任天堂DSP 4-bit ADPCM编码") },
-            { "wav2dsp", ("音频", "wav转换到dsp的音频转换器") },
-            { "wav2hps", ("音频", "wav转换到hps的音频转换器") },
-            { "wav2idsp", ("音频", "wav转换到idsp的音频转换器") },
-            { "wav2mdsp", ("音频", "wav转换到mdsp的音频转换器") },
-            { "wav2msf1", ("音频", "wav转换到msf的音频转换器,VGAudio不支持此格式,16-bit大端序PCM编码") },
-            { "wav2msf2", ("音频", "wav转换到msf的音频转换器,VGAudio不支持此格式,16-bit小端序PCM编码") },
-            { "wav2mtaf", ("音频", "wav转换到mtaf的音频转换器,VGAudio不支持此格式,Konami MTAF 4-bit ADPCM编码") },
-            { "wav2hca", ("音频", "wav转换到hca的音频转换器") },
-            { "wav2adx", ("音频", "wav转换到adx的音频转换器") },           
-            { "wav2at3", ("音频", "wav转换到at3的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
-            { "wav2lopus", ("音频", "wav转换到lopus的音频转换器,VGAudio不支持此格式,") },
-            { "wav2at9", ("音频", "wav转换到at9的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
-            { "wav2opus", ("音频", "wav转换到opus的音频转换器,VGAudio不支持此格式,") },
-            { "wav2swav_8-bit有符号PCM", ("音频", "wav转换到swav的音频转换器,VGAudio不支持此格式,8-bit signed PCM编码") },
-            { "wav2swav_16-bit小端序PCM", ("音频", "wav转换到swav的音频转换器,VGAudio不支持此格式,16-bit小端序PCM编码") },
-            { "wav2swav_IMA 4-bit ADPCM", ("音频", "wav转换到swav的音频转换器,VGAudio不支持此格式,IMA 4-bit ADPCM编码") },
-            { "wav2vag", ("音频", "wav转换到vag的音频转换器,VGAudio不支持此格式") },
-            { "wav2snr", ("音频", "wav转换到snr的音频转换器,VGAudio不支持此格式,电子艺界EA-XAS 4-bit ADPCM v1编码,暂不支持解码,请使用ffmpeg、vgmstream或foobar2000解码") },
-            { "wav2xma1", ("音频", "wav转换到xma的音频转换器,编码为xma1,VGAudio不支持此格式,使用微软官方工具实现转换") },
-            { "wav2xma2", ("音频", "wav转换到xma的音频转换器,编码为xma2,VGAudio不支持此格式,使用微软官方工具实现转换") },
-            { "wav2xma3", ("音频", "wav转换到xma的音频转换器,编码为Xbox 4-bit IMA ADPCM,VGAudio不支持此格式,") },
-            { "wav2xma4", ("音频", "wav转换到xma的音频转换器,编码为IMA ADPCM或微软4-bit IMA ADPCM,VGAudio不支持此格式") },
-            { "wav2xma5", ("音频", "使用AdpcmEncode把wav编码生成的音频文件保存为xma、xwm、xwma和wav都能被foobar2000识别和播放,VGAudio不支持此格式,使用微软官方工具实现转换") },          
-            { "wav2xwma", ("音频", "wav转换到xwma的音频转换器,VGAudio不支持此格式,使用微软官方工具实现转换") },
-            { "wav2wem", ("音频", "wav转换到wem的音频转换器,当前仅支持16-bit小端序PCM编码") },
-            { "wem2wav", ("音频", "wem转换到wav的音频转换器,当前仅支持16-bit小端序PCM编码") },
-            { "xma2wav1", ("音频", "xma转换到wav的音频转换器,VGAudio不支持此格式,使用微软官方工具实现转换,仅支持xma1和部分xma2编码,若要解码所有编码的xma推荐使用vgmstream+foobar2000") },
-            { "xma2wav2", ("音频", "xma转换到wav的音频转换器,VGAudio不支持此格式,Xbox 4-bit IMA ADPCM编码,") },
-            { "xma2wav3", ("音频", "xma转换到wav的音频转换器,VGAudio不支持此格式,IMA ADPCM或微软4-bit IMA ADPCM编码") },
-            { "xma2wav4", ("音频", "使用AdpcmEncode编码的音频文件专用解码器,VGAudio不支持此格式,仅处理偏移0x10-0x15为32 00 00 00 02 00的文件,不管它是wav/xma/xwm/xwma/pcm/adpcm/imaadpcm的哪一种") },
-            { "xwma2wav", ("音频", "xwma转换到wav的音频转换器,VGAudio不支持此格式,使用微软官方工具实现转换") },
-            { "任天堂stream/wave", ("音频", "bcwav、bcstm、bfwav、bfstm、brwav、brstm到wav的转换器") },          
-            { "Bethesda Archive - bsa", ("其他档案", "Bethesda Game Studios的bsa档案提取器,如上古卷轴5:天际重制版") },
-            { "nds - sdat", ("其他档案", "任天堂nds平台的sdat文件提取器") },
-            { "wav2asf1", ("音频", "wav转换到asf的音频转换器,VGAudio不支持此格式,电子艺界EA-XA 4-bit ADPCM v1编码,暂不支持解码,请使用ffmpeg、vgmstream或foobar2000解码") },
-            { "wav2asf2", ("音频", "wav转换到asf的音频转换器,VGAudio不支持此格式,电子艺界EA-XA 4-bit ADPCM v2编码,暂不支持解码,请使用ffmpeg、vgmstream或foobar2000解码") },
-            { "wav2asf3", ("音频", "wav转换到asf的音频转换器,VGAudio不支持此格式,电子艺界EA-XA 4-bit ADPCM v3编码,暂不支持解码,请使用ffmpeg、vgmstream或foobar2000解码") },
-            { "wav2MaxisXa", ("音频", "wav转换到MaxisXa的音频转换器,VGAudio不支持此格式,Maxis EA-XA 4-bit ADPCM编码,暂不支持解码,请使用ffmpeg、vgmstream或foobar2000解码") },
-            { "wav2binka1", ("音频", "wav转换到binka的音频转换器,VGAudio库不支持此格式,目前仅支持编码文件头为ABEU的标准binka格式,binka是rad game tools开发的一种音频格式,主要用于虚幻4和虚幻5游戏") },
-            { "wav2binka2", ("音频", "wav转换到binka的音频转换器,VGAudio库不支持此格式,这是文件头为1FCB的binka转换器,和ABEU的完全不同,当前不支持解码,如果需要解码请使用vgmstream或foobar2000") },
-            { "binka2wav", ("音频", "binka转换到wav的音频转换器,VGAudio库不支持此格式,目前仅支持解码ABEU文件头的标准binka格式") },
-            { "wav2rada", ("音频", "wav转换到rada的音频转换器,VGAudio库不支持此格式,rada是rad game tools开发的一种音频格式,主要用于虚幻5游戏") },
-            { "rada2wav", ("音频", "rada转换到wav的音频转换器,VGAudio库不支持此格式") },
-            { "Artemis - pfs", ("其他档案", "阿尔特弥斯引擎游戏的pfs文件提取器,测试游戏虚之少女") },
-            { "NekoPack - dat", ("其他档案", "NekoPack引擎游戏的dat文件提取器,测试游戏Really Really!") },
-            { "Innocent Grey - dat", ("其他档案", "Innocent Grey游戏的dat文件提取器,测试游戏恋狱月狂病") },
-            { "PSV欲望之拳 - lzs", ("其他档案", "PSV欲望之拳的lzs专用提取器,参考quickbms源码修改而来") },
-            { "PS2吟游默示录 - NKP", ("其他档案", "PS2吟游默示录的NPK专用提取器") },
-            { "任天堂 - bwav", ("音频", "任天堂的bwav音频提取器,用于塞尔达传说:王国之泪等游戏") },
-            { "塞尔达传说:王国之泪 - zs", ("其他档案", "塞尔达传说:王国之泪的zs文件专用解包器") },
-            { "任天堂 - bnsh提取器", ("其他档案", "任天堂游戏的bnsh着色器文件提取器,可从bfsha等文件里面提取出bnsh文件,比如塞尔达传说:王国之泪") },
-            { "msbt2json", ("其他档案", "msbt转换到json的转换器,适用于塞尔达传说:王国之泪等游戏") },
-        };
         public SuperToolbox()
         {
             InitializeComponent();
@@ -384,12 +52,12 @@ namespace super_toolbox
         }
         private void InitializeTreeView()
         {
-            foreach (string category in defaultCategories.Values.Select(x => x.category).Distinct())
+            foreach (string category in ExtractorRegistry.DefaultCategories.Values.Select(x => x.category).Distinct())
             {
                 AddCategory(category);
             }
 
-            var sortedExtractors = defaultCategories
+            var sortedExtractors = ExtractorRegistry.DefaultCategories
                 .OrderBy(x => x.Key)
                 .ToList();
 
@@ -440,31 +108,19 @@ namespace super_toolbox
             categoryNodes[categoryName] = categoryNode;
             return categoryNode;
         }
-        private void btnSelectFolder_Click(object sender, EventArgs e)
+        private bool IsConverter(string formatName) => ExtractorFactory.IsConverter(formatName);
+        private BaseExtractor? CreateExtractor(string formatName)
         {
-            using (FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog())
+            try
             {
-                folderBrowserDialog.Description = "选择要提取的文件夹";
-                folderBrowserDialog.ShowNewFolderButton = false;
-                string inputPath = txtFolderPath.Text;
-                if (!string.IsNullOrEmpty(inputPath) && Directory.Exists(inputPath))
-                {
-                    folderBrowserDialog.SelectedPath = inputPath;
-                }
-                if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
-                {
-                    txtFolderPath.Text = folderBrowserDialog.SelectedPath;
-                    EnqueueMessage($"已选择文件夹:{folderBrowserDialog.SelectedPath}");
-                }
+                return ExtractorFactory.Create(formatName);
+            }
+            catch (NotSupportedException)
+            {
+                return null;
             }
         }
-        private readonly HashSet<string> _converters = new HashSet<string>
-        {
-         "Gnf2Png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav","bfstm2wav","brstm2wav","wav2bcstm_8-bit有符号PCM","wav2bcstm_16-bit小端序PCM","wav2bcstm_任天堂DSP ADPCM","wav2bfstm_8-bit有符号PCM","wav2bfstm_16-bit大端序PCM","wav2bfstm_任天堂DSP ADPCM","wav2brstm_8-bit有符号PCM","wav2brstm_16-bit大端序PCM","wav2brstm_任天堂DSP ADPCM","wav2opus","opus2wav","wav2at3","at32wav","at92wav","wav2at9","wav2swav_8-bit有符号PCM","wav2swav_16-bit小端序PCM","wav2swav_IMA 4-bit ADPCM","swav2wav","wav2asf1","wav2asf2","wav2asf3","wav2msf1","wav2msf2","msf2wav","hps2wav","wav2hps","wav2mtaf","mtaf2wav","ogg2wem",
-         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rada2wav","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav","wav2hca", "wav2adx","dsp2adx","dsp2hca","dsp2wav","wav2dsp","wav2vag","vag2wav","wav2wem","wem2wav","xwma2wav","wav2xwma","wav2lopus","lopus2wav","wav2bcwav_16-bit小端序PCM","wav2bcwav_8-bit有符号PCM","wav2bfwav_16-bit小端序PCM","wav2bfwav_8-bit有符号PCM","wav2brwav_16-bit大端序PCM","wav2brwav_8-bit有符号PCM",
-         "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml","任天堂stream/wave","wav2idsp","wav2mdsp","idsp2wav","mdsp2wav","bcwav2wav","bfwav2wav","brwav2wav","wav2xma1","wav2xma2","wav2xma3","wav2xma4","xma2wav1","xma2wav2","xma2wav3","wav2xma5","xma2wav4","msbt2json",
-        };
-        private bool IsConverter(string formatName) => _converters.Contains(formatName);
+
         private async void btnExtract_Click(object sender, EventArgs e)
         {
             if (isExtracting)
@@ -690,343 +346,6 @@ namespace super_toolbox
                 }));
             }
         }
-        private BaseExtractor CreateExtractor(string formatName)
-        {
-            switch (formatName)
-            {
-                case "RIFF - RIFF/RIFX音频": return new RIFF_RIFX_Sound_Extractor();
-                case "RIFF - Google - webp": return new WebpExtractor();
-                case "RIFF - cdxa - xa": return new CdxaExtractor();
-                case "Criware - adx": return new AdxExtractor();
-                case "Criware - ahx": return new AhxExtractor();
-                case "Fmod - fsb5": return new Fsb5Extractor();
-                case "任天堂 - libopus - lopus": return new LopusExtractor();
-                case "光荣特库摩 - kvs/ktss": return new Kvs_Kns_Extractor();
-                case "Xiph.Org - Ogg": return new OggExtractor();
-                case "联合图像专家组 - JPEG/JPG": return new JpgExtractor();
-                case "便携式网络图形 - PNG": return new PngExtractor();
-                case "位图图像文件 - BMP": return new BmpExtractor();
-                case "标记图形文件 - TGA": return new TgaExtractor();
-                case "Criware - hca": return new HcaExtractor();
-                case "ENDILTLE - apk": return new ApkExtractor();
-                case "东方天空竞技场 - gpk": return new GpkExtractor();
-                case "GxArchivedFile - dat": return new GDAT_Extractor();
-                case "苍之彼方的四重奏EXTRA2 - dat": return new Aokana2Extractor();
-                case "Lightvn galgame - mcdat/vndat": return new LightvnExtractor();
-                case "Criware - afs提取器": return new AfsExtractor();
-                case "Criware - cpk": return new CpkExtractor();
-                case "IdeaFactory - tid": return new Tid2DDS_Converter();
-                case "第七史诗 - sct": return new Sct2Png_Converter();
-                case "万代南梦宫 - bnsf": return new Bnsf_Extractor();
-                case "索尼 - gxt提取器": return new SonyGxtExtractor();
-                case "直接绘制表面 - DDS": return new DdsExtractor();
-                case "Filename小端序 - pck/sdat": return new Filename_Pck_LE_Extractor();
-                case "Filename大端序 - pck": return new Filename_Pck_BE_Extractor();
-                case "地雷社和AQUAPLUS纹理 - tex": return new StingTexConverter();
-                case "PS3苍翼默示录_刻之幻影 - bin": return new SEGS_BinExtractor();
-                case "PS3苍翼默示录_刻之幻影 - pac": return new FPAC_CP3_Extractor();
-                case "PSV苍翼默示录_刻之幻影 - pac": return new FPAC_CPV_Extractor();
-                case "PSV苍翼默示录_连续变换 - pac": return new FPAC_CS_Extractor();
-                case "苍翼默示录_神观之梦 - pac": return new FPAC_CF_Extractor();
-                case "PlayStation 4 bit ADPCM - vag": return new VagExtractor();
-                case "断罪的玛利亚 - dat": return new DataDatExtractor();
-                case "进击的巨人_自由之翼 - bin": return new Attack_on_Titan_Wings_Extractor();
-                case "索尼 - gxt转换器": return new SonyGxtConverter();
-                case "零_濡鸦之巫女 - fmsg": return new FMSG_Extractor();
-                case "零_濡鸦之巫女 - kscl": return new KSCL_Extractor();
-                case "PhyreEngine Texture - phyre": return new PhyreTexture_Extractor();
-                case "PhyreEngine package - pkg": return new PhyrePKG_Extractor();
-                case "女神异闻录5对决_幽灵先锋 - bin": return new P5S_WMV_Extractor();
-                case "MPEG-4 - mp4": return new MP4_Extractor();
-                case "IdeaFactory - bra": return new BraExtractor();
-                case "任天堂 - 3DS/WII/WIIU sound": return new NintendoSound_Extractor();
-                case "Binary Audio Archive - baa": return new BaaExtractor();
-                case "Audio Archive - aw": return new AwExtractor();
-                case "反恐精英OL - pak": return new CSO_PakExtractor();
-                case "反恐精英OL - nar": return new NarExtractor();
-                case "IdeaFactory - pac提取器": return new IdeaFactory_PacExtractor();
-                case "IdeaFactory - pac打包器": return new IdeaFactory_PacRepacker();
-                case "光荣特库摩 - gz/exlilr": return new GustElixir_Extractor();
-                case "光荣特库摩 - ebm": return new GustEbm_Extractor();
-                case "光荣特库摩 - g1t": return new GustG1t_Extractor();
-                case "光荣特库摩 - gmpk": return new GustGmpk_Extractor();
-                case "光荣特库摩 - gapk": return new GustGapk_Extractor();
-                case "光荣特库摩 - gepk": return new GustGepk_Extractor();
-                case "光荣特库摩 - gspk": return new GustGspk_Extractor();
-                case "光荣特库摩 - pak": return new GustPak_Extractor();
-                case "逆战 - upk": return new AFUpkExtractor();
-                case "战争传说 - pak": return new WarTales_PakExtractor();
-                case "IdeaFactory - cl3": return new IdeaFactory_CL3Extractor();
-                case "5pb - LNK4档案 - dat": return new LNK4Extractor();
-                case "情热传说 - dat": return new TalesDat_Extractor();
-                case "Allz - allz_compress": return new Allz_Compressor();
-                case "Allz - allz_decompress": return new Allz_Decompressor();
-                case "Brotli - brotli_compress": return new Brotli_Compressor();
-                case "Brotli - brotli_decompress": return new Brotli_Decompressor();
-                case "Gzip - gzip_compress": return new Gzip_Compressor();
-                case "Gzip - gzip_decompress": return new Gzip_Decompressor();
-                case "Huffman - huffman_compress": return new Huffman_Compressor();
-                case "Huffman - huffman_decompress": return new Huffman_Decompressor();
-                case "HUF20 - huf20_compress": return new Huf20_Compressor();
-                case "HUF20 - huf20_decompress": return new Huf20_Decompressor();
-                case "Lz4 - lz4_compress": return new Lz4_Compressor();
-                case "Lz4 - lz4_decompress": return new Lz4_Decompressor();
-                case "LZ10 - lz10_compress": return new Lz10_Compressor();
-                case "LZ10 - lz10_decompress": return new Lz10_Decompressor();
-                case "LZ11 - lz11_compress": return new Lz11_Compressor();
-                case "LZ11 - lz11_decompress": return new Lz11_Decompressor();
-                case "LZ77 - lz77_compress": return new Lz77_Compressor();
-                case "LZ77 - lz77_decompress": return new Lz77_Decompressor();
-                case "LZMA - 7-zip_lzma_compress": return new Lzma_Compressor();
-                case "LZMA - 7-zip_lzma_decompress": return new Lzma_Decompressor();
-                case "LZO - lzo_compress": return new Lzo_Compressor();
-                case "LZO - lzo_decompress": return new Lzo_Decompressor();
-                case "LZOn - lzon_compress": return new Lzon_Compressor();
-                case "LZOn - lzon_decompress": return new Lzon_Decompressor();
-                case "LZSS - lzss自定义压缩": return new LzssCustom_Compressor();
-                case "LZSS - lzss自定义解压": return new LzssCustom_Decompressor();
-                case "LZSS - lzss标准压缩": return new LzssStandard_Compressor();
-                case "LZSS - lzss标准解压": return new LzssStandard_Decompressor();
-                case "LZX - lzx_compress": return new Lzx_Compressor();
-                case "LZX - lzx_decompress": return new Lzx_Decompressor();
-                case "Lzham - lzham自定义压缩": return new LzhamCustom_Compressor();
-                case "Lzham - lzham自定义解压": return new LzhamCustom_Decompressor();
-                case "Lzham - Lzham标准压缩": return new LzhamStandard_Compressor();
-                case "Lzham - Lzham标准解压": return new LzhamStandard_Decompressor();
-                case "Mio0 - mio0自定义压缩": return new Mio0Custom_Compressor();
-                case "Mio0 - mio0自定义解压": return new Mio0Custom_Decompressor();
-                case "Mio0 - mio0标准压缩": return new Mio0Standard_Compressor();
-                case "Mio0 - mio0标准解压": return new Mio0Standard_Decompressor();
-                case "Microsoft - lzms_compress": return new Lzms_Compressor();
-                case "Microsoft - lzms_decompress": return new Lzms_Decompressor();
-                case "Microsoft - lznt1_compress": return new Lznt1_Compressor();
-                case "Microsoft - lznt1_decompress": return new Lznt1_Decompressor();
-                case "Microsoft - microsoft_compress": return new Microsoft_Compressor();
-                case "Microsoft - microsoft_decompress": return new Microsoft_Decompressor();
-                case "Microsoft - mszip_compress": return new Mszip_Compressor();
-                case "Microsoft - mszip_decompress": return new Mszip_Decompressor();
-                case "Microsoft - xpress_compress": return new Xpress_Compressor();
-                case "Microsoft - xpress_decompress": return new Xpress_Decompressor();
-                case "Microsoft - xpresshuff_compress": return new XpressHuff_Compressor();
-                case "Microsoft - xpresshuff_decompress": return new XpressHuff_Decompressor();
-                case "Oodle - oodle_compress": return new Oodle_Compressor();
-                case "Oodle - oodle_decompress": return new Oodle_Decompressor();
-                case "Prs - prs_compress": return new Prs_Compressor();
-                case "Prs - prs_decompress": return new Prs_Decompressor();
-                case "Snappy - snappy_compress": return new Snappy_Compressor();
-                case "Snappy - snappy_decompress": return new Snappy_Decompressor();
-                case "Wflz - wflz_compress": return new Wflz_Compressor();
-                case "Wflz - wflz_decompress": return new Wflz_Decompressor();
-                case "Yay0 - yay0_compress": return new Yay0_Compressor();
-                case "Yay0 - yay0_decompress": return new Yay0_Decompressor();
-                case "Yaz0 - yaz0_compress": return new Yaz0_Compressor();
-                case "Yaz0 - yaz0_decompress": return new Yaz0_Decompressor();
-                case "Zlib - zlib_compress": return new Zlib_Compressor();
-                case "Zlib - zlib_decompress": return new Zlib_Decompressor();
-                case "ZSTD - zstd_compress": return new Zstd_Compressor();
-                case "ZSTD - zstd_decompress": return new Zstd_Decompressor();
-                case "Wiiu - h3/app": return new Wiiu_h3appExtractor();
-                case "nds - nds提取器": return new Nds_Extractor();
-                case "nds - nds打包器": return new Nds_Repacker();
-                case "3ds - darc": return new Darc_Extractor();
-                case "nds - narc": return new NarcExtractor();
-                case "PS3 - psarc提取器": return new PsarcExtractor();
-                case "PS3 - psarc打包器": return new PsarcRepacker();
-                case "PS3 - sdat": return new NPD_Extractor();
-                case "Criware - afs打包器": return new AfsRepacker();
-                case "Mages - mpk提取器": return new MagesMpkExtractor();
-                case "Mages - mpk打包器": return new MagesMpkRepacker();
-                case "Gnf2Png": return new GNF2PNG_Converter();
-                case "wav2qoa": return new Wav2qoa_Converter();
-                case "qoa2wav": return new Qoa2wav_Converter();
-                case "SRPG_Studio - dts": return new DtsExtractor();
-                case "XACT Wave Bank - xwb打包器": return new XWBPacker();
-                case "hip2png": return new Hip2png_Converter();
-                case "双截龙彩虹 - pak": return new DoubleDragonNeon_PakExtractor();
-                case "CFSI - cfsi提取器": return new Cfsi_Extractor();
-                case "CFSI - cfsi打包器": return new Cfsi_Repacker();
-                case "消逝的光芒 - rpack": return new DyingLight_rpack_Extractor();
-                case "消逝的光芒 - csb": return new DyingLight_csb_Extractor();
-                case "PlayStation MultiStream File - msf": return new Msf_Extractor();
-                case "PlayStation - pssg": return new PSSG_Extractor();
-                case "Terminal Reality - pod/epd": return new PodExtractor();
-                case "PlayStation - GPDA Header": return new GPDA_Extractor();
-                case "暗影狂奔 - data/toc档案": return new DataToc_Extractor();
-                case "异度之刃2 - ard/arh档案": return new Xenoblade2_Extractor();
-                case "异度之刃3 - ard/arh档案": return new Xenoblade3_Extractor();
-                case "异度之刃 - LBIM2DDS": return new LBIM2DDS_Converter();
-                case "ahx2wav": return new Ahx2wav_Converter();
-                case "异度之刃 - arc": return new XenobladeTpl_Extractor();
-                case "异度之刃 - BC Header": return new XenobladeBC_Extractor();
-                case "异度之刃 - tpl2bclim": return new Tpl2bclim_Converter();
-                case "任天堂 - bclim": return new Bclim2png_Converter();
-                case "异度之刃 - bdat提取器": return new XenobladeBdat_Extractor();
-                case "异度之刃 - bdat打包器": return new XenobladeBdat_Repacker();
-                case "异度之刃 - MXTX Footer": return new XenobladeMTXT_Extractor();
-                case "异度之刃 - LBIM Footer": return new XenobladeLBIM_Extractor();
-                case "异度之刃 - MXTX2DDS": return new MTXT2DDS_Converter();
-                case "异度之刃 - map.pkb": return new XenobladeMap_Extractor();
-                case "异度之刃 - sar": return new XenobladeSar_Extractor();
-                case "异度之刃 - pcbeb": return new Xenoblade_Pcbeb_Extractor();
-                case "Fate Extella/Link - pk/pfs/pkb": return new Fate_pk_Extractor();
-                case "白色相簿2 - dar": return new DarExtractor();
-                case "白色相簿2 - pak": return new WA2_Pak_Extractor();
-                case "PlayStation - TRP奖杯文件": return new PlayStation_Trp_Extractor();
-                case "奥特曼格斗进化3 - bin": return new Ultraman3_bin_Extractor();
-                case "混乱特工 - vpp_pc": return new Vpp_pc_Extractor();
-                case "捍卫雄鹰2 - gtp": return new Gtp_Extractor();
-                case "DXBC - DirectX Bytecode": return new DXBC_Extractor();
-                case "DXBC2HLSL": return new DXBC2HLSL_Converter();
-                case "地雷社 - cat": return new CatExtractor();
-                case "rad game tools - rada/binka提取器": return new Radgametools_Audio_Extractor();
-                
-                case "Xbox360 - god2iso打包器": return new Xbox360_iso_packer();
-                case "Xbox360 - iso提取器": return new Xbox360_iso_Extractor();
-                case "Dreamcast - Bin_Cue2GDI": return new BinCue2GDI_Converter();
-                case "猎天使魔女pc版": return new Bayonetta_PC_Extractor();
-                case "SEGA女武神 - hmt提取器": return new Hmt_Extractor();
-                case "SEGA女武神 - MMF": return new MMF_Extractor();
-                case "东京幻想乡 - pkg": return new LotusLandStory_pkg_Extractor();
-                case "东方红魔乡/东方妖妖梦 - dat": return new PBG_Extractor();
-                case "东方永夜抄/东方花映塚 - dat": return new PBGZ_Extractor();
-                case "东方project系列 - Thbgm.dat": return new Thbgm_Extractor();
-                case "东方project系列 - dat": return new Thdat_Extractor();
-                case "东方project系列 - cv0/cv1": return new Cv01_Converter();
-                case "东方project系列 - cv2": return new Cv2_Converter();
-                case "东方project系列 - cv3": return new Cv3_Converter();
-                case "东方project系列 - pal": return new Pal_Converter();
-                case "东方新世界 - pak/dat": return new TouhouNewWorld_Extractor();
-                case "yuris引擎 - ymv": return new YmvDecoder();
-                case "CMVS引擎 - CPZ6": return new CPZ6_Extractor();
-                case "CMVS引擎 - CPZ7": return new CPZ7_Extractor();
-                case "CMVS引擎 - pb3": return new PB3_Converter();
-                case "CMVS引擎 - cmv": return new CmvExtractor();
-                case "CMVS引擎 - jbpd": return new Jbpd2png_Converter();
-                case "初音未来歌姬计划 - DIVAFILE": return new DIVAFILE_Extractor();
-                case "初音未来歌姬计划 - farc": return new Farc_Extractor();
-                case "创意赛车族摩登赛车 - hdr/dat": return new ModNationRacers_Extractor();
-                case "PSV无双大蛇2终极版 - bin/idx": return new MusouOrochi2Ultimate_Extractor();
-                case "光荣特库摩 - rdb.bin": return new P5S_IDRK_Extractor();
-                case "PSV弹丸论破系列 - pak": return new Danganronpa_Pak_Extractor();
-                case "索尼 - gim": return new GIM2PNG_Converter();
-                case "索尼 - tim": return new Tim2png_Converter();
-                case "GBIX_PVRT - pvr": return new PVRT2PNG_Converter();
-                case "索尼非标准ADPCM - pcm": return new PlayStationHeaderlessADPCM_Extractor();
-                case "CloneCD - ccd/img": return new Ccdimg2isoConverter();
-                case "Java反编译 - jar/class": return new JavaDecompiler();
-                case "任天堂 - szs/sarc": return new SzsSarc_Extractor();
-                case "任天堂 - tpl/brres/brlan/brlyt/mca": return new Wii_Misc_Extractor();
-                case "任天堂 - bflim": return new Bflim2dds_Converter();
-                case "SGGG - MRG/EFC": return new SgggExtractor();
-                case "任天堂 - byml": return new Byml2yml_Converter();
-                case "任天堂 - tpl": return new Tpl2png_Converter();
-                case "PS2真三国无双4猛将传 - bin/idx": return new DW4_Extractor();
-                case "索尼 - tm2": return new Tm2_Extractor();
-                case "索尼 - tm2png": return new Tm2png_Converter();
-                case "索尼 - gxp": return new SonyGxpExtractor();
-                case "PS2多浪迪警官3 - vpk": return new Torrente3_VPK_Extractor();
-                case "电击文库巅峰格斗 - pac": return new UKArc_Extractor();
-                case "hca2adx": return new Hca2adx_Converter();
-                case "hca2wav": return new Hca2wav_Converter();
-                case "hca2dsp": return new Hca2dsp_Converter();
-                case "adx2hca": return new Adx2hca_Converter();
-                case "adx2dsp": return new Adx2dsp_Converter();
-                case "adx2wav": return new Adx2wav_Converter();
-                case "at32wav": return new At32wav_Converter();
-                case "at92wav": return new At92wav_Converter();
-                case "hps2wav": return new Hps2wav_Converter();
-                case "idsp2wav": return new Idsp2wav_Converter();
-                case "mdsp2wav": return new Mdsp2wav_Converter();
-                case "msf2wav": return new Msf2wav_Converter();
-                case "mtaf2wav": return new Mtaf2wav_Converter();
-                case "lopus2wav": return new Lopus2wav_Converter();
-                case "dsp2adx": return new Dsp2adx_Converter();
-                case "dsp2hca": return new Dsp2hca_Converter();
-                case "dsp2wav": return new Dsp2wav_Converter();
-                case "bcstm2wav": return new Bcstm2wav_Converter();
-                case "bfstm2wav": return new Bfstm2wav_Converter();
-                case "brstm2wav": return new Brstm2wav_Converter();
-                case "bcwav2wav": return new Bcwav2wav_Converter();
-                case "bfwav2wav": return new Bfwav2wav_Converter();
-                case "brwav2wav": return new Brwav2wav_Converter();
-                case "ogg2wem": return new Ogg2wem_Converter();
-                case "opus2wav": return new Opus2wav_Converter();
-                case "swav2wav": return new Swav2wav_Converter();
-                case "vag2wav": return new Vag2wav_Converter();
-                case "wav2bcstm_8-bit有符号PCM": return new Wav2bcstm1_Converter();
-                case "wav2bcstm_16-bit小端序PCM": return new Wav2bcstm2_Converter();
-                case "wav2bcstm_任天堂DSP ADPCM": return new Wav2bcstm3_Converter();
-                case "wav2bfstm_8-bit有符号PCM": return new Wav2bfstm1_Converter();
-                case "wav2bfstm_16-bit大端序PCM": return new Wav2bfstm2_Converter();
-                case "wav2bfstm_任天堂DSP ADPCM": return new Wav2bfstm3_Converter();
-                case "wav2brstm_8-bit有符号PCM": return new Wav2brstm1_Converter();
-                case "wav2brstm_16-bit大端序PCM": return new Wav2brstm2_Converter();
-                case "wav2brstm_任天堂DSP ADPCM": return new Wav2brstm3_Converter();
-                case "wav2bcwav_8-bit有符号PCM": return new Wav2bcwav1_Converter();
-                case "wav2bcwav_16-bit小端序PCM": return new Wav2bcwav2_Converter();
-                case "wav2bcwav_任天堂DSP ADPCM": return new Wav2bcwav3_Converter();
-                case "wav2bcwav_IMA 4-bit ADPCM": return new Wav2bcwav4_Converter();
-                case "wav2bfwav_8-bit有符号PCM": return new Wav2bfwav1_Converter();
-                case "wav2bfwav_16-bit小端序PCM": return new Wav2bfwav2_Converter();
-                case "wav2bfwav_任天堂DSP ADPCM": return new Wav2bfwav3_Converter();
-                case "wav2brwav_8-bit有符号PCM": return new Wav2brwav1_Converter();
-                case "wav2brwav_16-bit大端序PCM": return new Wav2brwav2_Converter();
-                case "wav2brwav_任天堂DSP ADPCM": return new Wav2brwav3_Converter();
-                case "wav2dsp": return new Wav2dsp_Converter();
-                case "wav2hps": return new Wav2hps_Converter();
-                case "wav2idsp": return new Wav2idsp_Converter();
-                case "wav2mdsp": return new Wav2mdsp_Converter();
-                case "wav2msf1": return new Wav2msf1_Converter();
-                case "wav2msf2": return new Wav2msf2_Converter();
-                case "wav2mtaf": return new Wav2mtaf_Converter();
-                case "wav2hca": return new Wav2hca_Converter();
-                case "wav2adx": return new Wav2adx_Converter();
-                case "wav2at3": return new Wav2at3_Converter();
-                case "wav2at9": return new Wav2at9_Converter();
-                case "wav2lopus": return new Wav2lopus_Converter();
-                case "wav2opus": return new Wav2opus_Converter();
-                case "wav2swav_8-bit有符号PCM": return new Wav2swav1_Converter();
-                case "wav2swav_16-bit小端序PCM": return new Wav2swav2_Converter();
-                case "wav2swav_IMA 4-bit ADPCM": return new Wav2swav3_Converter();
-                case "wav2vag": return new Wav2vag_Converter();
-                case "wav2snr": return new Wav2snr_Converter();
-                case "wav2xma1": return new Wav2xma1_Converter();
-                case "wav2xma2": return new Wav2xma2_Converter();
-                case "wav2xma3": return new Wav2xma3_Converter();
-                case "wav2xma4": return new Wav2xma4_Converter();
-                case "wav2xwma": return new Wav2xwma_Converter();
-                case "wav2wem": return new Wav2wem_Converter();
-                case "wem2wav": return new Wem2wav_Converter();
-                case "xma2wav1": return new Xma2wav1_Converter();
-                case "xma2wav2": return new Xma2wav2_Converter();
-                case "xma2wav3": return new Xma2wav3_Converter();
-                case "xwma2wav": return new Xwma2wav_Converter();
-                case "任天堂stream/wave": return new NintendoSound2wav_Converter();
-                case "wav2xma5": return new Wav2xma5_Converter();
-                case "xma2wav4": return new Xma2wav4_Converter();
-                case "Bethesda Archive - bsa": return new Bsa_Extractor();
-                case "nds - sdat": return new Nds_Sdat_Extractor();
-                case "wav2asf1": return new Wav2asf1_Converter();
-                case "wav2asf2": return new Wav2asf2_Converter();
-                case "wav2asf3": return new Wav2asf3_Converter();
-                case "wav2MaxisXa": return new Wav2MaxisXa_Converter();
-                case "wav2binka1": return new Wav2binka1_Converter();
-                case "wav2binka2": return new Wav2binka2_Converter();
-                case "wav2rada": return new Wav2rada_Converter();
-                case "rada2wav": return new Rada2wav_Converter();
-                case "binka2wav": return new Binka2wav_Converter();
-                case "Artemis - pfs": return new Artemis_pfs_Extractor();
-                case "NekoPack - dat": return new NekoPack_dat_Extractor();
-                case "Innocent Grey - dat": return new PACKDAT_Extractor();
-                case "PSV欲望之拳 - lzs": return new Lzs_Extractor();
-                case "任天堂 - bwav": return new Bwav_Extractor();
-                case "塞尔达传说:王国之泪 - zs": return new TOTK_zs_Extractor();
-                case "任天堂 - bnsh提取器": return new Bnsh_Extractor();
-                case "PS2吟游默示录 - NKP": return new NKP_Extractor();
-                case "msbt2json": return new Msbt2json_Converter();
-                default: throw new NotSupportedException($"不支持的格式:{formatName}");
-            }
-        }
         private void btnClear_Click(object sender, EventArgs e)
         {
             lock (bufferLocks[0]) { messageBuffers[0].Clear(); }
@@ -1153,9 +472,9 @@ namespace super_toolbox
             TreeNode? node = treeView1.GetNodeAt(e.Location);
             if (node != null && node.Tag as string != "category")
             {
-                if (defaultCategories.ContainsKey(node.Text))
+                if (ExtractorRegistry.DefaultCategories.ContainsKey(node.Text))
                 {
-                    string description = defaultCategories[node.Text].description;
+                    string description = ExtractorRegistry.DefaultCategories[node.Text].description;
                     toolTip1.SetToolTip(treeView1, description);
                 }
                 else
@@ -1183,7 +502,7 @@ namespace super_toolbox
             moveToCategoryMenuItem.Visible = !isCategory;
             renameCategoryMenuItem.Visible = isCategory;
             deleteCategoryMenuItem.Visible = isCategory && treeView1.SelectedNode.Nodes.Count == 0 &&
-                !defaultCategories.Values.Select(x => x.category).Contains(treeView1.SelectedNode.Text);
+                !ExtractorRegistry.DefaultCategories.Values.Select(x => x.category).Contains(treeView1.SelectedNode.Text);
             addNewCategoryMenuItem.Visible = true;
             moveToCategoryMenuItem.DropDownItems.Clear();
             if (!isCategory)
@@ -1370,7 +689,7 @@ namespace super_toolbox
                 MessageBox.Show("请选择一个分组进行编辑!", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-            if (defaultCategories.Values.Select(x => x.category).Contains(selectedNode.Text))
+            if (ExtractorRegistry.DefaultCategories.Values.Select(x => x.category).Contains(selectedNode.Text))
             {
                 MessageBox.Show("不能编辑默认分组!", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -1408,7 +727,7 @@ namespace super_toolbox
                 MessageBox.Show("无法删除非空分组,请先将其中的提取器移至其他分组!", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            if (defaultCategories.Values.Select(x => x.category).Contains(selectedNode.Text))
+            if (ExtractorRegistry.DefaultCategories.Values.Select(x => x.category).Contains(selectedNode.Text))
             {
                 MessageBox.Show("不能删除默认分组!", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -1515,11 +834,10 @@ namespace super_toolbox
         }
         private void BtnAudioPlayer_Click(object? sender, EventArgs e)
         {
-            using (var playerForm = new AudioPlayerForm())
-            {
-                playerForm.StartPosition = FormStartPosition.CenterParent;
-                playerForm.ShowDialog(this);
-            }
+            var playerForm = new AudioPlayerForm();
+            playerForm.StartPosition = FormStartPosition.CenterParent;
+            playerForm.Show(this); 
+            playerForm.FormClosed += (s, args) => playerForm.Dispose();
         }
     }
 }

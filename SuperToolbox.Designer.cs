@@ -160,7 +160,7 @@ namespace super_toolbox
             btnAudioPlayer.Size = new Size(85, 28);
             btnAudioPlayer.TabIndex = 7;
             btnAudioPlayer.Text = "音频播放器";
-            toolTip1.SetToolTip(btnAudioPlayer, "打开音频播放器");
+            toolTip1.SetToolTip(btnAudioPlayer, "一个简易的音频播放器,支持二十多种音频格式,未来也许会支持更多格式");
             btnAudioPlayer.UseVisualStyleBackColor = true;
             btnAudioPlayer.Click += BtnAudioPlayer_Click;
             // 
