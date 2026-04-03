@@ -11,11 +11,17 @@ namespace super_toolbox
 
         private static string _tempExePath;
         private static string _tempDllPath;
+        private Wav2brwav3_Converter _referenceConverter;
 
         static Wav2brwav1_Converter()
         {
             _tempExePath = LoadEmbeddedExe("embedded.nw4r_waveconv.exe", "nw4r_waveconv_pcm8.exe");
             _tempDllPath = LoadEmbeddedExe("embedded.dsptool.dll", "dsptool.dll");
+        }
+
+        public Wav2brwav1_Converter()
+        {
+            _referenceConverter = new Wav2brwav3_Converter();
         }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
@@ -58,14 +64,23 @@ namespace super_toolbox
                     try
                     {
                         string brwavFile = Path.Combine(fileDirectory, $"{fileName}.brwav");
+                        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+                        Directory.CreateDirectory(tempDir);
+                        string tempWavPath = Path.Combine(tempDir, $"{fileName}.wav");
+                        string tempBrwavDsp = Path.Combine(tempDir, $"{fileName}.brwav");
+
+                        File.Copy(wavFilePath, tempWavPath);
+
+                        await _referenceConverter.ExtractAsync(tempDir, cancellationToken);
 
                         if (File.Exists(brwavFile))
                             File.Delete(brwavFile);
 
-                        bool conversionSuccess = await ConvertWavToBrwav(wavFilePath, brwavFile, "pcm8", cancellationToken);
+                        bool conversionSuccess = await ConvertWavToBrwav(wavFilePath, brwavFile, cancellationToken);
 
-                        if (conversionSuccess && File.Exists(brwavFile))
+                        if (conversionSuccess && File.Exists(brwavFile) && File.Exists(tempBrwavDsp))
                         {
+                            await FixBrwavHeader(brwavFile, tempBrwavDsp, cancellationToken);
                             successCount++;
                             ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(brwavFile)}");
                             OnFileConverted(brwavFile);
@@ -75,6 +90,8 @@ namespace super_toolbox
                             ConversionError?.Invoke(this, $"{fileName}.wav转换失败");
                             OnConversionFailed($"{fileName}.wav转换失败");
                         }
+
+                        Directory.Delete(tempDir, true);
                     }
                     catch (Exception ex)
                     {
@@ -106,7 +123,7 @@ namespace super_toolbox
             }
         }
 
-        private async Task<bool> ConvertWavToBrwav(string wavFilePath, string brwavFilePath, string format, CancellationToken cancellationToken)
+        private async Task<bool> ConvertWavToBrwav(string wavFilePath, string brwavFilePath, CancellationToken cancellationToken)
         {
             try
             {
@@ -153,6 +170,22 @@ namespace super_toolbox
             {
                 ConversionError?.Invoke(this, $"转换过程异常:{ex.Message}");
                 return false;
+            }
+        }
+
+        private async Task FixBrwavHeader(string targetFile, string sourceFile, CancellationToken cancellationToken)
+        {
+            byte[] sourceHeader = new byte[64];
+
+            using (var fsSource = new FileStream(sourceFile, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true))
+            {
+                await fsSource.ReadAsync(sourceHeader, 0, 64, cancellationToken);
+            }
+
+            using (var fsTarget = new FileStream(targetFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None, 4096, true))
+            {
+                fsTarget.Seek(0x34, SeekOrigin.Begin);
+                await fsTarget.WriteAsync(sourceHeader, 0x34, 4, cancellationToken);
             }
         }
     }
