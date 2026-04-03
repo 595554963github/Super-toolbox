@@ -174,7 +174,6 @@
 		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="AstcSharp" Version="0.9.8" />
 		<PackageReference Include="AuroraLib.Compression" Version="1.5.4" />
 		<PackageReference Include="BymlLibrary" Version="2.1.18" />
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
@@ -196,7 +195,6 @@
 		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-		<PackageReference Include="VGAudio" Version="2.2.1" />
 	</ItemGroup>
 	<ItemGroup>
 		<Reference Include="ByteSize">
@@ -237,6 +235,9 @@
 		</Reference>
 		<Reference Include="Shadowrun">
 			<HintPath>plugins\Shadowrun.dll</HintPath>
+		</Reference>
+		<Reference Include="VGAudio">
+		  <HintPath>plugins\VGAudio.dll</HintPath>
 		</Reference>
 		<Reference Include="WarTales_PakExtractor">
 			<HintPath>plugins\WarTales_PakExtractor.dll</HintPath>
