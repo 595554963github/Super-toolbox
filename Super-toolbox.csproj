@@ -166,6 +166,15 @@
 		<EmbeddedResource Include="plugins\ttaenc.exe">
 			<LogicalName>embedded.ttaenc.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\WMAEncode.exe">
+			<LogicalName>embedded.WMAEncode.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\wma2wav.exe">
+			<LogicalName>embedded.wma2wav.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\oggenc2.exe">
+			<LogicalName>embedded.oggenc2.exe</LogicalName>
+		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\zs.zsdic">
 			<LogicalName>embedded.zs.zsdic</LogicalName>
 		</EmbeddedResource>
