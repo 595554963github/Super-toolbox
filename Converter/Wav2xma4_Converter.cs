@@ -17,7 +17,7 @@ namespace super_toolbox
 
         static Wav2xma4_Converter()
         {
-            LoadEmbeddedDll("embedded.IMA_codec.dll", "IMA_codec_encode.dll");
+            LoadEmbeddedDll("embedded.IMA_codec.dll", "IMA_codec.dll");
         }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
