@@ -33,9 +33,9 @@ namespace super_toolbox
         private bool _isAutoDecoding = false;
         private static readonly string[] AudioExtensions = new[]
         {
-            "adx","ahx","aifc","aiff","at3","at9","bcstm","bcwav","bfstm","bfwav",
+            "adx","ahx","aifc","aiff","at3","at9","bcstm","bcwav","bfstm","bfwav","cv3",
             "binka","brstm","brwav","dsp","flac","hca","hps","idsp","lopus","mdsp",
-            "msf","mtaf","ogg","opus","qoa","rada","rf64","swav","tta","vag","wav","wem","wma","xma","xwma"
+            "msf","mtaf","ogg","opus","qoa","rada","rf64","swav","tta","vag","w64","wav","wem","wma","xma","xwma"
         };
 
         public AudioPlayerForm()
@@ -279,10 +279,11 @@ namespace super_toolbox
             {
         "*.adx", "*.ahx", "*.aifc", "*.aiff", "*.at3", "*.at9",
         "*.bcstm", "*.bcwav", "*.bfstm", "*.bfwav", "*.binka", "*.brstm", "*.brwav",
+        "*.cv3",
         "*.dsp", "*.flac", "*.hca", "*.hps", "*.idsp", "*.lopus",
         "*.mdsp", "*.msf", "*.mtaf", "*.ogg", "*.opus", "*.qoa",
         "*.rada", "*.rf64", "*.swav", "*.tta", "*.vag",
-        "*.wav", "*.wem", "*.wma", "*.xma", "*.xwma"
+        "*.w64", "*.wav", "*.wem", "*.wma", "*.xma", "*.xwma"
             };
         }
 
@@ -640,6 +641,8 @@ namespace super_toolbox
             "vag" => new Vag2wav_Converter(),
             "wma" => new Wma2wav_Converter(),
             "ogg" => new Ogg2wav_Converter(),
+            "w64" => new W64ToWav_Converter(),
+            "cv3" => new Cv3_Converter(),
             _ => null
         };
 

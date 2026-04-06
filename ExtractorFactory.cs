@@ -340,6 +340,8 @@ namespace super_toolbox
                 "ogg2wav" => new Ogg2wav_Converter(),
                 "wav2aifc" => new Wav2aifc_Converter(),
                 "aifc2wav" => new Aifc2wav_Converter(),
+                "wav→w64" => new Wav2w64_Converter(),
+                "w64→wav" => new W64ToWav_Converter(),
                 "Artemis - pfs" => new Artemis_pfs_Extractor(),
                 "NekoPack - dat" => new NekoPack_dat_Extractor(),
                 "Innocent Grey - dat" => new PACKDAT_Extractor(),
