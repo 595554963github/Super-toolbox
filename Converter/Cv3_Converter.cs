@@ -109,7 +109,6 @@ namespace super_toolbox
                             inputStream.Seek(0, SeekOrigin.Begin);
                             await inputStream.ReadExactlyAsync(data, cancellationToken).ConfigureAwait(false);
 
-                            // 提取WAV数据
                             Memory<byte> waveData = WriteWave(data.Span[..WAVEFORMATEX_SIZE],
                                 data.Span.Slice(22, ReadInt32(data.Span, 18)),
                                 checkIfMagicExists: true,
@@ -141,7 +140,6 @@ namespace super_toolbox
 
             if (checkIfMagicExists && waveData.Length >= 4)
             {
-                // 检查是否已经是WAV格式
                 if (waveData[0] == 'R' && waveData[1] == 'I' && waveData[2] == 'F' && waveData[3] == 'F')
                 {
                     shouldUseInputData = true;
@@ -151,33 +149,24 @@ namespace super_toolbox
 
             using MemoryStream outputStream = new MemoryStream(44 + waveData.Length);
 
-            // RIFF头
             outputStream.Write("RIFF"u8);
 
-            // 文件大小 (数据大小 + 36)
             uint fileSize = (uint)(waveData.Length + 36);
             outputStream.Write(BitConverter.GetBytes(fileSize));
 
-            // WAVE标识
             outputStream.Write("WAVE"u8);
 
-            // fmt块
             outputStream.Write("fmt "u8);
 
-            // fmt块大小 (16)
             uint fmtSize = 16;
             outputStream.Write(BitConverter.GetBytes(fmtSize));
 
-            // 写入音频格式信息
             outputStream.Write(formatData);
 
-            // data块
             outputStream.Write("data"u8);
 
-            // data块大小
             outputStream.Write(BitConverter.GetBytes((uint)waveData.Length));
 
-            // 音频数据
             outputStream.Write(waveData);
 
             return outputStream.GetBuffer().AsMemory(0, (int)outputStream.Length);
