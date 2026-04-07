@@ -33,9 +33,7 @@ namespace super_toolbox
         private bool _isAutoDecoding = false;
         private static readonly string[] AudioExtensions = new[]
         {
-            "adx","ahx","aifc","aiff","at3","at9","bcstm","bcwav","bfstm","bfwav","cv3",
-            "binka","brstm","brwav","dsp","flac","hca","hps","idsp","lopus","mdsp",
-            "msf","mtaf","ogg","opus","qoa","rada","rf64","swav","tta","vag","w64","wav","wem","wma","xma","xwma"
+            "adx","ahx","aifc","aiff","at3","at9","bcstm","bcwav","bfstm","bfwav","binka","brstm","brwav","cv3","dsp","flac","hca","hps","idsp","kvs","lopus","mdsp","msf","mtaf","nwa","ogg","opus","qoa","rada","rf64","swav","tta","vag","w64","wav","wem","wma","xma","xwma"
         };
 
         public AudioPlayerForm()
@@ -280,8 +278,8 @@ namespace super_toolbox
         "*.adx", "*.ahx", "*.aifc", "*.aiff", "*.at3", "*.at9",
         "*.bcstm", "*.bcwav", "*.bfstm", "*.bfwav", "*.binka", "*.brstm", "*.brwav",
         "*.cv3",
-        "*.dsp", "*.flac", "*.hca", "*.hps", "*.idsp", "*.lopus",
-        "*.mdsp", "*.msf", "*.mtaf", "*.ogg", "*.opus", "*.qoa",
+        "*.dsp", "*.flac", "*.hca", "*.hps", "*.idsp", "*.lopus", "*.kvs",
+        "*.mdsp", "*.msf", "*.mtaf", "*.nwa", "*.ogg", "*.opus", "*.qoa",
         "*.rada", "*.rf64", "*.swav", "*.tta", "*.vag",
         "*.w64", "*.wav", "*.wem", "*.wma", "*.xma", "*.xwma"
             };
@@ -643,6 +641,8 @@ namespace super_toolbox
             "ogg" => new Ogg2wav_Converter(),
             "w64" => new W64ToWav_Converter(),
             "cv3" => new Cv3_Converter(),
+            "kvs" => new Kvs2wav_Converter(),
+            "nwa" => new Nwa2wav_Converter(),
             _ => null
         };
 

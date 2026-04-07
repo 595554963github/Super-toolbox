@@ -342,6 +342,9 @@ namespace super_toolbox
                 "aifc2wav" => new Aifc2wav_Converter(),
                 "wav→w64" => new Wav2w64_Converter(),
                 "w64→wav" => new W64ToWav_Converter(),
+                "ogg2kvs" => new Ogg2kvs_Converter(),
+                "kvs2ogg" => new Kvs2ogg_Converter(),
+                "kvs2wav" => new Kvs2wav_Converter(),
                 "Artemis - pfs" => new Artemis_pfs_Extractor(),
                 "NekoPack - dat" => new NekoPack_dat_Extractor(),
                 "Innocent Grey - dat" => new PACKDAT_Extractor(),
@@ -351,6 +354,8 @@ namespace super_toolbox
                 "任天堂 - bnsh提取器" => new Bnsh_Extractor(),
                 "PS2吟游默示录 - NKP" => new NKP_Extractor(),
                 "msbt2json" => new Msbt2json_Converter(),
+                "RealLive - ovk" => new Ovk_Extractor(),
+                "nwa2wav" => new Nwa2wav_Converter(),
                 _ => throw new NotSupportedException($"不支持的格式:{formatName}")
             };
         }

@@ -340,6 +340,9 @@ namespace super_toolbox
             { "ogg2wav", ("音频", "ogg转换到wav的音频转换器") },
             { "wav→w64", ("音频", "wav转换到w64的音频转换器,sony wave64,除了ffmpeg几乎没有开源项目支持此格式") },
             { "w64→wav", ("音频", "w64转换到wav的音频转换器") },
+            { "kvs2ogg", ("音频", "kvs转换到ogg的音频转换器,VGAudio库不支持此格式") },
+            { "kvs2wav", ("音频", "kvs转换到wav的音频转换器,VGAudio库不支持此格式") },
+            { "ogg2kvs", ("音频", "ogg转换到kvs的音频转换器,VGAudio库不支持此格式,光荣特库摩steam平台游戏常用的音频格式") },
             { "Artemis - pfs", ("其他档案", "阿尔特弥斯引擎游戏的pfs文件提取器,测试游戏虚之少女") },
             { "NekoPack - dat", ("其他档案", "NekoPack引擎游戏的dat文件提取器,测试游戏Really Really!") },
             { "Innocent Grey - dat", ("其他档案", "Innocent Grey游戏的dat文件提取器,测试游戏恋狱月狂病") },
@@ -349,12 +352,14 @@ namespace super_toolbox
             { "塞尔达传说:王国之泪 - zs", ("其他档案", "塞尔达传说:王国之泪的zs文件专用解包器") },
             { "任天堂 - bnsh提取器", ("其他档案", "任天堂游戏的bnsh着色器文件提取器,可从bfsha等文件里面提取出bnsh文件,比如塞尔达传说:王国之泪") },
             { "msbt2json", ("其他档案", "msbt转换到json的转换器,适用于塞尔达传说:王国之泪等游戏") },
+            { "RealLive - ovk", ("音频", "RealLive引擎游戏的ovk文件提取器,测试游戏初恋1/1") },
+            { "nwa2wav", ("音频", "nwa转换到wav的音频转换器,VGAudio库不支持此格式") },
         };
 
         public static readonly HashSet<string> Converters = new HashSet<string>
         {
-            "Gnf2Png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav","bfstm2wav","brstm2wav","wav2bcstm_8-bit有符号PCM","wav2bcstm_16-bit小端序PCM","wav2bcstm_任天堂DSP ADPCM","wav2bfstm_8-bit有符号PCM","wav2bfstm_16-bit大端序PCM","wav2bfstm_任天堂DSP ADPCM","wav2brstm_8-bit有符号PCM","wav2brstm_16-bit大端序PCM","wav2brstm_任天堂DSP ADPCM","wav2opus","opus2wav","wav2at3","at32wav","at92wav","wav2at9","wav2swav_8-bit有符号PCM","wav2swav_16-bit小端序PCM","wav2swav_IMA 4-bit ADPCM","swav2wav","wav2asf1","wav2asf2","wav2msf1","wav2msf2","msf2wav","hps2wav","wav2hps","wav2mtaf","mtaf2wav","ogg2wem",
-         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rada2wav","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav","wav2hca", "wav2adx","dsp2adx","dsp2hca","dsp2wav","wav2dsp","wav2vag","vag2wav","wav2wem","wem2wav","xwma2wav","wav2xwma","wav2lopus","lopus2wav","wav2bcwav_16-bit小端序PCM","wav2bcwav_8-bit有符号PCM","wav2bfwav_16-bit小端序PCM","wav2bfwav_8-bit有符号PCM","wav2brwav_16-bit大端序PCM","wav2brwav_8-bit有符号PCM","wav2bcwav_任天堂DSP ADPCM","wav2bcwav_IMA 4-bit ADPCM","wav2bfwav_任天堂DSP ADPCM","wav2brwav_任天堂DSP ADPCM","wav2binka1","binka2wav","wav2binka2","wav2rada","wav2aifc","aifc2wav","wav2wma","wma2wav","wav2ogg","ogg2wav",
+            "Gnf2Png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav","bfstm2wav","brstm2wav","wav2bcstm_8-bit有符号PCM","wav2bcstm_16-bit小端序PCM","wav2bcstm_任天堂DSP ADPCM","wav2bfstm_8-bit有符号PCM","wav2bfstm_16-bit大端序PCM","wav2bfstm_任天堂DSP ADPCM","wav2brstm_8-bit有符号PCM","wav2brstm_16-bit大端序PCM","wav2brstm_任天堂DSP ADPCM","wav2opus","opus2wav","wav2at3","at32wav","at92wav","wav2at9","wav2swav_8-bit有符号PCM","wav2swav_16-bit小端序PCM","wav2swav_IMA 4-bit ADPCM","swav2wav","wav2asf1","wav2asf2","wav2msf1","wav2msf2","msf2wav","hps2wav","wav2hps","wav2mtaf","mtaf2wav","ogg2wem","ogg2kvs","kvs2ogg","kvs2wav",
+         "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rada2wav","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav","wav2hca", "wav2adx","dsp2adx","dsp2hca","dsp2wav","wav2dsp","wav2vag","vag2wav","wav2wem","wem2wav","xwma2wav","wav2xwma","wav2lopus","lopus2wav","wav2bcwav_16-bit小端序PCM","wav2bcwav_8-bit有符号PCM","wav2bfwav_16-bit小端序PCM","wav2bfwav_8-bit有符号PCM","wav2brwav_16-bit大端序PCM","wav2brwav_8-bit有符号PCM","wav2bcwav_任天堂DSP ADPCM","wav2bcwav_IMA 4-bit ADPCM","wav2bfwav_任天堂DSP ADPCM","wav2brwav_任天堂DSP ADPCM","wav2binka1","binka2wav","wav2binka2","wav2rada","wav2aifc","aifc2wav","wav2wma","wma2wav","wav2ogg","ogg2wav","nwa2wav",
          "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml","任天堂stream/wave","wav2idsp","wav2mdsp","idsp2wav","mdsp2wav","bcwav2wav","bfwav2wav","brwav2wav","wav2xma1","wav2xma2","wav2xma3","wav2xma4","xma2wav1","xma2wav2","xma2wav3","wav2xma5","xma2wav4","msbt2json","wav2asf3","binka2wav","wav2flac","flac2wav","wav2aiff","aiff2wav","wav2tta","tta2wav","wav2snr","wav→rf64","rf64→wav","wav→w64","w64→wav",
         };
     }
