@@ -136,12 +136,6 @@
 		<EmbeddedResource Include="plugins\bfwavtool.dll">
 			<LogicalName>embedded.bfwavtool.dll</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\dsptool.dll">
-			<LogicalName>embedded.dsptool.dll</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\nw4r_waveconv.exe">
-			<LogicalName>embedded.nw4r_waveconv.exe</LogicalName>
-		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\xboxcompress.dll">
 			<LogicalName>embedded.xboxcompress.dll</LogicalName>
 		</EmbeddedResource>
@@ -174,6 +168,9 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\oggenc2.exe">
 			<LogicalName>embedded.oggenc2.exe</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\ast_codec.exe">
+			<LogicalName>embedded.ast_codec.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\zs.zsdic">
 			<LogicalName>embedded.zs.zsdic</LogicalName>
