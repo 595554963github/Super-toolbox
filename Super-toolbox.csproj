@@ -148,6 +148,9 @@
 		<EmbeddedResource Include="plugins\BinkAudioCodec.dll">
 			<LogicalName>embedded.BinkAudioCodec.dll</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\binkadec.dll">
+			<LogicalName>embedded.binkadec.dll</LogicalName>
+		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\binka_encode.exe">
 			<LogicalName>embedded.binka_encode.exe</LogicalName>
 		</EmbeddedResource>

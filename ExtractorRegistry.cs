@@ -321,7 +321,7 @@ namespace super_toolbox
             { "wav2MaxisXa", ("音频", "wav转换到MaxisXa的音频转换器,VGAudio不支持此格式,Maxis EA-XA 4-bit ADPCM编码,暂不支持解码,请使用ffmpeg、vgmstream或foobar2000解码") },
             { "wav2binka1", ("音频", "wav转换到binka的音频转换器,VGAudio库不支持此格式,目前仅支持编码文件头为ABEU的标准binka格式,binka是rad game tools开发的一种音频格式,主要用于虚幻4和虚幻5游戏") },
             { "wav2binka2", ("音频", "wav转换到binka的音频转换器,VGAudio库不支持此格式,这是文件头为1FCB的binka转换器,和ABEU的完全不同,当前不支持解码,如果需要解码请使用vgmstream或foobar2000") },
-            { "binka2wav", ("音频", "binka转换到wav的音频转换器,VGAudio库不支持此格式,目前仅支持解码ABEU文件头的标准binka格式") },
+            { "binka2wav", ("音频", "binka转换到wav的音频转换器,VGAudio库不支持此格式,支持解码目前已知的所有binka格式(1FCB、普通ABEU和ABEU+SEEK三种不同结构)") },
             { "wav2rada", ("音频", "wav转换到rada的音频转换器,VGAudio库不支持此格式,rada是rad game tools开发的一种音频格式,主要用于虚幻5游戏") },
             { "rada2wav", ("音频", "rada转换到wav的音频转换器,VGAudio库不支持此格式") },
             { "wav2flac", ("音频", "wav转换到flac的音频转换器") },
