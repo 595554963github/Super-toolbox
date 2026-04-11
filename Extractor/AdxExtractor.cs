@@ -118,6 +118,24 @@ namespace super_toolbox
                     OnExtractionFailed($"读取文件{filePath} 时出错:{e.Message}");
                 }
             }
+
+            foreach (var extractedFile in extractedFiles.ToList())
+            {
+                try
+                {
+                    byte[] fileContent = await File.ReadAllBytesAsync(extractedFile, cancellationToken);
+                    byte[] trimmedContent = TrimTrailingZeroBlocks(fileContent);
+                    if (trimmedContent.Length != fileContent.Length)
+                    {
+                        await File.WriteAllBytesAsync(extractedFile, trimmedContent, cancellationToken);
+                    }
+                }
+                catch (IOException e)
+                {
+                    ExtractionError?.Invoke(this, $"瘦身文件{extractedFile}时出错:{e.Message}");
+                }
+            }
+
             TotalFilesToExtract = extractedFiles.Count;
             if (extractedFiles.Count > 0)
             {
@@ -159,6 +177,25 @@ namespace super_toolbox
                 ExtractionError?.Invoke(this, $"写入文件{outputFilePath}时出错:{e.Message}");
                 OnExtractionFailed($"写入文件{outputFilePath}时出错:{e.Message}");
             }
+        }
+
+        private byte[] TrimTrailingZeroBlocks(byte[] data)
+        {
+            for (int i = data.Length - 4; i >= 0; i--)
+            {
+                if (data[i] == 0x80 && data[i + 1] == 0x01)
+                {
+                    int newLength = i + 4;
+                    if (newLength == data.Length)
+                    {
+                        return data;
+                    }
+                    byte[] trimmed = new byte[newLength];
+                    Array.Copy(data, 0, trimmed, 0, newLength);
+                    return trimmed;
+                }
+            }
+            return data;
         }
     }
 }
