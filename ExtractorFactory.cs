@@ -356,6 +356,12 @@ namespace super_toolbox
                 "msbt2json" => new Msbt2json_Converter(),
                 "RealLive - ovk" => new Ovk_Extractor(),
                 "nwa2wav" => new Nwa2wav_Converter(),
+                "wav2ast" => new Wav2ast_Converter(),
+                "ast2wav" => new Ast2wav_Converter(),
+                "wav2msu" => new Wav2msu_Converter(),
+                "msu2wav" => new Msu2wav_Converter(),
+                "wav2apex" => new Wav2apex_Converter(),
+                "apex2wav" => new Apex2wav_Converter(),
                 _ => throw new NotSupportedException($"不支持的格式:{formatName}")
             };
         }

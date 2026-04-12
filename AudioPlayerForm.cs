@@ -1,4 +1,5 @@
 using System.Media;
+using System.Text.RegularExpressions;
 using VGAudio.Containers.Adx;
 using VGAudio.Containers.Dsp;
 using VGAudio.Containers.Hca;
@@ -33,7 +34,7 @@ namespace super_toolbox
         private bool _isAutoDecoding = false;
         private static readonly string[] AudioExtensions = new[]
         {
-            "adx","ahx","aifc","aiff","at3","at9","bcstm","bcwav","bfstm","bfwav","binka","brstm","brwav","cv3","dsp","flac","hca","hps","idsp","kvs","lopus","mdsp","msf","mtaf","nwa","ogg","opus","qoa","rada","rf64","swav","tta","vag","w64","wav","wem","wma","xma","xwma"
+            "adx","ahx","aifc","aiff","apex","ast","at3","at9","bcstm","bcwav","bfstm","bfwav","binka","brstm","brwav","cv3","dsp","flac","hca","hps","idsp","kvs","lopus","mdsp","msf","mtaf","nwa","ogg","opus","qoa","rada","raw","rf64","swav","tta","vag","w64","wav","wem","wma","xma","xwma"
         };
 
         public AudioPlayerForm()
@@ -43,6 +44,7 @@ namespace super_toolbox
             AllowDrop = true;
             DragEnter += (s, e) => { if (e.Data?.GetDataPresent(DataFormats.FileDrop) == true) e.Effect = DragDropEffects.Copy; };
             DragDrop += AudioPlayerForm_DragDrop;
+            new ToolTip().SetToolTip(listViewFiles, "请拖放音频文件到此窗口进行播放");
         }
 
         private void InitializeComponent()
@@ -257,8 +259,18 @@ namespace super_toolbox
 
             if (audioFiles.Count > 0)
             {
-                _playlist = audioFiles;
-                _durations = new List<TimeSpan>(new TimeSpan[audioFiles.Count]);
+                _playlist = audioFiles
+                    .OrderBy(f =>
+                    {
+                        string fileName = Path.GetFileNameWithoutExtension(f);
+                        var match = Regex.Match(fileName, @"_(\d+)$");
+                        if (match.Success && int.TryParse(match.Groups[1].Value, out int num))
+                            return num;
+                        return int.MaxValue;
+                    })
+                    .ThenBy(f => Path.GetFileNameWithoutExtension(f))
+                    .ToList();
+                _durations = new List<TimeSpan>(new TimeSpan[_playlist.Count]);
                 RefreshPlaylist();
                 lblStatus.Text = $"已加载{_playlist.Count}个音频，开始解码...";
                 UpdateButtonStates();
@@ -275,13 +287,13 @@ namespace super_toolbox
         {
             return new string[]
             {
-        "*.adx", "*.ahx", "*.aifc", "*.aiff", "*.at3", "*.at9",
-        "*.bcstm", "*.bcwav", "*.bfstm", "*.bfwav", "*.binka", "*.brstm", "*.brwav",
-        "*.cv3",
-        "*.dsp", "*.flac", "*.hca", "*.hps", "*.idsp", "*.lopus", "*.kvs",
-        "*.mdsp", "*.msf", "*.mtaf", "*.nwa", "*.ogg", "*.opus", "*.qoa",
-        "*.rada", "*.rf64", "*.swav", "*.tta", "*.vag",
-        "*.w64", "*.wav", "*.wem", "*.wma", "*.xma", "*.xwma"
+                "*.adx", "*.ahx", "*.aifc", "*.aiff", "*.apex", "*.ast", "*.at3", "*.at9",
+                "*.bcstm", "*.bcwav", "*.bfstm", "*.bfwav", "*.binka", "*.brstm", "*.brwav",
+                "*.cv3",
+                "*.dsp", "*.flac", "*.hca", "*.hps", "*.idsp", "*.lopus", "*.kvs",
+                "*.mdsp", "*.msf", "*.mtaf", "*.nwa", "*.ogg", "*.opus", "*.qoa",
+                "*.rada", "*.raw", "*.rf64", "*.swav", "*.tta", "*.vag",
+                "*.w64", "*.wav", "*.wem", "*.wma", "*.xma", "*.xwma"
             };
         }
 
@@ -363,9 +375,24 @@ namespace super_toolbox
             string fmt = cboFormat.SelectedItem?.ToString() == "目前支持的所有格式" ? Path.GetExtension(filePath).TrimStart('.').ToLower() : cboFormat.SelectedItem?.ToString()?.ToLower() ?? "";
             if (string.IsNullOrEmpty(fmt)) throw new Exception("无法识别的格式");
 
-            _currentWavStream?.Dispose();
+            _soundPlayer?.Stop();
+            updateTimer.Stop();
+
+            await Task.Delay(50, ct);
+
             _soundPlayer?.Dispose();
-            string tmpWav = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.wav");
+            _currentWavStream?.Dispose();
+            _soundPlayer = null;
+            _currentWavStream = null;
+
+            if (!string.IsNullOrEmpty(_tempFile) && File.Exists(_tempFile))
+            {
+                try { File.Delete(_tempFile); } catch { }
+                _tempFile = null;
+            }
+
+            string tmpWav = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}_{DateTime.Now.Ticks}.wav");
+            _tempFile = tmpWav;
 
             var result = await DecodeToWavStreamWithDuration(filePath, fmt, ct);
             _totalDuration = result.Duration;
@@ -376,20 +403,24 @@ namespace super_toolbox
             }
 
             result.Stream.Position = 0;
-            using (FileStream fs = new FileStream(tmpWav, FileMode.Create)) result.Stream.WriteTo(fs);
-            _currentWavStream = result.Stream;
-            _soundPlayer = new SoundPlayer(tmpWav);
+            using (FileStream fs = new FileStream(tmpWav, FileMode.Create, FileAccess.Write, FileShare.Read))
+            {
+                result.Stream.WriteTo(fs);
+            }
 
+            _currentWavStream = result.Stream;
+
+            _soundPlayer = new SoundPlayer(tmpWav);
             _playStartTime = DateTime.Now;
             _isPlaying = true;
             _isPaused = false;
             updateTimer.Start();
             UpdateButtonStates();
+
             _soundPlayer.Play();
 
-            while (_isPlaying && !ct.IsCancellationRequested) await Task.Delay(100, ct);
-
-            if (File.Exists(tmpWav)) File.Delete(tmpWav);
+            while (_isPlaying && !ct.IsCancellationRequested)
+                await Task.Delay(100, ct);
         }
 
         private async void BtnPlay_Click(object? sender, EventArgs e)
@@ -402,8 +433,17 @@ namespace super_toolbox
                 lblStatus.Text = "播放中..."; UpdateButtonStates();
                 return;
             }
-            if (_currentIndex >= 0) PlayCurrentFile();
-            else if (_playlist.Count > 0) { _currentIndex = 0; SelectAndPlay(); }
+            if (_currentIndex >= 0)
+            {
+                _cancellation?.Cancel();
+                _cancellation = new CancellationTokenSource();
+                PlayCurrentFile();
+            }
+            else if (_playlist.Count > 0)
+            {
+                _currentIndex = 0;
+                SelectAndPlay();
+            }
         }
 
         private async Task<TimeSpan> GetAudioDurationAsync(string filePath)
@@ -618,31 +658,34 @@ namespace super_toolbox
             "aifc" => new Aifc2wav_Converter(),
             "aiff" => new Aiff2wav_Converter(),
             "ahx" => new Ahx2wav_Converter(),
+            "apex" => new Apex2wav_Converter(),
+            "ast" => new Ast2wav_Converter(),
             "at3" => new At32wav_Converter(),
             "at9" => new At92wav_Converter(),
             "bcwav" => new Bcwav2wav_Converter(),
             "bfwav" => new Bfwav2wav_Converter(),
-            "brwav" => new Brwav2wav_Converter(),
-            "flac" => new Flac2wav_Converter(),
-            "wem" => new Wem2wav_Converter(),
-            "opus" => new Opus2wav_Converter(),
-            "lopus" => new Lopus2wav_Converter(),
             "binka" => new Binka2wav_Converter(),
-            "rada" => new Rada2wav_Converter(),
-            "rf64" => new Rf64ToWav_Converter(),
-            "xwma" => new Xwma2wav_Converter(),
+            "brwav" => new Brwav2wav_Converter(),
+            "cv3" => new Cv3_Converter(),
+            "flac" => new Flac2wav_Converter(),
+            "kvs" => new Kvs2wav_Converter(),
+            "lopus" => new Lopus2wav_Converter(),
             "msf" => new Msf2wav_Converter(),
             "mtaf" => new Mtaf2wav_Converter(),
+            "nwa" => new Nwa2wav_Converter(),
+            "ogg" => new Ogg2wav_Converter(),
+            "opus" => new Opus2wav_Converter(),
             "qoa" => new Qoa2wav_Converter(),
+            "rada" => new Rada2wav_Converter(),
+            "raw" => new Msu2wav_Converter(),
+            "rf64" => new Rf64ToWav_Converter(),
             "swav" => new Swav2wav_Converter(),
             "tta" => new Tta2wav_Converter(),
             "vag" => new Vag2wav_Converter(),
-            "wma" => new Wma2wav_Converter(),
-            "ogg" => new Ogg2wav_Converter(),
             "w64" => new W64ToWav_Converter(),
-            "cv3" => new Cv3_Converter(),
-            "kvs" => new Kvs2wav_Converter(),
-            "nwa" => new Nwa2wav_Converter(),
+            "wem" => new Wem2wav_Converter(),
+            "wma" => new Wma2wav_Converter(),
+            "xwma" => new Xwma2wav_Converter(),
             _ => null
         };
 
@@ -666,7 +709,19 @@ namespace super_toolbox
             _soundPlayer?.Stop();
             _soundPlayer?.Dispose();
             _currentWavStream?.Dispose();
-            if (!string.IsNullOrEmpty(_tempFile) && File.Exists(_tempFile)) try { File.Delete(_tempFile); } catch { }
+            if (!string.IsNullOrEmpty(_tempFile) && File.Exists(_tempFile))
+            {
+                try { File.Delete(_tempFile); } catch { }
+            }
+            try
+            {
+                foreach (var file in Directory.GetFiles(Path.GetTempPath(), "*.wav"))
+                {
+                    if (Path.GetFileName(file).StartsWith(Guid.Empty.ToString().Substring(0, 8)))
+                        try { File.Delete(file); } catch { }
+                }
+            }
+            catch { }
         }
     }
 }
