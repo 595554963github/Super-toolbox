@@ -25,21 +25,25 @@ namespace super_toolbox
                 return;
             }
 
-            var datFiles = Directory.EnumerateFiles(directoryPath, "*.dat", SearchOption.AllDirectories)
+            var allDatFiles = Directory.EnumerateFiles(directoryPath, "*.dat", SearchOption.AllDirectories)
                 .Where(f => !Path.GetFileName(f).ToLower().EndsWith("bgm.dat"))
                 .ToList();
 
-            if (datFiles.Count == 0)
+            if (allDatFiles.Count == 0)
             {
                 ExtractionError?.Invoke(this, "未找到任何.dat文件");
                 OnExtractionFailed("未找到任何.dat文件");
                 return;
             }
 
-            TotalFilesToExtract = datFiles.Count;
             ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
-            uint detectedVersion = DetectVersion(directoryPath, datFiles);
+            uint detectedVersion = DetectVersionFromExe(directoryPath);
+            if (detectedVersion == 0)
+            {
+                detectedVersion = DetectVersionFromDatFiles(allDatFiles);
+            }
+
             if (detectedVersion == 0)
             {
                 ExtractionError?.Invoke(this, "无法识别版本号");
@@ -47,6 +51,46 @@ namespace super_toolbox
                 return;
             }
 
+            List<string> datFiles = new List<string>();
+            string exeName = GetExeName(directoryPath);
+
+            if (!string.IsNullOrEmpty(exeName))
+            {
+                string expectedDatName = exeName.ToLower() + ".dat";
+                foreach (var datFile in allDatFiles)
+                {
+                    string fileName = Path.GetFileName(datFile).ToLower();
+                    if (fileName == expectedDatName)
+                    {
+                        datFiles.Add(datFile);
+                    }
+                }
+            }
+
+            if (datFiles.Count == 0)
+            {
+                datFiles = allDatFiles;
+            }
+
+            if (detectedVersion == 75)
+            {
+                datFiles = datFiles.Where(f =>
+                {
+                    string fileName = Path.GetFileNameWithoutExtension(f).ToLower();
+                    return fileName == "th075b";
+                }).ToList();
+
+                if (datFiles.Count == 0)
+                {
+                    ExtractionError?.Invoke(this, "未找到th075b.dat文件");
+                    OnExtractionFailed("未找到th075b.dat文件");
+                    return;
+                }
+
+                ExtractionProgress?.Invoke(this, $"检测到TH075,仅解包th075b.dat");
+            }
+
+            TotalFilesToExtract = datFiles.Count;
             ExtractionProgress?.Invoke(this, $"找到{datFiles.Count}个.dat文件,检测到版本:{detectedVersion},开始解包...");
 
             int extractedCount = 0;
@@ -175,6 +219,20 @@ namespace super_toolbox
             ExtractAsync(directoryPath).Wait();
         }
 
+        private string GetExeName(string directoryPath)
+        {
+            var exeFiles = Directory.EnumerateFiles(directoryPath, "*.exe", SearchOption.TopDirectoryOnly);
+            foreach (var exe in exeFiles)
+            {
+                string name = Path.GetFileNameWithoutExtension(exe).ToLower();
+                if (name.StartsWith("th") && Regex.IsMatch(name, @"th\d+"))
+                {
+                    return name;
+                }
+            }
+            return string.Empty;
+        }
+
         private uint DetectVersionFromExe(string directoryPath)
         {
             var exeFiles = Directory.EnumerateFiles(directoryPath, "*.exe", SearchOption.TopDirectoryOnly);
@@ -232,23 +290,6 @@ namespace super_toolbox
                     }
                 }
             }
-            return 0;
-        }
-
-        private uint DetectVersion(string directoryPath, List<string> datFiles)
-        {
-            uint version = DetectVersionFromExe(directoryPath);
-            if (version != 0)
-            {
-                return version;
-            }
-
-            version = DetectVersionFromDatFiles(datFiles);
-            if (version != 0)
-            {
-                return version;
-            }
-
             return 0;
         }
     }

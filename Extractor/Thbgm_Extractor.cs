@@ -1,12 +1,19 @@
+using System.Diagnostics;
 using System.Text;
 
 namespace super_toolbox
 {
     public class Thbgm_Extractor : BaseExtractor
     {
+        private static string _tempExePath;
         public event EventHandler<string>? ExtractionStarted;
         public event EventHandler<string>? ExtractionProgress;
         public event EventHandler<string>? ExtractionError;
+
+        static Thbgm_Extractor()
+        {
+            _tempExePath = LoadEmbeddedExe("embedded.thdat.exe", "thdat.exe");
+        }
 
         public override void Extract(string directoryPath)
         {
@@ -26,8 +33,18 @@ namespace super_toolbox
 
             ExtractionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
+            var allDatFiles = Directory.EnumerateFiles(directoryPath, "*.dat", SearchOption.AllDirectories).ToList();
+            var th075bgmFile = allDatFiles.FirstOrDefault(f => Path.GetFileName(f).ToLower() == "th075bgm.dat");
+
+            if (!string.IsNullOrEmpty(th075bgmFile))
+            {
+                await ExtractWithThdatExe(th075bgmFile, directoryPath, cancellationToken);
+                OnExtractionCompleted();
+                return;
+            }
+
             var fmtFiles = Directory.EnumerateFiles(directoryPath, "thbgm.fmt", SearchOption.AllDirectories);
-            var datFiles = Directory.EnumerateFiles(directoryPath, "Thbgm.dat", SearchOption.AllDirectories);
+            var datFiles = allDatFiles.Where(f => Path.GetFileName(f).ToLower() == "thbgm.dat").ToList();
 
             if (!fmtFiles.Any())
             {
@@ -38,20 +55,13 @@ namespace super_toolbox
 
             if (!datFiles.Any())
             {
-                ExtractionError?.Invoke(this, "未找到Thbgm.dat文件");
-                OnExtractionFailed("未找到Thbgm.dat文件");
+                ExtractionError?.Invoke(this, "未找到thbgm.dat文件");
+                OnExtractionFailed("未找到thbgm.dat文件");
                 return;
             }
 
             string fmtFile = fmtFiles.First();
-            string datFile = FindMatchingDatFile(fmtFile, directoryPath);
-
-            if (string.IsNullOrEmpty(datFile))
-            {
-                ExtractionError?.Invoke(this, $"未找到与{fmtFile}匹配的Thbgm.dat文件");
-                OnExtractionFailed($"未找到与{fmtFile}匹配的Thbgm.dat文件");
-                return;
-            }
+            string datFile = datFiles.First();
 
             try
             {
@@ -85,31 +95,82 @@ namespace super_toolbox
             OnExtractionCompleted();
         }
 
-        private string FindMatchingDatFile(string fmtFile, string directoryPath)
+        private async Task ExtractWithThdatExe(string datPath, string directoryPath, CancellationToken cancellationToken)
         {
-            string baseName = Path.GetFileNameWithoutExtension(fmtFile);
-            string expectedDatName = baseName.Replace(".fmt", ".dat");
+            ExtractionProgress?.Invoke(this, $"使用thdat.exe解包th075bgm.dat...");
 
-            var possiblePaths = new List<string>
+            string fileDirectory = Path.GetDirectoryName(datPath) ?? string.Empty;
+            string fileName = Path.GetFileName(datPath);
+            string datFileNameWithoutExt = Path.GetFileNameWithoutExtension(datPath);
+            string extractDir = Path.Combine(fileDirectory, datFileNameWithoutExt);
+
+            var processStartInfo = new ProcessStartInfo
             {
-                Path.Combine(Path.GetDirectoryName(fmtFile) ?? "", "Thbgm.dat"),
-                Path.Combine(Path.GetDirectoryName(fmtFile) ?? "", expectedDatName)
+                FileName = _tempExePath,
+                Arguments = $"\"{datPath}\" 75",
+                WorkingDirectory = fileDirectory,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8
             };
 
-            foreach (var path in possiblePaths)
+            using (var process = Process.Start(processStartInfo))
             {
-                if (File.Exists(path))
-                    return path;
-            }
+                if (process == null)
+                {
+                    ExtractionError?.Invoke(this, "无法启动解包进程");
+                    OnExtractionFailed("无法启动解包进程");
+                    return;
+                }
 
-            var allDatFiles = Directory.EnumerateFiles(directoryPath, "*.dat", SearchOption.AllDirectories);
-            foreach (var datFile in allDatFiles)
-            {
-                if (Path.GetFileName(datFile).Equals("thbgm.dat", StringComparison.OrdinalIgnoreCase))
-                    return datFile;
-            }
+                StringBuilder errorBuilder = new StringBuilder();
 
-            return string.Empty;
+                process.OutputDataReceived += (sender, e) =>
+                {
+                    if (!string.IsNullOrEmpty(e.Data))
+                    {
+                        ExtractionProgress?.Invoke(this, e.Data);
+                    }
+                };
+
+                process.ErrorDataReceived += (sender, e) =>
+                {
+                    if (!string.IsNullOrEmpty(e.Data))
+                    {
+                        ExtractionError?.Invoke(this, $"错误:{e.Data}");
+                        errorBuilder.AppendLine(e.Data);
+                    }
+                };
+
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                await process.WaitForExitAsync(cancellationToken);
+
+                if (process.ExitCode != 0)
+                {
+                    ExtractionError?.Invoke(this, $"th075bgm.dat处理失败,错误代码:{process.ExitCode}");
+                    OnExtractionFailed($"th075bgm.dat处理失败,错误代码:{process.ExitCode}");
+                    return;
+                }
+
+                ExtractionProgress?.Invoke(this, "th075bgm.dat解包成功");
+
+                if (Directory.Exists(extractDir))
+                {
+                    var extractedFiles = Directory.GetFiles(extractDir, "*", SearchOption.AllDirectories);
+                    TotalFilesToExtract = extractedFiles.Length;
+                    foreach (var extractedFile in extractedFiles)
+                    {
+                        string relativePath = Path.GetRelativePath(extractDir, extractedFile);
+                        ExtractionProgress?.Invoke(this, $"已提取:{relativePath}");
+                        OnFileExtracted(extractedFile);
+                    }
+                    ExtractionProgress?.Invoke(this, $"共提取{extractedFiles.Length}个音频文件");
+                }
+            }
         }
 
         private List<BgmInfo> ReadBgmList(string fmtPath)
