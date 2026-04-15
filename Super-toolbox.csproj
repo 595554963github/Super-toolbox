@@ -7,7 +7,7 @@
 		<UseWindowsForms>true</UseWindowsForms>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<EnableDefaultCompileItems>true</EnableDefaultCompileItems>
-		<NoWarn>MSB3270;MSB3277;MSB3026</NoWarn>
+		<NoWarn>MSB3270;MSB3277;MSB3026;NU1701</NoWarn>
 		<GenerateDependencyFile>false</GenerateDependencyFile>
 		<Configurations>Release</Configurations>
 		<Platforms>AnyCPU</Platforms>
@@ -191,6 +191,7 @@
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
+		<PackageReference Include="CSCore" Version="1.2.1.2" />
 		<PackageReference Include="Fody" Version="6.9.3">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

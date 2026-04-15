@@ -1,14 +1,15 @@
-using System.Media;
 using System.Text.RegularExpressions;
+using CSCore;
+using CSCore.Codecs.WAV;
+using CSCore.SoundOut;
 using VGAudio.Containers.Adx;
 using VGAudio.Containers.Dsp;
 using VGAudio.Containers.Hca;
 using VGAudio.Containers.Hps;
 using VGAudio.Containers.Idsp;
 using VGAudio.Containers.NintendoWare;
-using VGAudio.Containers.Wave;
 using VGAudio.Formats;
-
+using VGAudioWaveWriter = VGAudio.Containers.Wave.WaveWriter;
 namespace super_toolbox
 {
     public class AudioPlayerForm : Form
@@ -17,6 +18,7 @@ namespace super_toolbox
         private Label lblFile = null!, lblStatus = null!, lblTime = null!;
         private ProgressBar progressBar = null!;
         private ComboBox cboFormat = null!;
+        private TrackBar volumeTrackBar = null!;
         private System.Windows.Forms.Timer updateTimer = null!;
         private Button btnClearList = null!, btnPrev = null!, btnPlay = null!, btnPause = null!, btnStop = null!, btnNext = null!;
         private ColumnHeader colIndex = null!, colFileName = null!, colDuration = null!;
@@ -30,11 +32,12 @@ namespace super_toolbox
         private DateTime _playStartTime;
         private TimeSpan _totalDuration, _pausedElapsed;
         private MemoryStream? _currentWavStream;
-        private SoundPlayer? _soundPlayer;
+        private ISoundOut? _soundOut;
+        private IWaveSource? _waveSource;
         private bool _isAutoDecoding = false;
         private static readonly string[] AudioExtensions = new[]
         {
-            "adx","ahx","aifc","aiff","apex","ast","at3","at9","bcstm","bcwav","bfstm","bfwav","binka","brstm","brwav","cv3","dsp","flac","hca","hps","idsp","kvs","lopus","mdsp","msf","mtaf","nwa","ogg","opus","qoa","rada","raw","rf64","swav","tta","vag","w64","wav","wem","wma","xma","xwma"
+            "adx","ahx","aifc","aiff","apex","ast","at3","at9","bcstm","bcwav","bfstm","bfwav","binka","brstm","brwav","cv3","dsp","flac","hca","hps","idsp","kvs","lopus","mdsp","msf","mtaf","nwa","ogg","opus","pcm","qoa","rada","raw","rf64","snr","swav","tta","vag","w64","wav","wem","wma","xa","xma","xwma"
         };
 
         public AudioPlayerForm()
@@ -89,17 +92,44 @@ namespace super_toolbox
                 else if (i == 4) btnNext = btn;
             }
 
+            volumeTrackBar = new TrackBar
+            {
+                Minimum = 0,
+                Maximum = 100,
+                Value = 80,
+                TickFrequency = 10,
+                Width = 100,
+                Location = new Point(startX + totalWidth + 35, (controlPanel.Height - 30) / 2),
+                BackColor = Color.FromArgb(45, 45, 48),
+                ForeColor = Color.FromArgb(0, 120, 215)
+            };
+            volumeTrackBar.ValueChanged += (s, e) => { if (_soundOut != null) _soundOut.Volume = volumeTrackBar.Value / 100f; };
+            controlPanel.Controls.Add(volumeTrackBar);
+
+            var volumeLabel = new Label
+            {
+                Text = "音量",
+                ForeColor = Color.White,
+                BackColor = Color.Transparent,
+                AutoSize = true,
+                Location = new Point(startX + totalWidth + 5, (controlPanel.Height - 20) / 2),
+                Width = 30
+            };
+            controlPanel.Controls.Add(volumeLabel);
+
             controlPanel.Resize += (s, e) => {
                 int newStartX = (controlPanel.Width - totalWidth) / 2;
                 if (newStartX < 10) newStartX = 10;
-                for (int i = 0; i < controlPanel.Controls.Count; i++)
+                for (int i = 0; i < 5; i++)
                     controlPanel.Controls[i].Location = new Point(newStartX + i * (buttonWidth + buttonSpacing), (controlPanel.Height - buttonHeight) / 2);
+                volumeLabel.Location = new Point(newStartX + totalWidth + 5, (controlPanel.Height - 20) / 2);
+                volumeTrackBar.Location = new Point(newStartX + totalWidth + 35, (controlPanel.Height - 30) / 2);
             };
 
             btnPrev.Click += (s, e) => { if (_currentIndex > 0) { _currentIndex--; SelectAndPlay(); } };
             btnPlay.Click += BtnPlay_Click;
-            btnPause.Click += (s, e) => { if (_isPlaying) { _isPaused = true; _isPlaying = false; _pausedElapsed = DateTime.Now - _playStartTime; updateTimer.Stop(); _soundPlayer?.Stop(); lblStatus.Text = "已暂停"; UpdateButtonStates(); } };
-            btnStop.Click += (s, e) => { _cancellation?.Cancel(); _isPlaying = _isPaused = false; updateTimer.Stop(); _soundPlayer?.Stop(); lblStatus.Text = "已停止"; progressBar.Value = 0; if (_currentIndex >= 0 && _currentIndex < _durations.Count && _durations[_currentIndex] != TimeSpan.Zero) lblTime.Text = $"00:00 / {_durations[_currentIndex]:mm\\:ss}"; else lblTime.Text = "00:00 / 00:00"; UpdateButtonStates(); };
+            btnPause.Click += (s, e) => { if (_isPlaying) { _isPaused = true; _isPlaying = false; _pausedElapsed = DateTime.Now - _playStartTime; updateTimer.Stop(); _soundOut?.Pause(); lblStatus.Text = "已暂停"; UpdateButtonStates(); } };
+            btnStop.Click += (s, e) => { _cancellation?.Cancel(); _isPlaying = _isPaused = false; updateTimer.Stop(); _soundOut?.Stop(); lblStatus.Text = "已停止"; progressBar.Value = 0; if (_currentIndex >= 0 && _currentIndex < _durations.Count && _durations[_currentIndex] != TimeSpan.Zero) lblTime.Text = $"00:00 / {_durations[_currentIndex]:mm\\:ss}"; else lblTime.Text = "00:00 / 00:00"; UpdateButtonStates(); };
             btnNext.Click += (s, e) => { if (_currentIndex < _playlist.Count - 1) { _currentIndex++; SelectAndPlay(); } };
 
             var infoPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(45, 45, 48), Padding = new Padding(20, 5, 20, 5) };
@@ -137,7 +167,7 @@ namespace super_toolbox
 
             var bottomPanel = new Panel { Dock = DockStyle.Bottom, Height = 45, BackColor = Color.FromArgb(45, 45, 48), Padding = new Padding(12, 0, 12, 0) };
             btnClearList = new Button { Text = "清空列表", Size = new Size(90, 27), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(63, 63, 70), ForeColor = Color.White, Location = new Point(12, 9) };
-            btnClearList.Click += (s, e) => { btnStop_Click(null, EventArgs.Empty); _playlist.Clear(); _durations.Clear(); listViewFiles.Items.Clear(); _currentIndex = -1; UpdateButtonStates(); };
+            btnClearList.Click += (s, e) => { BtnStop_Click(null, EventArgs.Empty); _playlist.Clear(); _durations.Clear(); listViewFiles.Items.Clear(); _currentIndex = -1; UpdateButtonStates(); };
 
             cboFormat = new ComboBox { Size = new Size(180, 27), DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Color.FromArgb(45, 45, 48), ForeColor = Color.FromArgb(230, 230, 230), FlatStyle = FlatStyle.Flat, Location = new Point(110, 9) };
             cboFormat.Items.AddRange(new string[] { "目前支持的所有格式" }.Concat(AudioExtensions).ToArray());
@@ -154,16 +184,13 @@ namespace super_toolbox
 
             updateTimer = new System.Windows.Forms.Timer { Interval = 100 };
             updateTimer.Tick += (s, e) => {
-                if (!_isPlaying) return;
+                if (!_isPlaying || _waveSource == null) return;
                 TimeSpan elapsed = DateTime.Now - _playStartTime;
-                if (elapsed > _totalDuration) elapsed = _totalDuration;
-                if (_totalDuration.TotalSeconds > 0) progressBar.Value = (int)(elapsed.TotalSeconds / _totalDuration.TotalSeconds * 100);
-                lblTime.Text = $"{elapsed:mm\\:ss} / {_totalDuration:mm\\:ss}";
                 if (elapsed >= _totalDuration && _isPlaying)
                 {
                     _isPlaying = false;
                     updateTimer.Stop();
-                    _soundPlayer?.Stop();
+                    _soundOut?.Stop();
                     if (_currentIndex < _playlist.Count - 1)
                     {
                         _currentIndex++;
@@ -172,12 +199,31 @@ namespace super_toolbox
                     else
                     {
                         progressBar.Value = 0;
-                        lblTime.Text = _currentIndex >= 0 && _durations[_currentIndex] != TimeSpan.Zero ? $"00:00 / {_durations[_currentIndex]:mm\\:ss}" : "00:00 / 00:00";
+                        if (_totalDuration.TotalMilliseconds < 500)
+                        {
+                            lblTime.Text = $"{_totalDuration:mm\\:ss\\:ff} / {_totalDuration:mm\\:ss\\:ff}";
+                        }
+                        else
+                        {
+                            lblTime.Text = _currentIndex >= 0 && _durations[_currentIndex] != TimeSpan.Zero ? $"00:00 / {_durations[_currentIndex]:mm\\:ss}" : "00:00 / 00:00";
+                        }
                         UpdateButtonStates();
                     }
+                    return;
+                }
+                if (_totalDuration.TotalSeconds > 0)
+                    progressBar.Value = (int)(elapsed.TotalSeconds / _totalDuration.TotalSeconds * 100);
+                if (_totalDuration.TotalMilliseconds < 500)
+                {
+                    lblTime.Text = $"{elapsed:mm\\:ss\\:ff} / {_totalDuration:mm\\:ss\\:ff}";
+                }
+                else
+                {
+                    lblTime.Text = $"{elapsed:mm\\:ss} / {_totalDuration:mm\\:ss}";
                 }
             };
         }
+
         private bool IsSupportedFile(string filePath)
         {
             string ext = Path.GetExtension(filePath).ToLower().TrimStart('.');
@@ -188,25 +234,32 @@ namespace super_toolbox
         {
             if (index < listViewFiles.Items.Count)
             {
-                listViewFiles.Items[index].SubItems[2].Text = $"{duration:mm\\:ss}";
+                string durationText;
+                if (duration.TotalMilliseconds < 1000)
+                    durationText = $"{duration:ss\\:fff}";
+                else
+                    durationText = $"{duration:mm\\:ss}";
+                listViewFiles.Items[index].SubItems[2].Text = durationText;
                 listViewFiles.Items[index].ForeColor = Color.LightGreen;
             }
 
             if (index == _currentIndex && InvokeRequired)
             {
-                Invoke(() => lblTime.Text = $"00:00 / {duration:mm\\:ss}");
+                Invoke(() => lblTime.Text = duration.TotalMilliseconds < 1000 ? $"00:00 / {duration:ss\\:fff}" : $"00:00 / {duration:mm\\:ss}");
             }
             else if (index == _currentIndex)
             {
-                lblTime.Text = $"00:00 / {duration:mm\\:ss}";
+                lblTime.Text = duration.TotalMilliseconds < 1000 ? $"00:00 / {duration:ss\\:fff}" : $"00:00 / {duration:mm\\:ss}";
             }
         }
+
         private void SelectAndPlay()
         {
             listViewFiles.SelectedIndices.Clear();
             listViewFiles.Items[_currentIndex].Selected = true;
             PlayCurrentFile();
         }
+
         private void RefreshPlaylist()
         {
             listViewFiles.Items.Clear();
@@ -214,7 +267,20 @@ namespace super_toolbox
             {
                 var item = new ListViewItem((i + 1).ToString());
                 item.SubItems.Add(Path.GetFileName(_playlist[i]));
-                item.SubItems.Add(_durations[i] != TimeSpan.Zero ? $"{_durations[i]:mm\\:ss}" : "未知");
+
+                string durationText;
+                if (_durations[i] != TimeSpan.Zero)
+                {
+                    if (_durations[i].TotalMilliseconds < 1000)
+                        durationText = $"{_durations[i]:ss\\:fff}";
+                    else
+                        durationText = $"{_durations[i]:mm\\:ss}";
+                }
+                else
+                {
+                    durationText = "未知";
+                }
+                item.SubItems.Add(durationText);
                 item.ForeColor = _durations[i] != TimeSpan.Zero ? Color.LightGreen : Color.FromArgb(230, 230, 230);
                 listViewFiles.Items.Add(item);
             }
@@ -224,10 +290,16 @@ namespace super_toolbox
         {
             if (index < listViewFiles.Items.Count)
             {
-                listViewFiles.Items[index].SubItems[2].Text = $"{duration:mm\\:ss}";
+                string durationText;
+                if (duration.TotalMilliseconds < 1000)
+                    durationText = $"{duration:ss\\:fff}";
+                else
+                    durationText = $"{duration:mm\\:ss}";
+                listViewFiles.Items[index].SubItems[2].Text = durationText;
                 listViewFiles.Items[index].ForeColor = Color.LightGreen;
             }
         }
+
         private void AudioPlayerForm_DragDrop(object? sender, DragEventArgs e)
         {
             if (!(e?.Data?.GetDataPresent(DataFormats.FileDrop) ?? false)) return;
@@ -291,9 +363,9 @@ namespace super_toolbox
                 "*.bcstm", "*.bcwav", "*.bfstm", "*.bfwav", "*.binka", "*.brstm", "*.brwav",
                 "*.cv3",
                 "*.dsp", "*.flac", "*.hca", "*.hps", "*.idsp", "*.lopus", "*.kvs",
-                "*.mdsp", "*.msf", "*.mtaf", "*.nwa", "*.ogg", "*.opus", "*.qoa",
-                "*.rada", "*.raw", "*.rf64", "*.swav", "*.tta", "*.vag",
-                "*.w64", "*.wav", "*.wem", "*.wma", "*.xma", "*.xwma"
+                "*.mdsp", "*.msf", "*.mtaf", "*.nwa", "*.ogg", "*.opus", "*.pcm", "*.qoa",
+                "*.rada", "*.raw", "*.rf64", "*.snr", "*.swav", "*.tta", "*.vag",
+                "*.w64", "*.wav", "*.wem", "*.wma", "*.xa", "*.xma", "*.xwma"
             };
         }
 
@@ -345,6 +417,7 @@ namespace super_toolbox
                 _isAutoDecoding = false;
             }
         }
+
         private async void PlayCurrentFile()
         {
             if (_currentIndex < 0 || _currentIndex >= _playlist.Count) return;
@@ -357,7 +430,7 @@ namespace super_toolbox
                     var duration = await GetAudioDurationAsync(_playlist[_currentIndex]);
                     _durations[_currentIndex] = duration;
                     UpdateDurationDisplay(_currentIndex, duration);
-                    lblTime.Text = $"00:00 / {duration:mm\\:ss}";
+                    lblTime.Text = duration.TotalMilliseconds < 1000 ? $"00:00 / {duration:ss\\:fff}" : $"00:00 / {duration:mm\\:ss}";
                 }
                 catch { lblStatus.Text = "解码失败"; return; }
             }
@@ -375,14 +448,16 @@ namespace super_toolbox
             string fmt = cboFormat.SelectedItem?.ToString() == "目前支持的所有格式" ? Path.GetExtension(filePath).TrimStart('.').ToLower() : cboFormat.SelectedItem?.ToString()?.ToLower() ?? "";
             if (string.IsNullOrEmpty(fmt)) throw new Exception("无法识别的格式");
 
-            _soundPlayer?.Stop();
+            _soundOut?.Stop();
             updateTimer.Stop();
 
             await Task.Delay(50, ct);
 
-            _soundPlayer?.Dispose();
+            _soundOut?.Dispose();
+            _waveSource?.Dispose();
             _currentWavStream?.Dispose();
-            _soundPlayer = null;
+            _soundOut = null;
+            _waveSource = null;
             _currentWavStream = null;
 
             if (!string.IsNullOrEmpty(_tempFile) && File.Exists(_tempFile))
@@ -396,6 +471,7 @@ namespace super_toolbox
 
             var result = await DecodeToWavStreamWithDuration(filePath, fmt, ct);
             _totalDuration = result.Duration;
+
             if (_durations[_currentIndex] == TimeSpan.Zero)
             {
                 _durations[_currentIndex] = _totalDuration;
@@ -407,17 +483,22 @@ namespace super_toolbox
             {
                 result.Stream.WriteTo(fs);
             }
-
             _currentWavStream = result.Stream;
 
-            _soundPlayer = new SoundPlayer(tmpWav);
+            _waveSource = new WaveFileReader(tmpWav);
+            _soundOut = new WasapiOut();
+            _soundOut.Initialize(_waveSource);
+            _soundOut.Volume = volumeTrackBar.Value / 100f;
+
             _playStartTime = DateTime.Now;
             _isPlaying = true;
             _isPaused = false;
+
+            updateTimer.Interval = _totalDuration.TotalMilliseconds < 500 ? 50 : 100;
             updateTimer.Start();
             UpdateButtonStates();
 
-            _soundPlayer.Play();
+            _soundOut.Play();
 
             while (_isPlaying && !ct.IsCancellationRequested)
                 await Task.Delay(100, ct);
@@ -429,7 +510,7 @@ namespace super_toolbox
             {
                 _isPaused = false; _isPlaying = true;
                 _playStartTime = DateTime.Now - _pausedElapsed;
-                updateTimer.Start(); _soundPlayer?.Play();
+                updateTimer.Start(); _soundOut?.Resume();
                 lblStatus.Text = "播放中..."; UpdateButtonStates();
                 return;
             }
@@ -502,7 +583,6 @@ namespace super_toolbox
                         string wavOut = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(sf) + ".wav");
                         if (File.Exists(wavOut))
                         {
-                            wavOut = ConvertToPcmWav(wavOut);
                             if (File.Exists(tempWav)) File.Delete(tempWav);
                             File.Move(wavOut, tempWav);
                         }
@@ -555,7 +635,7 @@ namespace super_toolbox
             if (pcmFormat == null) throw new Exception("无法获取PCM格式");
             var duration = TimeSpan.FromSeconds((double)pcmFormat.SampleCount / pcmFormat.SampleRate);
             var ms = new MemoryStream();
-            new WaveWriter().WriteToStream(ad, ms);
+            new VGAudioWaveWriter().WriteToStream(ad, ms);
             ms.Position = 0;
             return (ms, duration);
         }, ct);
@@ -574,7 +654,6 @@ namespace super_toolbox
                     string wavOut = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(sf) + ".wav");
                     if (File.Exists(wavOut))
                     {
-                        wavOut = ConvertToPcmWav(wavOut);
                         if (File.Exists(_tempFile)) File.Delete(_tempFile);
                         File.Move(wavOut, _tempFile);
                     }
@@ -597,46 +676,73 @@ namespace super_toolbox
             {
                 var pos = wavStream.Position;
                 wavStream.Position = 0;
-                var header = new byte[44];
-                wavStream.Read(header, 0, 44);
-                var channels = BitConverter.ToInt16(header, 22);
-                var sampleRate = BitConverter.ToInt32(header, 24);
-                var bitsPerSample = BitConverter.ToInt16(header, 34);
-                wavStream.Position = 12;
+
+                byte[] header = new byte[44];
+                int bytesRead = wavStream.Read(header, 0, 44);
+                if (bytesRead < 44) return TimeSpan.Zero;
+
+                short channels = BitConverter.ToInt16(header, 22);
+                int sampleRate = BitConverter.ToInt32(header, 24);
+                short bitsPerSample = BitConverter.ToInt16(header, 34);
+
+                if (channels <= 0 || sampleRate <= 0 || bitsPerSample <= 0)
+                    return TimeSpan.Zero;
+
+                wavStream.Position = 0;
+
                 long dataSize = 0;
+                long riffSize = 0;
+
+                wavStream.Position = 4;
+                byte[] riffSizeBytes = new byte[4];
+                wavStream.Read(riffSizeBytes, 0, 4);
+                riffSize = BitConverter.ToUInt32(riffSizeBytes, 0);
+
+                wavStream.Position = 12;
+
                 while (wavStream.Position < wavStream.Length - 8)
                 {
-                    var chunkId = new byte[4];
+                    byte[] chunkId = new byte[4];
                     wavStream.Read(chunkId, 0, 4);
-                    var chunkSize = BitConverter.ToInt32(new byte[4] { (byte)wavStream.ReadByte(), (byte)wavStream.ReadByte(), (byte)wavStream.ReadByte(), (byte)wavStream.ReadByte() }, 0);
-                    if (System.Text.Encoding.ASCII.GetString(chunkId) == "data")
+                    string chunkIdStr = System.Text.Encoding.ASCII.GetString(chunkId);
+
+                    byte[] chunkSizeBytes = new byte[4];
+                    wavStream.Read(chunkSizeBytes, 0, 4);
+                    uint chunkSize = BitConverter.ToUInt32(chunkSizeBytes, 0);
+
+                    if (chunkIdStr == "data")
                     {
                         dataSize = chunkSize;
                         break;
                     }
+
                     wavStream.Position += chunkSize;
                 }
-                wavStream.Position = pos;
-                if (dataSize > 0 && sampleRate > 0 && channels > 0 && bitsPerSample > 0)
-                    return TimeSpan.FromSeconds(dataSize / (sampleRate * channels * (bitsPerSample / 8.0)));
-            }
-            catch { }
-            return TimeSpan.FromSeconds(30);
-        }
 
-        private string ConvertToPcmWav(string inputWav)
-        {
-            string outputPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + "_pcm.wav");
-            var reader = new WaveReader();
-            using var fs = File.OpenRead(inputWav);
-            var audioData = reader.Read(fs);
-            using var ms = new MemoryStream();
-            new WaveWriter().WriteToStream(audioData, ms);
-            ms.Position = 0;
-            using var outFs = new FileStream(outputPath, FileMode.Create);
-            ms.WriteTo(outFs);
-            try { File.Delete(inputWav); } catch { }
-            return outputPath;
+                wavStream.Position = pos;
+
+                if (dataSize == 0)
+                {
+                    dataSize = riffSize + 8 - 44;
+                    if (dataSize <= 0) return TimeSpan.Zero;
+                }
+
+                double bytesPerSecond = sampleRate * channels * (bitsPerSample / 8.0);
+                if (bytesPerSecond <= 0) return TimeSpan.Zero;
+
+                double seconds = dataSize / bytesPerSecond;
+
+                if (seconds < 0.01 && dataSize > 0 && bytesPerSecond > 0)
+                {
+                    seconds = Math.Max(0.01, seconds);
+                }
+
+                return TimeSpan.FromSeconds(seconds);
+            }
+            catch
+            {
+                return TimeSpan.FromSeconds(0.01);
+            }
         }
 
         private BaseExtractor? TryXmaDecoders(string path)
@@ -660,7 +766,7 @@ namespace super_toolbox
             "ahx" => new Ahx2wav_Converter(),
             "apex" => new Apex2wav_Converter(),
             "ast" => new Ast2wav_Converter(),
-            "at3" => new At32wav_Converter(),
+            "at3" => new At3plus2wav_Converter(),
             "at9" => new At92wav_Converter(),
             "bcwav" => new Bcwav2wav_Converter(),
             "bfwav" => new Bfwav2wav_Converter(),
@@ -675,16 +781,19 @@ namespace super_toolbox
             "nwa" => new Nwa2wav_Converter(),
             "ogg" => new Ogg2wav_Converter(),
             "opus" => new Opus2wav_Converter(),
+            "pcm" => new Sony_psxadpcm2wav_Converter(),
             "qoa" => new Qoa2wav_Converter(),
             "rada" => new Rada2wav_Converter(),
             "raw" => new Msu2wav_Converter(),
             "rf64" => new Rf64ToWav_Converter(),
+            "snr" => new Snr2wav_Converter(),
             "swav" => new Swav2wav_Converter(),
             "tta" => new Tta2wav_Converter(),
             "vag" => new Vag2wav_Converter(),
             "w64" => new W64ToWav_Converter(),
             "wem" => new Wem2wav_Converter(),
             "wma" => new Wma2wav_Converter(),
+            "xa" => new MaxisXa2wav_Converter(),
             "xwma" => new Xwma2wav_Converter(),
             _ => null
         };
@@ -699,15 +808,31 @@ namespace super_toolbox
             btnStop.Enabled = hasSel && (_isPlaying || _isPaused);
         }
 
-        private void btnStop_Click(object? sender, EventArgs e) => BtnStop_Click(sender, e);
-        private void BtnStop_Click(object? sender, EventArgs e) { _cancellation?.Cancel(); _isPlaying = _isPaused = false; updateTimer.Stop(); _soundPlayer?.Stop(); lblStatus.Text = "已停止"; progressBar.Value = 0; if (_currentIndex >= 0 && _currentIndex < _durations.Count && _durations[_currentIndex] != TimeSpan.Zero) lblTime.Text = $"00:00 / {_durations[_currentIndex]:mm\\:ss}"; else lblTime.Text = "00:00 / 00:00"; UpdateButtonStates(); }
+        private void BtnStop_Click(object? sender, EventArgs e)
+        {
+            _cancellation?.Cancel();
+            _isPlaying = _isPaused = false;
+            updateTimer.Stop();
+            _soundOut?.Stop();
+            lblStatus.Text = "已停止";
+            progressBar.Value = 0;
+            if (_currentIndex >= 0 && _currentIndex < _durations.Count && _durations[_currentIndex] != TimeSpan.Zero)
+            {
+                var duration = _durations[_currentIndex];
+                lblTime.Text = duration.TotalMilliseconds < 1000 ? $"00:00 / {duration:ss\\:fff}" : $"00:00 / {duration:mm\\:ss}";
+            }
+            else
+                lblTime.Text = "00:00 / 00:00";
+            UpdateButtonStates();
+        }
 
         private void AudioPlayerForm_FormClosing(object? sender, FormClosingEventArgs e)
         {
             _cancellation?.Cancel();
             updateTimer?.Stop();
-            _soundPlayer?.Stop();
-            _soundPlayer?.Dispose();
+            _soundOut?.Stop();
+            _soundOut?.Dispose();
+            _waveSource?.Dispose();
             _currentWavStream?.Dispose();
             if (!string.IsNullOrEmpty(_tempFile) && File.Exists(_tempFile))
             {

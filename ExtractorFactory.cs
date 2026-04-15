@@ -222,7 +222,7 @@ namespace super_toolbox
                 "索尼 - gim" => new GIM2PNG_Converter(),
                 "索尼 - tim" => new Tim2png_Converter(),
                 "GBIX_PVRT - pvr" => new PVRT2PNG_Converter(),
-                "索尼非标准ADPCM - pcm" => new PlayStationHeaderlessADPCM_Extractor(),
+                "索尼psxadpcm - pcm" => new Sony_psxadpcm_Extractor(),
                 "CloneCD - ccd/img" => new Ccdimg2isoConverter(),
                 "Java反编译 - jar/class" => new JavaDecompiler(),
                 "任天堂 - szs/sarc" => new SzsSarc_Extractor(),
@@ -363,6 +363,9 @@ namespace super_toolbox
                 "msu2wav" => new Msu2wav_Converter(),
                 "wav2apex" => new Wav2apex_Converter(),
                 "apex2wav" => new Apex2wav_Converter(),
+                "psxadpcm2wav" => new Sony_psxadpcm2wav_Converter(),
+                "MaxisXa2wav" => new MaxisXa2wav_Converter(),
+                "Snr2wav" => new Snr2wav_Converter(),
                 _ => throw new NotSupportedException($"不支持的格式:{formatName}")
             };
         }
