@@ -199,7 +199,7 @@ namespace super_toolbox
             { "东方红魔乡/东方妖妖梦 - dat", ("其他档案", "东方红魔乡、东方妖妖梦的专用dat提取器") },
             { "东方永夜抄/东方花映塚 - dat", ("其他档案", "东方永夜抄和东方花映塚的专用dat提取器,PBGZ头,比东方红魔乡和东方妖妖梦稍微困难些") },
             { "东方project系列 - Thbgm.dat", ("音频", "东方project系列的Thbgm.dat提取器,如东方红魔乡、东方妖妖梦、东方永夜抄、东方花映塚,要解包此文件必须得先从普通dat文件里提取出thbgm.fmt,把它放到Thbgm.dat所在目录") },
-            { "东方project系列 - dat", ("其他档案", "th95及后续版本的专用dat提取器,可解东方文花帖、东方风神录、东方地灵殿、东方绯想天、东方星莲船、东方非想天则、东方文花帖DS、\r\n妖精大战争、东方神灵庙、东方辉针城、弹幕天邪鬼、东方绀珠传、东方天空璋、秘封噩梦日记、东方鬼形兽、东方虹龙洞、东方兽王园、东方锦上京") },
+            { "东方project系列 - dat", ("其他档案", "th75及后续版本的专用dat提取器,可解东方萃梦想、东方文花帖、东方风神录、东方地灵殿、东方绯想天、东方星莲船、东方非想天则、东方文花帖DS、\r\n妖精大战争、东方神灵庙、东方辉针城、弹幕天邪鬼、东方绀珠传、东方天空璋、秘封噩梦日记、东方鬼形兽、东方虹龙洞、东方兽王园、东方锦上京") },
             { "东方project系列 - cv0/cv1", ("其他档案", "东方project系列的cv0和cv1文本转换器") },
             { "东方project系列 - cv2", ("图片", "东方project系列的cv2纹理转换器") },
             { "东方project系列 - cv3", ("音频", "东方project系列的cv3音频转换器") },
@@ -241,7 +241,7 @@ namespace super_toolbox
             { "adx2hca", ("音频", "adx转换到hca的音频转换器") },
             { "adx2dsp", ("音频", "adx转换到dsp的音频转换器") },
             { "adx2wav", ("音频", "adx转换到wav的音频转换器") },
-            { "at32wav", ("音频", "at3转换到wav的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
+            { "at3plus2wav", ("音频", "at3plus编码的at3转换到wav的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
             { "at92wav", ("音频", "at9转换到wav的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
             { "hps2wav", ("音频", "hps转换到wav的音频转换器") },
             { "idsp2wav", ("音频", "idsp转换到wav的音频转换器") },
@@ -290,7 +290,8 @@ namespace super_toolbox
             { "wav2mtaf", ("音频", "wav转换到mtaf的音频转换器,VGAudio不支持此格式,Konami MTAF 4-bit ADPCM编码") },
             { "wav2hca", ("音频", "wav转换到hca的音频转换器") },
             { "wav2adx", ("音频", "wav转换到adx的音频转换器") },
-            { "wav2at3", ("音频", "wav转换到at3的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换,仅支持atrac3plus") },
+            { "wav2at3", ("音频", "wav转换到at3的音频转换器,VGAudio不支持此格式,使用rust语言编译的程序进行转换,不是atrac3plus编码,它俩不一样") },
+            { "wav2at3plus", ("音频", "wav转换到at3plus编码的at3的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
             { "wav2lopus", ("音频", "wav转换到lopus的音频转换器,VGAudio不支持此格式,") },
             { "wav2at9", ("音频", "wav转换到at9的音频转换器,VGAudio不支持此格式,使用索尼官方工具实现转换") },
             { "wav2opus", ("音频", "wav转换到opus的音频转换器,VGAudio不支持此格式,") },
@@ -364,9 +365,9 @@ namespace super_toolbox
 
         public static readonly HashSet<string> Converters = new HashSet<string>
         {
-            "Gnf2Png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav","bfstm2wav","brstm2wav","wav2bcstm_8-bit有符号PCM","wav2bcstm_16-bit小端序PCM","wav2bcstm_任天堂DSP ADPCM","wav2bfstm_8-bit有符号PCM","wav2bfstm_16-bit大端序PCM","wav2bfstm_任天堂DSP ADPCM","wav2brstm_8-bit有符号PCM","wav2brstm_16-bit大端序PCM","wav2brstm_任天堂DSP ADPCM","wav2opus","opus2wav","wav2at3","at32wav","at92wav","wav2at9","wav2swav_8-bit有符号PCM","wav2swav_16-bit小端序PCM","wav2swav_IMA 4-bit ADPCM","swav2wav","wav2asf1","wav2asf2","wav2msf1","wav2msf2","msf2wav","hps2wav","wav2hps","wav2mtaf","mtaf2wav","ogg2wem","ogg2kvs","kvs2ogg","kvs2wav",
+            "Gnf2Png","异度之刃 - tpl2bclim","任天堂 - bclim","任天堂 - bflim","异度之刃 - MXTX2DDS","IdeaFactory - tid","东方project系列 - pal","CloneCD - ccd/img","任天堂 - tpl","索尼 - tm2png","CMVS引擎 - jbpd","bcstm2wav","bfstm2wav","brstm2wav","wav2bcstm_8-bit有符号PCM","wav2bcstm_16-bit小端序PCM","wav2bcstm_任天堂DSP ADPCM","wav2bfstm_8-bit有符号PCM","wav2bfstm_16-bit大端序PCM","wav2bfstm_任天堂DSP ADPCM","wav2brstm_8-bit有符号PCM","wav2brstm_16-bit大端序PCM","wav2brstm_任天堂DSP ADPCM","wav2opus","opus2wav","wav2at3plus","at3plus2wav","at92wav","wav2at9","wav2swav_8-bit有符号PCM","wav2swav_16-bit小端序PCM","wav2swav_IMA 4-bit ADPCM","swav2wav","wav2asf1","wav2asf2","wav2msf1","wav2msf2","msf2wav","hps2wav","wav2hps","wav2mtaf","mtaf2wav","ogg2wem","ogg2kvs","kvs2ogg","kvs2wav",
          "第七史诗 - sct", "索尼 - gxt转换器", "地雷社和AQUAPLUS纹理 - tex","DXBC2HLSL","rada2wav","东方project系列 - cv0/cv1","东方project系列 - cv2","东方project系列 - cv3","hca2adx","hca2wav","hca2dsp","adx2hca","adx2dsp","adx2wav","wav2hca", "wav2adx","dsp2adx","dsp2hca","dsp2wav","wav2dsp","wav2vag","vag2wav","wav2wem","wem2wav","xwma2wav","wav2xwma","wav2lopus","lopus2wav","wav2bcwav_16-bit小端序PCM","wav2bcwav_8-bit有符号PCM","wav2bfwav_16-bit小端序PCM","wav2bfwav_8-bit有符号PCM","wav2brwav_16-bit大端序PCM","wav2brwav_8-bit有符号PCM","wav2bcwav_任天堂DSP ADPCM","wav2bcwav_IMA 4-bit ADPCM","wav2bfwav_任天堂DSP ADPCM","wav2brwav_任天堂DSP ADPCM","wav2binka1","binka2wav","wav2binka2","wav2rada","wav2aifc","aifc2wav","wav2wma","wma2wav","wav2ogg","ogg2wav","nwa2wav","wav2MaxisXa",
-         "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml","任天堂stream/wave","wav2idsp","wav2mdsp","idsp2wav","mdsp2wav","bcwav2wav","bfwav2wav","brwav2wav","wav2xma1","wav2xma2","wav2xma3","wav2xma4","xma2wav1","xma2wav2","xma2wav3","wav2xma5","xma2wav4","msbt2json","wav2asf3","binka2wav","wav2flac","flac2wav","wav2aiff","aiff2wav","wav2tta","tta2wav","wav2snr","wav→rf64","rf64→wav","wav→w64","w64→wav","wav2ast","ast2wav","wav2msu","msu2wav","wav2apex","apex2wav",
+         "wav2qoa","qoa2wav", "hip2png","异度之刃 - LBIM2DDS","ahx2wav","Dreamcast - Bin_Cue2GDI","CMVS引擎 - pb3","索尼 - gim","索尼 - tim","GBIX_PVRT - pvr","Java反编译 - jar/class","任天堂 - byml","任天堂stream/wave","wav2idsp","wav2mdsp","idsp2wav","mdsp2wav","bcwav2wav","bfwav2wav","brwav2wav","wav2xma1","wav2xma2","wav2xma3","wav2xma4","xma2wav1","xma2wav2","xma2wav3","wav2xma5","xma2wav4","msbt2json","wav2asf3","binka2wav","wav2flac","flac2wav","wav2aiff","aiff2wav","wav2tta","tta2wav","wav2snr","wav→rf64","rf64→wav","wav→w64","w64→wav","wav2ast","ast2wav","wav2msu","msu2wav","wav2apex","apex2wav","wav2at3",
         };
     }
 }

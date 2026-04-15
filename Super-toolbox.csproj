@@ -112,6 +112,9 @@
 		<EmbeddedResource Include="plugins\opus_tool.dll">
 			<LogicalName>embedded.opus_tool.dll</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\at3cmp.exe">
+			<LogicalName>embedded.at3cmp.exe</LogicalName>
+		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\PS3_at3tool.exe">
 			<LogicalName>embedded.PS3_at3tool.exe</LogicalName>
 		</EmbeddedResource>
