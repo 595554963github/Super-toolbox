@@ -1,6 +1,6 @@
 namespace super_toolbox
 {
-    public class PlayStationHeaderlessADPCM_Extractor : BaseExtractor
+    public class Sony_psxadpcm_Extractor : BaseExtractor
     {
         public event EventHandler<string>? ExtractionStarted;
         public event EventHandler<string>? ExtractionProgress;
