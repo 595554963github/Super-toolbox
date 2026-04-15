@@ -1,7 +1,4 @@
 using System.Text.RegularExpressions;
-using VGAudio.Containers.Wave;
-using VGAudio.Formats;
-using VGAudio.Formats.Pcm16;
 
 namespace super_toolbox
 {
@@ -48,78 +45,7 @@ namespace super_toolbox
             0xA6, 0x00
         };
 
-        private async Task<byte[]> ConvertToMonoPcmAsync(string wavFilePath, CancellationToken cancellationToken)
-        {
-            var wavReader = new WaveReader();
-            AudioData audioData;
-
-            using (var wavStream = File.OpenRead(wavFilePath))
-            {
-                audioData = wavReader.Read(wavStream);
-            }
-
-            if (audioData == null)
-            {
-                throw new InvalidDataException("无法读取WAV音频数据");
-            }
-
-            var pcm16 = audioData.GetFormat<Pcm16Format>();
-            if (pcm16 == null)
-            {
-                throw new InvalidDataException("不支持的WAV格式(仅支持PCM16)");
-            }
-
-            short[][] channels = pcm16.Channels;
-            int sampleCount = pcm16.SampleCount;
-            int sampleRate = pcm16.SampleRate;
-            short[] mono = new short[sampleCount];
-
-            if (channels.Length == 1)
-            {
-                mono = channels[0];
-            }
-            else
-            {
-                for (int i = 0; i < sampleCount; i++)
-                {
-                    int sum = 0;
-                    for (int c = 0; c < channels.Length; c++)
-                    {
-                        sum += channels[c][i];
-                    }
-                    mono[i] = (short)(sum / channels.Length);
-                }
-            }
-
-            using (var ms = new MemoryStream())
-            {
-                using (var writer = new BinaryWriter(ms))
-                {
-                    writer.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
-                    int dataSize = mono.Length * 2;
-                    int fileSize = 36 + dataSize;
-                    writer.Write(fileSize);
-                    writer.Write(System.Text.Encoding.ASCII.GetBytes("WAVE"));
-                    writer.Write(System.Text.Encoding.ASCII.GetBytes("fmt "));
-                    writer.Write(16);
-                    writer.Write((short)1);
-                    writer.Write((short)1);
-                    writer.Write(sampleRate);
-                    writer.Write(sampleRate * 2);
-                    writer.Write((short)2);
-                    writer.Write((short)16);
-                    writer.Write(System.Text.Encoding.ASCII.GetBytes("data"));
-                    writer.Write(dataSize);
-
-                    foreach (short sample in mono)
-                    {
-                        writer.Write(sample);
-                    }
-                }
-
-                return ms.ToArray();
-            }
-        }
+        private const int APEX_HEADER_SIZE = 514;
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -164,12 +90,12 @@ namespace super_toolbox
 
                 try
                 {
-                    byte[] monoWavData = await ConvertToMonoPcmAsync(wavFilePath, cancellationToken);
+                    byte[] originalWavData = await File.ReadAllBytesAsync(wavFilePath, cancellationToken);
 
                     using (var fs = new FileStream(apexFilePath, FileMode.Create, FileAccess.Write))
                     {
-                        fs.Write(APEX_HEADER, 0, APEX_HEADER.Length);
-                        fs.Write(monoWavData, 0, monoWavData.Length);
+                        await fs.WriteAsync(APEX_HEADER, 0, APEX_HEADER.Length, cancellationToken);
+                        await fs.WriteAsync(originalWavData, 0, originalWavData.Length, cancellationToken);
                     }
 
                     successCount++;

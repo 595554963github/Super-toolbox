@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace super_toolbox
 {
@@ -7,6 +8,11 @@ namespace super_toolbox
         public event EventHandler<string>? ConversionStarted;
         public event EventHandler<string>? ConversionProgress;
         public event EventHandler<string>? ConversionError;
+
+        public int? SampleRate { get; set; }
+        public int? Channels { get; set; }
+        public float? Volume { get; set; }
+        public bool UseLegacyMode { get; set; }
 
         private static readonly byte[] JUNK =
         {
@@ -34,60 +40,83 @@ namespace super_toolbox
                 return;
             }
 
-            ConversionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
-
-            var wemFiles = Directory.GetFiles(directoryPath, "*.wem", SearchOption.AllDirectories);
-            TotalFilesToConvert = wemFiles.Length;
-            int successCount = 0;
-
             try
             {
-                foreach (var wemFilePath in wemFiles)
+                await Task.Run(() =>
                 {
-                    ThrowIfCancellationRequested(cancellationToken);
+                    var wemFiles = Directory.GetFiles(directoryPath, "*.wem", SearchOption.AllDirectories)
+                        .OrderBy(f =>
+                        {
+                            string fileName = Path.GetFileNameWithoutExtension(f);
+                            var match = Regex.Match(fileName, @"_(\d+)$");
+                            if (match.Success && int.TryParse(match.Groups[1].Value, out int num))
+                                return num;
+                            return int.MaxValue;
+                        })
+                        .ThenBy(f => Path.GetFileNameWithoutExtension(f))
+                        .ToArray();
 
-                    string fileName = Path.GetFileNameWithoutExtension(wemFilePath);
-                    ConversionProgress?.Invoke(this, $"正在处理:{fileName}.wem");
+                    TotalFilesToConvert = wemFiles.Length;
+                    int successCount = 0;
 
-                    string fileDirectory = Path.GetDirectoryName(wemFilePath) ?? string.Empty;
-                    string wavFilePath = Path.Combine(fileDirectory, $"{fileName}.wav");
-
-                    try
+                    if (wemFiles.Length == 0)
                     {
-                        if (File.Exists(wavFilePath))
-                            File.Delete(wavFilePath);
+                        ConversionError?.Invoke(this, "未找到需要转换的WEM文件");
+                        OnConversionFailed("未找到需要转换的WEM文件");
+                        return;
+                    }
 
-                        bool conversionSuccess = await Task.Run(() => ConvertWemToWav(wemFilePath, wavFilePath), cancellationToken);
+                    ConversionStarted?.Invoke(this, $"开始转换,共{TotalFilesToConvert}个WEM文件");
 
-                        if (conversionSuccess && File.Exists(wavFilePath))
+                    foreach (var wemFilePath in wemFiles)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        string fileName = Path.GetFileNameWithoutExtension(wemFilePath);
+                        ConversionProgress?.Invoke(this, $"正在转换:{fileName}.wem");
+
+                        string fileDirectory = Path.GetDirectoryName(wemFilePath) ?? string.Empty;
+                        string wavFilePath = Path.Combine(fileDirectory, $"{fileName}.wav");
+
+                        try
                         {
-                            successCount++;
-                            ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(wavFilePath)}");
-                            OnFileConverted(wavFilePath);
+                            if (File.Exists(wavFilePath))
+                                File.Delete(wavFilePath);
+
+                            bool conversionSuccess = UseLegacyMode
+                                ? ConvertWemToWavLegacy(wemFilePath, wavFilePath)
+                                : ConvertWemToWavAdvanced(wemFilePath, wavFilePath);
+
+                            if (conversionSuccess && File.Exists(wavFilePath))
+                            {
+                                successCount++;
+                                ConversionProgress?.Invoke(this, $"转换成功:{Path.GetFileName(wavFilePath)}");
+                                OnFileConverted(wavFilePath);
+                            }
+                            else
+                            {
+                                ConversionError?.Invoke(this, $"{fileName}.wem转换失败");
+                                OnConversionFailed($"{fileName}.wem转换失败");
+                            }
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            ConversionError?.Invoke(this, $"{fileName}.wem转换失败");
-                            OnConversionFailed($"{fileName}.wem转换失败");
+                            ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
+                            OnConversionFailed($"{fileName}.wem处理错误:{ex.Message}");
                         }
                     }
-                    catch (Exception ex)
+
+                    if (successCount > 0)
                     {
-                        ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
-                        OnConversionFailed($"{fileName}.wem处理错误:{ex.Message}");
+                        ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件");
                     }
-                }
+                    else
+                    {
+                        ConversionProgress?.Invoke(this, "转换完成,但未成功转换任何文件");
+                    }
 
-                if (successCount > 0)
-                {
-                    ConversionProgress?.Invoke(this, $"转换完成,成功转换{successCount}/{TotalFilesToConvert}个文件");
-                }
-                else
-                {
-                    ConversionProgress?.Invoke(this, "转换完成,但未成功转换任何文件");
-                }
-
-                OnConversionCompleted();
+                    OnConversionCompleted();
+                }, cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -101,18 +130,13 @@ namespace super_toolbox
             }
         }
 
-        private bool ConvertWemToWav(string wemFilePath, string wavFilePath)
+        private bool ConvertWemToWavLegacy(string wemFilePath, string wavFilePath)
         {
             try
             {
-                ConversionProgress?.Invoke(this, $"读取WEM文件:{Path.GetFileName(wemFilePath)}");
-
                 using (BinaryReader br = new BinaryReader(File.OpenRead(wemFilePath)))
                 {
                     WavHeader header = ReadWemHeader(br);
-
-                    ConversionProgress?.Invoke(this, $"声道数:{header.channels},采样率:{header.samplerate},比特率:{header.bitspersample}");
-
                     byte[] data = br.ReadBytes((int)(br.BaseStream.Length - br.BaseStream.Position));
 
                     using (BinaryWriter bw = new BinaryWriter(File.Create(wavFilePath)))
@@ -131,11 +155,182 @@ namespace super_toolbox
 
                 return true;
             }
-            catch (Exception ex)
+            catch
             {
-                ConversionError?.Invoke(this, $"转换错误:{ex.Message}");
                 return false;
             }
+        }
+
+        private bool ConvertWemToWavAdvanced(string wemPath, string wavPath)
+        {
+            try
+            {
+                using var fs = new FileStream(wemPath, FileMode.Open);
+                using var reader = new BinaryReader(fs);
+
+                if (new string(reader.ReadChars(4)) != "RIFF")
+                    return false;
+
+                reader.ReadInt32();
+                if (new string(reader.ReadChars(4)) != "WAVE")
+                    return false;
+
+                short numChannels = 0;
+                int sampleRateFromFile = 0;
+                short bitsPerSample = 0;
+                short[] pcmData = null!;
+
+                while (fs.Position < fs.Length)
+                {
+                    string chunkId = new string(reader.ReadChars(4));
+                    int chunkSize = reader.ReadInt32();
+
+                    if (chunkId == "fmt ")
+                    {
+                        reader.ReadInt16();
+                        numChannels = reader.ReadInt16();
+                        sampleRateFromFile = reader.ReadInt32();
+                        reader.ReadInt32();
+                        reader.ReadInt16();
+                        bitsPerSample = reader.ReadInt16();
+
+                        if (chunkSize > 16)
+                            reader.ReadBytes(chunkSize - 16);
+                    }
+                    else if (chunkId == "data")
+                    {
+                        int dataSize = chunkSize;
+                        int totalSamples = dataSize / (bitsPerSample / 8);
+                        pcmData = new short[totalSamples];
+
+                        if (bitsPerSample == 16)
+                        {
+                            for (int i = 0; i < totalSamples; i++)
+                            {
+                                pcmData[i] = reader.ReadInt16();
+                            }
+                        }
+                        else if (bitsPerSample == 8)
+                        {
+                            for (int i = 0; i < totalSamples; i++)
+                            {
+                                pcmData[i] = (short)((reader.ReadByte() - 128) * 256);
+                            }
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        reader.ReadBytes(chunkSize);
+                    }
+                }
+
+                if (pcmData == null)
+                    return false;
+
+                int targetChannelsFinal = Channels ?? numChannels;
+                int targetSampleRateFinal = SampleRate ?? sampleRateFromFile;
+
+                short[] processedData = pcmData;
+
+                if (targetChannelsFinal != numChannels)
+                {
+                    processedData = ConvertChannels(processedData, numChannels, targetChannelsFinal);
+                }
+
+                if (targetSampleRateFinal != sampleRateFromFile)
+                {
+                    processedData = ResampleSamples(processedData, sampleRateFromFile, targetSampleRateFinal);
+                }
+
+                string? parentDir = Path.GetDirectoryName(wavPath);
+                if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir))
+                    Directory.CreateDirectory(parentDir);
+
+                using var wavFs = new FileStream(wavPath, FileMode.Create);
+                using var writer = new BinaryWriter(wavFs);
+
+                int byteRate = targetSampleRateFinal * targetChannelsFinal * 2;
+                short blockAlign = (short)(targetChannelsFinal * 2);
+                int wavDataSize = processedData.Length * 2;
+
+                writer.Write(Encoding.ASCII.GetBytes("RIFF"));
+                writer.Write(36 + wavDataSize);
+                writer.Write(Encoding.ASCII.GetBytes("WAVE"));
+                writer.Write(Encoding.ASCII.GetBytes("fmt "));
+                writer.Write(16);
+                writer.Write((short)1);
+                writer.Write((short)targetChannelsFinal);
+                writer.Write(targetSampleRateFinal);
+                writer.Write(byteRate);
+                writer.Write(blockAlign);
+                writer.Write((short)16);
+                writer.Write(Encoding.ASCII.GetBytes("data"));
+                writer.Write(wavDataSize);
+
+                foreach (short sample in processedData)
+                {
+                    writer.Write(sample);
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private short[] ResampleSamples(short[] samples, int originalRate, int targetRate)
+        {
+            if (originalRate == targetRate)
+                return samples;
+
+            double ratio = (double)targetRate / originalRate;
+            int newLength = (int)(samples.Length * ratio);
+            short[] result = new short[newLength];
+
+            for (int i = 0; i < newLength; i++)
+            {
+                double pos = i / ratio;
+                int index = (int)pos;
+                double frac = pos - index;
+
+                if (index >= samples.Length - 1)
+                {
+                    result[i] = samples[samples.Length - 1];
+                }
+                else
+                {
+                    double sample = samples[index] * (1 - frac) + samples[index + 1] * frac;
+                    result[i] = (short)sample;
+                }
+            }
+
+            return result;
+        }
+
+        private short[] ConvertChannels(short[] samples, int sourceChannels, int targetChannels)
+        {
+            int frameCount = samples.Length / sourceChannels;
+            short[] result = new short[frameCount * targetChannels];
+
+            for (int i = 0; i < frameCount; i++)
+            {
+                for (int j = 0; j < targetChannels; j++)
+                {
+                    int sourceIndex = i * sourceChannels + (j % sourceChannels);
+                    float sample = samples[sourceIndex] * (Volume ?? 1.0f);
+                    if (sample > 32767) sample = 32767;
+                    if (sample < -32768) sample = -32768;
+                    result[i * targetChannels + j] = (short)sample;
+                }
+            }
+
+            return result;
         }
 
         private WavHeader ReadWemHeader(BinaryReader br)

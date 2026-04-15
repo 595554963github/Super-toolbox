@@ -1,7 +1,4 @@
 using System.Text.RegularExpressions;
-using VGAudio.Containers.Wave;
-using VGAudio.Formats;
-using VGAudio.Formats.Pcm16;
 
 namespace super_toolbox
 {
@@ -12,75 +9,6 @@ namespace super_toolbox
         public event EventHandler<string>? ConversionError;
 
         private const int APEX_HEADER_SIZE = 514;
-
-        private async Task<byte[]> ExtractMonoWavFromApexAsync(string apexFilePath, CancellationToken cancellationToken)
-        {
-            byte[] apexData = await File.ReadAllBytesAsync(apexFilePath, cancellationToken);
-
-            if (apexData.Length < APEX_HEADER_SIZE)
-            {
-                throw new InvalidDataException("无效的APEX文件:文件太小");
-            }
-
-            byte[] wavData = new byte[apexData.Length - APEX_HEADER_SIZE];
-            Array.Copy(apexData, APEX_HEADER_SIZE, wavData, 0, wavData.Length);
-
-            return wavData;
-        }
-
-        private async Task<byte[]> ConvertToStereoWavAsync(byte[] monoWavData, CancellationToken cancellationToken)
-        {
-            string tempMonoPath = Path.GetTempFileName() + ".wav";
-
-            try
-            {
-                await File.WriteAllBytesAsync(tempMonoPath, monoWavData, cancellationToken);
-
-                var wavReader = new WaveReader();
-                AudioData audioData;
-
-                using (var fs = File.OpenRead(tempMonoPath))
-                {
-                    audioData = wavReader.Read(fs);
-                }
-
-                if (audioData == null)
-                {
-                    throw new InvalidDataException("无法读取WAV音频数据");
-                }
-
-                var pcm16 = audioData.GetFormat<Pcm16Format>();
-                if (pcm16 == null)
-                {
-                    throw new InvalidDataException("APEX内嵌的WAV不是PCM16格式");
-                }
-
-                short[][] monoChannels = pcm16.Channels;
-                if (monoChannels == null || monoChannels.Length == 0)
-                {
-                    throw new InvalidDataException("无法获取PCM16通道数据");
-                }
-
-                short[] mono = monoChannels[0];
-                int sampleRate = pcm16.SampleRate;
-                short[][] stereo = new short[2][];
-                stereo[0] = mono;
-                stereo[1] = mono;
-
-                var stereoFormat = new Pcm16Format(stereo, sampleRate);
-                var wavWriter = new WaveWriter();
-
-                using (var ms = new MemoryStream())
-                {
-                    wavWriter.WriteToStream(stereoFormat, ms);
-                    return ms.ToArray();
-                }
-            }
-            finally
-            {
-                try { File.Delete(tempMonoPath); } catch { }
-            }
-        }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -125,10 +53,17 @@ namespace super_toolbox
 
                 try
                 {
-                    byte[] monoWavData = await ExtractMonoWavFromApexAsync(apexFilePath, cancellationToken);
-                    byte[] stereoWavData = await ConvertToStereoWavAsync(monoWavData, cancellationToken);
+                    byte[] apexData = await File.ReadAllBytesAsync(apexFilePath, cancellationToken);
 
-                    await File.WriteAllBytesAsync(wavFilePath, stereoWavData, cancellationToken);
+                    if (apexData.Length < APEX_HEADER_SIZE)
+                    {
+                        throw new InvalidDataException("无效的APEX文件:文件太小");
+                    }
+
+                    byte[] wavData = new byte[apexData.Length - APEX_HEADER_SIZE];
+                    Array.Copy(apexData, APEX_HEADER_SIZE, wavData, 0, wavData.Length);
+
+                    await File.WriteAllBytesAsync(wavFilePath, wavData, cancellationToken);
 
                     successCount++;
                     ConversionProgress?.Invoke(this, $"已转换:{fileName}.wav");
