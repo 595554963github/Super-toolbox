@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace super_toolbox
 {
-    public class Wav2at3_Converter : BaseExtractor
+    public class At3plus2wav_Converter : BaseExtractor
     {
         public event EventHandler<string>? ConversionStarted;
         public event EventHandler<string>? ConversionProgress;
@@ -14,7 +14,7 @@ namespace super_toolbox
         private static bool _exeExtracted = false;
         private static readonly object _lock = new object();
 
-        static Wav2at3_Converter()
+        static At3plus2wav_Converter()
         {
             ExtractEmbeddedExe();
         }
@@ -31,17 +31,17 @@ namespace super_toolbox
                 {
                     string tempDir = Path.Combine(Path.GetTempPath(), "supertoolbox_temp");
                     Directory.CreateDirectory(tempDir);
-                    _tempExePath = Path.Combine(tempDir, "at3cmp.exe");
+                    _tempExePath = Path.Combine(tempDir, "PS3_at3tool.exe");
 
                     if (!File.Exists(_tempExePath))
                     {
                         Assembly assembly = Assembly.GetExecutingAssembly();
-                        string resourceName = "embedded.at3cmp.exe";
+                        string resourceName = "embedded.PS3_at3tool.exe";
 
                         using (var stream = assembly.GetManifestResourceStream(resourceName))
                         {
                             if (stream == null)
-                                throw new FileNotFoundException($"嵌入的at3cmp资源未找到:{resourceName}");
+                                throw new FileNotFoundException($"嵌入的PS3_at3tool资源未找到:{resourceName}");
 
                             byte[] buffer = new byte[stream.Length];
                             stream.Read(buffer, 0, buffer.Length);
@@ -53,7 +53,7 @@ namespace super_toolbox
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"提取at3cmp.exe失败:{ex.Message}");
+                    throw new Exception($"提取PS3_at3tool.exe失败:{ex.Message}");
                 }
             }
         }
@@ -71,7 +71,7 @@ namespace super_toolbox
             {
                 await Task.Run(() =>
                 {
-                    var wavFiles = Directory.GetFiles(directoryPath, "*.wav", SearchOption.AllDirectories)
+                    var at3Files = Directory.GetFiles(directoryPath, "*.at3", SearchOption.AllDirectories)
                         .OrderBy(f =>
                         {
                             string fileName = Path.GetFileNameWithoutExtension(f);
@@ -83,49 +83,49 @@ namespace super_toolbox
                         .ThenBy(f => Path.GetFileNameWithoutExtension(f))
                         .ToArray();
 
-                    TotalFilesToConvert = wavFiles.Length;
+                    TotalFilesToConvert = at3Files.Length;
                     int successCount = 0;
 
-                    if (wavFiles.Length == 0)
+                    if (at3Files.Length == 0)
                     {
-                        ConversionError?.Invoke(this, "未找到需要转换的wav文件");
-                        OnConversionFailed("未找到需要转换的wav文件");
+                        ConversionError?.Invoke(this, "未找到需要转换的AT3文件");
+                        OnConversionFailed("未找到需要转换的AT3文件");
                         return;
                     }
 
-                    ConversionStarted?.Invoke(this, $"开始转换,共{TotalFilesToConvert}个wav文件");
+                    ConversionStarted?.Invoke(this, $"开始转换,共{TotalFilesToConvert}个AT3文件");
 
-                    foreach (var wavFilePath in wavFiles)
+                    foreach (var at3FilePath in at3Files)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        string fileName = Path.GetFileNameWithoutExtension(wavFilePath);
-                        ConversionProgress?.Invoke(this, $"正在转换:{fileName}.wav");
+                        string fileName = Path.GetFileNameWithoutExtension(at3FilePath);
+                        ConversionProgress?.Invoke(this, $"正在转换:{fileName}.at3");
 
-                        string fileDirectory = Path.GetDirectoryName(wavFilePath) ?? string.Empty;
-                        string at3FilePath = Path.Combine(fileDirectory, $"{fileName}.at3");
+                        string fileDirectory = Path.GetDirectoryName(at3FilePath) ?? string.Empty;
+                        string wavFilePath = Path.Combine(fileDirectory, $"{fileName}.wav");
 
                         try
                         {
-                            if (File.Exists(at3FilePath))
-                                File.Delete(at3FilePath);
+                            if (File.Exists(wavFilePath))
+                                File.Delete(wavFilePath);
 
-                            if (ConvertWavToAt3(wavFilePath, at3FilePath) && File.Exists(at3FilePath))
+                            if (ConvertAt3ToWav(at3FilePath, wavFilePath) && File.Exists(wavFilePath))
                             {
                                 successCount++;
-                                ConversionProgress?.Invoke(this, $"已转换:{fileName}.at3");
-                                OnFileConverted(at3FilePath);
+                                ConversionProgress?.Invoke(this, $"已转换:{fileName}.wav");
+                                OnFileConverted(wavFilePath);
                             }
                             else
                             {
-                                ConversionError?.Invoke(this, $"{fileName}.wav转换失败");
-                                OnConversionFailed($"{fileName}.wav转换失败");
+                                ConversionError?.Invoke(this, $"{fileName}.at3转换失败");
+                                OnConversionFailed($"{fileName}.at3转换失败");
                             }
                         }
                         catch (Exception ex)
                         {
                             ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
-                            OnConversionFailed($"{fileName}.wav处理错误:{ex.Message}");
+                            OnConversionFailed($"{fileName}.at3处理错误:{ex.Message}");
                         }
                     }
 
@@ -151,7 +151,7 @@ namespace super_toolbox
             ExtractAsync(directoryPath).Wait();
         }
 
-        private bool ConvertWavToAt3(string wavFilePath, string at3FilePath)
+        private bool ConvertAt3ToWav(string at3FilePath, string wavFilePath)
         {
             try
             {
@@ -160,7 +160,7 @@ namespace super_toolbox
                     StartInfo = new ProcessStartInfo
                     {
                         FileName = _tempExePath,
-                        Arguments = $"-e \"{wavFilePath}\"",
+                        Arguments = $"-d \"{at3FilePath}\" \"{wavFilePath}\"",
                         WorkingDirectory = Path.GetTempPath(),
                         UseShellExecute = false,
                         CreateNoWindow = true,
@@ -174,13 +174,12 @@ namespace super_toolbox
                 string error = process.StandardError.ReadToEnd();
                 process.WaitForExit();
 
-                if (process.ExitCode != 0)
+                if (process.ExitCode == 0 && File.Exists(wavFilePath))
                 {
-                    ConversionError?.Invoke(this, $"at3cmp错误:{error}");
-                    return false;
+                    return true;
                 }
 
-                return File.Exists(at3FilePath);
+                return false;
             }
             catch (Exception ex)
             {
