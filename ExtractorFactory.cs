@@ -365,7 +365,8 @@ namespace super_toolbox
                 "apex2wav" => new Apex2wav_Converter(),
                 "psxadpcm2wav" => new Sony_psxadpcm2wav_Converter(),
                 "MaxisXa2wav" => new MaxisXa2wav_Converter(),
-                "Snr2wav" => new Snr2wav_Converter(),
+                "snr2wav" => new Snr2wav_Converter(),
+                "asf2wav" => new Asf2wav_Converter(),
                 _ => throw new NotSupportedException($"不支持的格式:{formatName}")
             };
         }

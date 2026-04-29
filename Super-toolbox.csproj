@@ -148,6 +148,9 @@
 		<EmbeddedResource Include="plugins\EA_XA-ADPCM.dll">
 			<LogicalName>embedded.EA_XA-ADPCM.dll</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\ea_asf_decoder.dll">
+			<LogicalName>embedded.ea_asf_decoder.dll</LogicalName>
+		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\BinkAudioCodec.dll">
 			<LogicalName>embedded.BinkAudioCodec.dll</LogicalName>
 		</EmbeddedResource>

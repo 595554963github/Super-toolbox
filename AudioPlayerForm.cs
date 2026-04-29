@@ -37,7 +37,7 @@ namespace super_toolbox
         private bool _isAutoDecoding = false;
         private static readonly string[] AudioExtensions = new[]
         {
-            "adx","ahx","aifc","aiff","apex","ast","at3","at9","bcstm","bcwav","bfstm","bfwav","binka","brstm","brwav","cv3","dsp","flac","hca","hps","idsp","kvs","lopus","mdsp","msf","mtaf","nwa","ogg","opus","pcm","qoa","rada","raw","rf64","snr","swav","tta","vag","w64","wav","wem","wma","xa","xma","xwma"
+            "adx","ahx","aifc","aiff","apex","asf","ast","at3","at9","bcstm","bcwav","bfstm","bfwav","binka","brstm","brwav","cv3","dsp","flac","hca","hps","idsp","kvs","lopus","mdsp","msf","mtaf","nwa","ogg","opus","pcm","qoa","rada","raw","rf64","snr","swav","tta","vag","w64","wav","wem","wma","xa","xma","xwma"
         };
 
         public AudioPlayerForm()
@@ -359,7 +359,7 @@ namespace super_toolbox
         {
             return new string[]
             {
-                "*.adx", "*.ahx", "*.aifc", "*.aiff", "*.apex", "*.ast", "*.at3", "*.at9",
+                "*.adx", "*.ahx", "*.aifc", "*.aiff", "*.apex", "*.asf", "*.ast", "*.at3", "*.at9",
                 "*.bcstm", "*.bcwav", "*.bfstm", "*.bfwav", "*.binka", "*.brstm", "*.brwav",
                 "*.cv3",
                 "*.dsp", "*.flac", "*.hca", "*.hps", "*.idsp", "*.lopus", "*.kvs",
@@ -765,6 +765,7 @@ namespace super_toolbox
             "aiff" => new Aiff2wav_Converter(),
             "ahx" => new Ahx2wav_Converter(),
             "apex" => new Apex2wav_Converter(),
+            "asf" => new Asf2wav_Converter(),
             "ast" => new Ast2wav_Converter(),
             "at3" => new At3plus2wav_Converter(),
             "at9" => new At92wav_Converter(),
