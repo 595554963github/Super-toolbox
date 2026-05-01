@@ -113,32 +113,84 @@ namespace super_toolbox
                             return false;
                         }
 
-                        wavStream.Seek(20, SeekOrigin.Begin);
+                        reader.ReadInt32();
 
-                        if (reader.ReadInt16() != 1)
+                        if (reader.ReadInt32() != 0x45564157)
                         {
-                            ConversionError?.Invoke(this, "不是PCM格式");
+                            ConversionError?.Invoke(this, "无效的WAVE标识");
                             return false;
                         }
 
-                        short channels = reader.ReadInt16();
-                        int sampleRate = reader.ReadInt32();
-                        wavStream.Seek(34, SeekOrigin.Begin);
-                        short bitsPerSample = reader.ReadInt16();
-
-                        if (channels != 2 || sampleRate != 44100 || bitsPerSample != 16)
+                        bool foundFmt = false;
+                        while (wavStream.Position < wavStream.Length - 8)
                         {
-                            ConversionError?.Invoke(this, $"不支持的格式: {bitsPerSample}bit, {sampleRate}Hz, {channels}ch");
+                            int chunkId = reader.ReadInt32();
+                            int chunkSize = reader.ReadInt32();
+
+                            if (chunkId == 0x20746D66)
+                            {
+                                foundFmt = true;
+
+                                if (reader.ReadInt16() != 1)
+                                {
+                                    ConversionError?.Invoke(this, "不是PCM格式");
+                                    return false;
+                                }
+
+                                short channels = reader.ReadInt16();
+                                int sampleRate = reader.ReadInt32();
+                                reader.ReadInt32();
+                                reader.ReadInt16();
+                                short bitsPerSample = reader.ReadInt16();
+
+                                if (channels != 2 || sampleRate != 44100 || bitsPerSample != 16)
+                                {
+                                    ConversionError?.Invoke(this, $"不支持的格式:{bitsPerSample}bit, {sampleRate}Hz, {channels}ch");
+                                    return false;
+                                }
+
+                                wavStream.Seek(chunkSize - 16, SeekOrigin.Current);
+                                break;
+                            }
+                            else
+                            {
+                                wavStream.Seek(chunkSize, SeekOrigin.Current);
+                            }
+                        }
+
+                        if (!foundFmt)
+                        {
+                            ConversionError?.Invoke(this, "找不到fmt块");
                             return false;
                         }
 
-                        if (reader.ReadInt32() != 0x61746164)
+                        bool foundData = false;
+                        long dataStartPos = 0;
+                        int dataSize = 0;
+
+                        while (wavStream.Position < wavStream.Length - 8)
+                        {
+                            int chunkId = reader.ReadInt32();
+                            int chunkSize = reader.ReadInt32();
+
+                            if (chunkId == 0x61746164)
+                            {
+                                foundData = true;
+                                dataStartPos = wavStream.Position;
+                                dataSize = chunkSize;
+                                break;
+                            }
+                            else
+                            {
+                                wavStream.Seek(chunkSize, SeekOrigin.Current);
+                            }
+                        }
+
+                        if (!foundData)
                         {
                             ConversionError?.Invoke(this, "找不到data块");
                             return false;
                         }
-
-                        int dataSize = reader.ReadInt32();
 
                         using (var msuStream = File.Create(msuFilePath))
                         {
@@ -155,7 +207,16 @@ namespace super_toolbox
                                     }
                                 }
 
-                                wavStream.CopyTo(msuStream);
+                                wavStream.Seek(dataStartPos, SeekOrigin.Begin);
+                                byte[] buffer = new byte[4096];
+                                int bytesToRead = dataSize;
+                                while (bytesToRead > 0)
+                                {
+                                    int bytesRead = wavStream.Read(buffer, 0, Math.Min(buffer.Length, bytesToRead));
+                                    if (bytesRead == 0) break;
+                                    msuStream.Write(buffer, 0, bytesRead);
+                                    bytesToRead -= bytesRead;
+                                }
                             }
                         }
                     }
