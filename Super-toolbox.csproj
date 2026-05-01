@@ -187,6 +187,9 @@
 		<EmbeddedResource Include="plugins\pack.zsdic">
 			<LogicalName>embedded.pack.zsdic</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\codec.exe">
+			<LogicalName>embedded.codec.exe</LogicalName>
+		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="AuroraLib.Compression" Version="1.5.4" />

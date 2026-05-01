@@ -10,9 +10,9 @@ namespace super_toolbox
         {
             InitializeComponent();
 
-            this.FormBorderStyle = FormBorderStyle.Sizable; 
-            this.MaximizeBox = true;  
-            this.MinimizeBox = true;   
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.MaximizeBox = true;
+            this.MinimizeBox = true;
             this.StartPosition = FormStartPosition.CenterParent;
             this.Text = "关于-超级工具箱";
             this.Size = new Size(420, 410);
@@ -30,7 +30,7 @@ namespace super_toolbox
                 ForeColor = Color.DarkBlue,
                 Location = new Point(25, 15),
                 AutoSize = true,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left 
+                Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
             Controls.Add(lblTitle);
 
@@ -53,7 +53,7 @@ namespace super_toolbox
                 ForeColor = Color.Black,
                 Location = new Point(25, 80),
                 Size = new Size(350, 80),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right 
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             Controls.Add(lblDescription);
 
@@ -113,7 +113,7 @@ namespace super_toolbox
             Controls.Add(lblDonorsTitle);
 
             string[] donors = new string[]
-            {"御坂银蛇","azoa9","卡柯卡基","紅い瞳に","一年小舞","紧差菊I吴克","水落清秋","明天就不开始","次元狸","苏子瑜o","-梦幻的月夜-","木木木木木酱","叶子三分青","枝江与卿长存我心","苏格拉没UD","帅气逼人小鱼干","煤洋洋","紫林旧主","Encore_Requiem","春是哈鲁","1231陌墨","阳离子21","膻糊椒","贝利亚","甜萌雪团","西红柿真秦","謙巽很努力","黑之断罪米兰达","丶自在有情","Mor75afe","杜绝所有","花小灵a","不雷死它警长","上古龙神",
+            {"御坂银蛇","azoa9","卡柯卡基","紅い瞳に","一年小舞","紧差菊I吴克","水落清秋","明天就不开始","次元狸","苏子瑜o","-梦幻的月夜-","木木木木木酱","叶子三分青","枝江与卿长存我心","苏格拉没UD","帅气逼人小鱼干","煤洋洋","紫林旧主","Encore_Requiem","春是哈鲁","1231陌墨","阳离子21","膻糊椒","贝利亚","甜萌雪团","西红柿真秦","謙巽很努力","黑之断罪米兰达","丶自在有情","Mor75afe","杜绝所有","花小灵a","不雷死它警长","上古龙神","杏子酱Kyouko","nanxia2018","潜匿007","wjei5267","疑似正派",
             };
 
             var listDonors = new ListBox
@@ -124,7 +124,7 @@ namespace super_toolbox
                 BorderStyle = BorderStyle.FixedSingle,
                 BackColor = Color.FromArgb(250, 250, 250),
                 SelectionMode = SelectionMode.None,
-                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right 
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
             };
 
             foreach (var donor in donors)

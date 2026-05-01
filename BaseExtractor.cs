@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace super_toolbox
 {
@@ -8,10 +10,12 @@ namespace super_toolbox
         [DllImport("kernel32.dll", SetLastError = true)]
         protected static extern bool SetDllDirectory(string lpPathName);
         protected static string TempDllDirectory { get; private set; } = string.Empty;
+
         static BaseExtractor()
         {
             InitializeDllLoading();
         }
+
         private static void InitializeDllLoading()
         {
             TempDllDirectory = Path.Combine(Path.GetTempPath(), "supertoolbox_temp");
@@ -22,6 +26,7 @@ namespace super_toolbox
                 try { Directory.Delete(TempDllDirectory, true); } catch { }
             };
         }
+
         protected static void LoadEmbeddedDll(string embeddedResourceName, string dllFileName)
         {
             string dllPath = Path.Combine(TempDllDirectory, dllFileName);
@@ -39,6 +44,7 @@ namespace super_toolbox
                 }
             }
         }
+
         protected static string LoadEmbeddedExe(string embeddedResourceName, string exeFileName)
         {
             string exePath = Path.Combine(TempDllDirectory, exeFileName);
@@ -56,8 +62,8 @@ namespace super_toolbox
                 }
             }
             return exePath;
-        }    
-#pragma warning disable CS0067
+        }
+
         public event EventHandler<string>? FileExtracted;
         public event EventHandler<int>? ProgressUpdated;
         public event EventHandler<int>? ExtractionCompleted;
@@ -74,7 +80,7 @@ namespace super_toolbox
         public event EventHandler<string>? FileDecompressed;
         public event EventHandler<int>? DecompressionCompleted;
         public event EventHandler<string>? DecompressionFailed;
-#pragma warning restore CS0067
+
 
         private int _extractedFileCount = 0;
         private int _totalFilesToExtract = 0;
@@ -100,6 +106,9 @@ namespace super_toolbox
         private int _totalFilesToDecompress = 0;
         private bool _isDecompressionCompleted = false;
         private readonly object _decompressionLock = new object();
+
+        private static string? _codecExePath;
+        private static readonly object _codecLock = new object();
 
         public int ExtractedFileCount
         {
@@ -155,7 +164,6 @@ namespace super_toolbox
             get { lock (_decompressionLock) return _totalFilesToDecompress; }
             protected set { lock (_decompressionLock) _totalFilesToDecompress = value; }
         }
-
 
         public int ProgressPercentage
         {
@@ -446,13 +454,111 @@ namespace super_toolbox
         {
             DecompressionFailed?.Invoke(this, errorMessage);
         }
-
         protected void ThrowIfCancellationRequested(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested || IsCancellationRequested)
             {
                 IsCancellationRequested = true;
                 cancellationToken.ThrowIfCancellationRequested();
+            }
+        }
+
+        private static string GetCodecExePath()
+        {
+            if (_codecExePath != null && File.Exists(_codecExePath))
+                return _codecExePath;
+
+            lock (_codecLock)
+            {
+                if (_codecExePath != null && File.Exists(_codecExePath))
+                    return _codecExePath;
+
+                string tempPath = Path.Combine(Path.GetTempPath(), "super_toolbox_codec.exe");
+
+                if (!File.Exists(tempPath))
+                {
+                    var assembly = Assembly.GetExecutingAssembly();
+                    using (var stream = assembly.GetManifestResourceStream("embedded.codec.exe"))
+                    {
+                        if (stream == null)
+                        {
+                            var resourceNames = string.Join(", ", assembly.GetManifestResourceNames());
+                            throw new Exception($"找不到embedded.codec.exe,可用资源:{resourceNames}");
+                        }
+
+                        var bytes = new byte[stream.Length];
+                        stream.Read(bytes, 0, bytes.Length);
+                        File.WriteAllBytes(tempPath, bytes);
+                    }
+                }
+
+                _codecExePath = tempPath;
+                return _codecExePath;
+            }
+        }
+
+        protected async Task<bool> ConvertWithCodec(string inputFilePath, string wavFilePath, CancellationToken cancellationToken, bool useRawCommand = false)
+        {
+            try
+            {
+                string codecExe = GetCodecExePath();
+                string command = useRawCommand ? "-dr" : "-d";
+                string generatedWav = Path.ChangeExtension(inputFilePath, ".wav");
+
+                if (File.Exists(generatedWav))
+                {
+                    try { File.Delete(generatedWav); } catch { }
+                }
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = codecExe,
+                    Arguments = $"{command} \"{inputFilePath}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true,
+                    WorkingDirectory = Path.GetDirectoryName(inputFilePath) ?? Path.GetTempPath()
+                };
+
+                using var process = new Process { StartInfo = psi };
+
+                var outputBuilder = new StringBuilder();
+                var errorBuilder = new StringBuilder();
+
+                process.OutputDataReceived += (s, e) => { if (e.Data != null) outputBuilder.AppendLine(e.Data); };
+                process.ErrorDataReceived += (s, e) => { if (e.Data != null) errorBuilder.AppendLine(e.Data); };
+
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                await process.WaitForExitAsync(cancellationToken);
+
+                if (process.ExitCode != 0)
+                {
+                    string error = errorBuilder.ToString();
+                    string output = outputBuilder.ToString();
+                    throw new Exception($"codec.exe解码失败(退出码:{process.ExitCode})\n错误:{error}\n输出:{output}");
+                }
+
+                await Task.Delay(100, cancellationToken);
+
+                if (!File.Exists(generatedWav))
+                {
+                    throw new Exception($"未找到生成的WAV文件:{generatedWav}");
+                }
+
+                if (!string.Equals(generatedWav, wavFilePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (File.Exists(wavFilePath)) File.Delete(wavFilePath);
+                    File.Move(generatedWav, wavFilePath);
+                }
+
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
     }

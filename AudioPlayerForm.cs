@@ -1,7 +1,9 @@
-using System.Text.RegularExpressions;
 using CSCore;
 using CSCore.Codecs.WAV;
 using CSCore.SoundOut;
+using System.Diagnostics;
+using System.Text;
+using System.Text.RegularExpressions;
 using VGAudio.Containers.Adx;
 using VGAudio.Containers.Dsp;
 using VGAudio.Containers.Hca;
@@ -22,7 +24,8 @@ namespace super_toolbox
         private System.Windows.Forms.Timer updateTimer = null!;
         private Button btnClearList = null!, btnPrev = null!, btnPlay = null!, btnPause = null!, btnStop = null!, btnNext = null!;
         private ColumnHeader colIndex = null!, colFileName = null!, colDuration = null!;
-
+        private static string? _codecExePath;
+        private static readonly object _codecLock = new object();
         private CancellationTokenSource? _cancellation;
         private string? _tempFile;
         private List<string> _playlist = new List<string>();
@@ -37,7 +40,7 @@ namespace super_toolbox
         private bool _isAutoDecoding = false;
         private static readonly string[] AudioExtensions = new[]
         {
-            "adx","ahx","aifc","aiff","apex","asf","ast","at3","at9","bcstm","bcwav","bfstm","bfwav","binka","brstm","brwav","cv3","dsp","flac","hca","hps","idsp","kvs","lopus","mdsp","msf","mtaf","nwa","ogg","opus","pcm","qoa","rada","raw","rf64","snr","swav","tta","vag","w64","wav","wem","wma","xa","xma","xwma"
+            "adx","ahx","aifc","aiff","apex","asf","ast","at3","at9","au","avr","bcstm","bcwav","bfstm","bfwav","binka","brstm","brwav","caf","cv3","dsp","fap","flac","hca","hps","htk","idsp","ircam","kvs","lopus","mat","mat4","mat5","mdsp","mpc","msf","mtaf","nist","nwa","ogg","opus","paf","pcm","pvf","qoa","rada","raw","rf64","sd2","sf","snd","sph","snr","svx","swav","tta","vag","voc","w64","wav","wavex","wem","wma","xi","xa","xma","xwma"
         };
 
         public AudioPlayerForm()
@@ -252,7 +255,39 @@ namespace super_toolbox
                 lblTime.Text = duration.TotalMilliseconds < 1000 ? $"00:00 / {duration:ss\\:fff}" : $"00:00 / {duration:mm\\:ss}";
             }
         }
+        private string GetCodecExePath()
+        {
+            if (_codecExePath != null && File.Exists(_codecExePath))
+                return _codecExePath;
 
+            lock (_codecLock)
+            {
+                if (_codecExePath != null && File.Exists(_codecExePath))
+                    return _codecExePath;
+
+                string tempPath = Path.Combine(Path.GetTempPath(), "super_toolbox_codec.exe");
+
+                if (!File.Exists(tempPath))
+                {
+                    var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                    using (var stream = assembly.GetManifestResourceStream("embedded.codec.exe"))
+                    {
+                        if (stream == null)
+                        {
+                            var resourceNames = string.Join(", ", assembly.GetManifestResourceNames());
+                            throw new Exception($"找不到 embedded.codec.exe 资源。可用资源: {resourceNames}");
+                        }
+
+                        var bytes = new byte[stream.Length];
+                        stream.Read(bytes, 0, bytes.Length);
+                        File.WriteAllBytes(tempPath, bytes);
+                    }
+                }
+
+                _codecExePath = tempPath;
+                return _codecExePath;
+            }
+        }
         private void SelectAndPlay()
         {
             listViewFiles.SelectedIndices.Clear();
@@ -360,12 +395,13 @@ namespace super_toolbox
             return new string[]
             {
                 "*.adx", "*.ahx", "*.aifc", "*.aiff", "*.apex", "*.asf", "*.ast", "*.at3", "*.at9",
-                "*.bcstm", "*.bcwav", "*.bfstm", "*.bfwav", "*.binka", "*.brstm", "*.brwav",
-                "*.cv3",
-                "*.dsp", "*.flac", "*.hca", "*.hps", "*.idsp", "*.lopus", "*.kvs",
-                "*.mdsp", "*.msf", "*.mtaf", "*.nwa", "*.ogg", "*.opus", "*.pcm", "*.qoa",
-                "*.rada", "*.raw", "*.rf64", "*.snr", "*.swav", "*.tta", "*.vag",
-                "*.w64", "*.wav", "*.wem", "*.wma", "*.xa", "*.xma", "*.xwma"
+                "*.au", "*.avr", "*.bcstm", "*.bcwav", "*.bfstm", "*.bfwav", "*.binka", "*.brstm", "*.brwav",
+                "*.caf", "*.cv3", "*.dsp", "*.fap", "*.flac", "*.hca", "*.hps", "*.htk", "*.idsp",
+                "*.ircam", "*.kvs", "*.lopus", "*.mat", "*.mat4", "*.mat5", "*.mdsp", "*.mpc", "*.msf",
+                "*.mtaf", "*.nist", "*.nwa", "*.ogg", "*.opus", "*.paf", "*.pcm", "*.pvf", "*.qoa",
+                "*.rada", "*.raw", "*.rf64", "*.sd2", "*.sf", "*.snd", "*.sph", "*.snr", "*.svx",
+                "*.swav", "*.tta", "*.vag", "*.voc", "*.w64", "*.wav", "*.wavex", "*.wem", "*.wma",
+                "*.xi", "*.xa", "*.xma", "*.xwma"
             };
         }
 
@@ -546,29 +582,13 @@ namespace super_toolbox
 
             return await GetDurationWithTempFile(filePath, fmt);
         }
-
-        private Task<TimeSpan> GetDurationWithVGAudio(string path, string fmt) => Task.Run(() =>
-        {
-            AudioData? ad = null;
-            using var fs = File.OpenRead(path);
-            switch (fmt)
-            {
-                case "hca": ad = new HcaReader().Read(fs); break;
-                case "adx": ad = new AdxReader().Read(fs); break;
-                case "bcstm": case "bfstm": ad = new BCFstmReader().Read(fs); break;
-                case "brstm": ad = new BrstmReader().Read(fs); break;
-                case "dsp": case "mdsp": ad = new DspReader().Read(fs); break;
-                case "hps": ad = new HpsReader().Read(fs); break;
-                case "idsp": ad = new IdspReader().Read(fs); break;
-            }
-            if (ad == null) throw new Exception("读取音频数据失败");
-            var pcmFormat = ad.GetFormat<VGAudio.Formats.Pcm16.Pcm16Format>();
-            if (pcmFormat == null) throw new Exception("无法获取PCM格式");
-            return TimeSpan.FromSeconds((double)pcmFormat.SampleCount / pcmFormat.SampleRate);
-        });
-
         private async Task<TimeSpan> GetDurationWithTempFile(string path, string fmt)
         {
+            if (fmt == "sd2")
+            {
+                return await GetSd2DurationWithCodecExe(path);
+            }
+
             string tempWav = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".wav");
             try
             {
@@ -599,6 +619,184 @@ namespace super_toolbox
             finally { if (File.Exists(tempWav)) try { File.Delete(tempWav); } catch { } }
         }
 
+        private async Task<TimeSpan> GetSd2DurationWithCodecExe(string sd2Path)
+        {
+            string tempWav = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.wav");
+            string codecExe = GetCodecExePath();
+            string generatedWav = Path.ChangeExtension(sd2Path, ".wav");
+
+            try
+            {
+                if (File.Exists(generatedWav)) File.Delete(generatedWav);
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = codecExe,
+                    Arguments = $"-d \"{sd2Path}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardError = true,
+                    WorkingDirectory = Path.GetDirectoryName(sd2Path) ?? Path.GetTempPath()
+                };
+
+                using var process = new Process { StartInfo = psi };
+                process.Start();
+                await process.WaitForExitAsync();
+
+                if (process.ExitCode != 0) throw new Exception("解码失败");
+
+                await Task.Delay(100);
+
+                if (!File.Exists(generatedWav)) throw new Exception("未生成WAV");
+
+                File.Move(generatedWav, tempWav);
+
+                using var fs = File.OpenRead(tempWav);
+                var ms = new MemoryStream();
+                await fs.CopyToAsync(ms);
+                ms.Position = 0;
+                return GetWavDuration(ms);
+            }
+            finally
+            {
+                try { if (File.Exists(tempWav)) File.Delete(tempWav); } catch { }
+                try { if (File.Exists(generatedWav)) File.Delete(generatedWav); } catch { }
+            }
+        }
+        private Task<TimeSpan> GetDurationWithVGAudio(string path, string fmt) => Task.Run(() =>
+        {
+            AudioData? ad = null;
+            using var fs = File.OpenRead(path);
+            switch (fmt)
+            {
+                case "hca": ad = new HcaReader().Read(fs); break;
+                case "adx": ad = new AdxReader().Read(fs); break;
+                case "bcstm": case "bfstm": ad = new BCFstmReader().Read(fs); break;
+                case "brstm": ad = new BrstmReader().Read(fs); break;
+                case "dsp": case "mdsp": ad = new DspReader().Read(fs); break;
+                case "hps": ad = new HpsReader().Read(fs); break;
+                case "idsp": ad = new IdspReader().Read(fs); break;
+            }
+            if (ad == null) throw new Exception("读取音频数据失败");
+            var pcmFormat = ad.GetFormat<VGAudio.Formats.Pcm16.Pcm16Format>();
+            if (pcmFormat == null) throw new Exception("无法获取PCM格式");
+            return TimeSpan.FromSeconds((double)pcmFormat.SampleCount / pcmFormat.SampleRate);
+        });
+
+        private async Task<(MemoryStream Stream, TimeSpan Duration)> DecodeWithTempFile(string path, string fmt, CancellationToken ct)
+        {
+            if (fmt == "sd2")
+            {
+                return await DecodeSd2WithCodecExe(path, ct);
+            }
+            _tempFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".wav");
+            await Task.Run(() => {
+                BaseExtractor? ext = fmt == "xma" ? TryXmaDecoders(path) : CreateExtractorByFormat(fmt);
+                if (ext == null) throw new Exception("无对应解码器");
+                string sf = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + Path.GetExtension(path));
+                File.Copy(path, sf, true);
+                try
+                {
+                    ext.ExtractAsync(Path.GetTempPath(), ct).Wait(ct);
+                    string wavOut = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(sf) + ".wav");
+                    if (File.Exists(wavOut))
+                    {
+                        if (File.Exists(_tempFile)) File.Delete(_tempFile);
+                        File.Move(wavOut, _tempFile);
+                    }
+                }
+                finally { try { File.Delete(sf); } catch { } }
+            }, ct);
+            if (!File.Exists(_tempFile)) throw new Exception("未生成wav");
+            var st = new MemoryStream();
+            using var rd = File.OpenRead(_tempFile);
+            rd.CopyTo(st);
+            st.Position = 0;
+            var duration = GetWavDuration(st);
+            st.Position = 0;
+            return (st, duration);
+        }
+        private async Task<(MemoryStream Stream, TimeSpan Duration)> DecodeSd2WithCodecExe(string sd2Path, CancellationToken ct)
+        {
+            string tempWav = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.wav");
+            string codecExe = GetCodecExePath();
+            string generatedWav = Path.ChangeExtension(sd2Path, ".wav");
+
+            try
+            {
+                if (File.Exists(generatedWav))
+                {
+                    try { File.Delete(generatedWav); } catch { }
+                }
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = codecExe,
+                    Arguments = $"-d \"{sd2Path}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true,
+                    WorkingDirectory = Path.GetDirectoryName(sd2Path) ?? Path.GetTempPath()
+                };
+
+                using var process = new Process { StartInfo = psi };
+
+                var outputBuilder = new StringBuilder();
+                var errorBuilder = new StringBuilder();
+
+                process.OutputDataReceived += (s, e) => { if (e.Data != null) outputBuilder.AppendLine(e.Data); };
+                process.ErrorDataReceived += (s, e) => { if (e.Data != null) errorBuilder.AppendLine(e.Data); };
+
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                await process.WaitForExitAsync(ct);
+
+                if (process.ExitCode != 0)
+                {
+                    string error = errorBuilder.ToString();
+                    string output = outputBuilder.ToString();
+                    throw new Exception($"codec.exe解码失败(退出码:{process.ExitCode})\n错误:{error}\n输出:{output}");
+                }
+                await Task.Delay(100, ct);
+                if (!File.Exists(generatedWav))
+                {
+                    throw new Exception($"未找到生成的WAV文件:{generatedWav}");
+                }
+
+                if (File.Exists(tempWav)) File.Delete(tempWav);
+                File.Move(generatedWav, tempWav);
+
+                var ms = new MemoryStream();
+                using (var fs = File.OpenRead(tempWav))
+                {
+                    await fs.CopyToAsync(ms, ct);
+                }
+                ms.Position = 0;
+
+                var duration = GetWavDuration(ms);
+                ms.Position = 0;
+
+                this.Invoke(() => {
+                    lblStatus.Text = $"SD2解码完成:{Path.GetFileName(sd2Path)}";
+                });
+
+                return (ms, duration);
+            }
+            catch (Exception ex)
+            {
+                this.Invoke(() => {
+                    lblStatus.Text = $"SD2解码失败:{ex.Message}";
+                });
+                throw;
+            }
+            finally
+            {
+                try { if (File.Exists(tempWav)) File.Delete(tempWav); } catch { }
+                try { if (File.Exists(generatedWav)) File.Delete(generatedWav); } catch { }
+            }
+        }
         private async Task<(MemoryStream Stream, TimeSpan Duration)> DecodeToWavStreamWithDuration(string path, string fmt, CancellationToken ct)
         {
             if (fmt == "wav")
@@ -639,37 +837,6 @@ namespace super_toolbox
             ms.Position = 0;
             return (ms, duration);
         }, ct);
-
-        private async Task<(MemoryStream Stream, TimeSpan Duration)> DecodeWithTempFile(string path, string fmt, CancellationToken ct)
-        {
-            _tempFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".wav");
-            await Task.Run(() => {
-                BaseExtractor? ext = fmt == "xma" ? TryXmaDecoders(path) : CreateExtractorByFormat(fmt);
-                if (ext == null) throw new Exception("无对应解码器");
-                string sf = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + Path.GetExtension(path));
-                File.Copy(path, sf, true);
-                try
-                {
-                    ext.ExtractAsync(Path.GetTempPath(), ct).Wait(ct);
-                    string wavOut = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(sf) + ".wav");
-                    if (File.Exists(wavOut))
-                    {
-                        if (File.Exists(_tempFile)) File.Delete(_tempFile);
-                        File.Move(wavOut, _tempFile);
-                    }
-                }
-                finally { try { File.Delete(sf); } catch { } }
-            }, ct);
-            if (!File.Exists(_tempFile)) throw new Exception("未生成wav");
-            var st = new MemoryStream();
-            using var rd = File.OpenRead(_tempFile);
-            rd.CopyTo(st);
-            st.Position = 0;
-            var duration = GetWavDuration(st);
-            st.Position = 0;
-            return (st, duration);
-        }
-
         private TimeSpan GetWavDuration(MemoryStream wavStream)
         {
             try
@@ -769,32 +936,52 @@ namespace super_toolbox
             "ast" => new Ast2wav_Converter(),
             "at3" => new At3plus2wav_Converter(),
             "at9" => new At92wav_Converter(),
+            "au" => new Snd2wav_Converter(),
+            "avr" => new Avr2wav_Converter(),
             "bcwav" => new Bcwav2wav_Converter(),
             "bfwav" => new Bfwav2wav_Converter(),
             "binka" => new Binka2wav_Converter(),
             "brwav" => new Brwav2wav_Converter(),
+            "caf" => new Caf2wav_Converter(),
             "cv3" => new Cv3_Converter(),
+            "fap" => new Fap2wav_Converter(),
             "flac" => new Flac2wav_Converter(),
+            "htk" => new Htk2wav_Converter(),
+            "ircam" => new Sf2wav_Converter(),
             "kvs" => new Kvs2wav_Converter(),
             "lopus" => new Lopus2wav_Converter(),
+            "mat" => new Mat2wav_Converter(),
+            "mat4" => new Mat2wav_Converter(),
+            "mat5" => new Mat52wav_Converter(),
+            "mpc" => new Mpc2wav_Converter(),
             "msf" => new Msf2wav_Converter(),
             "mtaf" => new Mtaf2wav_Converter(),
+            "nist" => new Sph2wav_Converter(),
             "nwa" => new Nwa2wav_Converter(),
             "ogg" => new Ogg2wav_Converter(),
             "opus" => new Opus2wav_Converter(),
+            "paf" => new Paf2wav_Converter(),
             "pcm" => new Sony_psxadpcm2wav_Converter(),
+            "pvf" => new Pvf2wav_Converter(),
             "qoa" => new Qoa2wav_Converter(),
             "rada" => new Rada2wav_Converter(),
-            "raw" => new Msu2wav_Converter(),
+            "raw" => new Raw2wav_Converter(),
             "rf64" => new Rf64ToWav_Converter(),
+            "sf" => new Sf2wav_Converter(),
+            "snd" => new Snd2wav_Converter(),
+            "sph" => new Sph2wav_Converter(),
             "snr" => new Snr2wav_Converter(),
+            "svx" => new Svx2wav_Converter(),
             "swav" => new Swav2wav_Converter(),
             "tta" => new Tta2wav_Converter(),
             "vag" => new Vag2wav_Converter(),
+            "voc" => new Voc2wav_Converter(),
             "w64" => new W64ToWav_Converter(),
+            "wavex" => new Wavex2wav_Converter(),
             "wem" => new Wem2wav_Converter(),
             "wma" => new Wma2wav_Converter(),
             "xa" => new MaxisXa2wav_Converter(),
+            "xi" => new Xi2wav_Converter(),
             "xwma" => new Xwma2wav_Converter(),
             _ => null
         };
