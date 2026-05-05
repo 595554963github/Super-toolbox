@@ -6,7 +6,7 @@ using VGAudio.Formats.Pcm16;
 
 namespace super_toolbox
 {
-    public class At3plus2wav_Converter : BaseExtractor
+    public class At32wav_Converter : BaseExtractor
     {
         public event EventHandler<string>? ConversionStarted;
         public event EventHandler<string>? ConversionProgress;
@@ -57,7 +57,7 @@ namespace super_toolbox
                             File.Delete(wavFile);
 
                         bool conversionSuccess = await Task.Run(() =>
-                            ConvertAt3plusToWav(at3FilePath, wavFile, cancellationToken));
+                            ConvertAt3ToWav(at3FilePath, wavFile, cancellationToken));
 
                         if (conversionSuccess && File.Exists(wavFile))
                         {
@@ -101,14 +101,14 @@ namespace super_toolbox
             }
         }
 
-        private bool ConvertAt3plusToWav(string at3FilePath, string wavFilePath, CancellationToken cancellationToken)
+        private bool ConvertAt3ToWav(string at3FilePath, string wavFilePath, CancellationToken cancellationToken)
         {
             try
             {
                 byte[] data = File.ReadAllBytes(at3FilePath);
                 int channels = 2;
-                int sampleRate = 48000;
-                int blockAlign = 638;
+                int sampleRate = 44100;
+                int blockAlign = 96;
                 byte[]? audioData = null;
 
                 if (data.Length >= 12 && data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F')
@@ -125,7 +125,7 @@ namespace super_toolbox
                             channels = BitConverter.ToInt16(data, offset + 2);
                             sampleRate = BitConverter.ToInt32(data, offset + 4);
                             blockAlign = BitConverter.ToInt16(data, offset + 12);
-                            if (blockAlign <= 0) blockAlign = 638;
+                            if (blockAlign <= 0) blockAlign = 96;
                         }
                         else if (chunkId == "data")
                         {
@@ -144,7 +144,7 @@ namespace super_toolbox
                 if (audioData == null || audioData.Length == 0)
                     return false;
 
-                ILightCodec codec = CodecFactory.Get(AudioCodec.AT3plus);
+                ILightCodec codec = CodecFactory.Get(AudioCodec.AT3);
                 int initResult = codec.init(blockAlign, channels, channels, 0);
                 if (initResult < 0)
                     return false;
