@@ -243,6 +243,7 @@ namespace super_toolbox
                 "adx2hca" => new Adx2hca_Converter(),
                 "adx2dsp" => new Adx2dsp_Converter(),
                 "adx2wav" => new Adx2wav_Converter(),
+                "at32wav" => new At32wav_Converter(),
                 "at3plus2wav" => new At3plus2wav_Converter(),
                 "at92wav" => new At92wav_Converter(),
                 "hps2wav" => new Hps2wav_Converter(),
@@ -402,6 +403,8 @@ namespace super_toolbox
                 "voc2wav" => new Voc2wav_Converter(),
                 "wavex2wav" => new Wavex2wav_Converter(),
                 "xi2wav" => new Xi2wav_Converter(),
+                "wav2wv" => new Wav2Wv_Converter(),
+                "wv2wav" => new Wv2Wav_Converter(),
                 _ => throw new NotSupportedException($"不支持的格式:{formatName}")
             };
         }

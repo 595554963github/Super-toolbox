@@ -4,6 +4,7 @@ using CSCore.SoundOut;
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
+using LightCodec;
 using VGAudio.Containers.Adx;
 using VGAudio.Containers.Dsp;
 using VGAudio.Containers.Hca;
@@ -17,8 +18,7 @@ namespace super_toolbox
     public class AudioPlayerForm : Form
     {
         private ListView listViewFiles = null!;
-        private Label lblFile = null!, lblStatus = null!, lblTime = null!;
-        private ProgressBar progressBar = null!;
+        private Label lblFile = null!, lblStatus = null!, lblTime = null!, lblPlayTime = null!;
         private ComboBox cboFormat = null!;
         private TrackBar volumeTrackBar = null!;
         private System.Windows.Forms.Timer updateTimer = null!;
@@ -38,9 +38,11 @@ namespace super_toolbox
         private ISoundOut? _soundOut;
         private IWaveSource? _waveSource;
         private bool _isAutoDecoding = false;
+        private readonly Dictionary<string, MemoryStream> _decodedAudioCache = new Dictionary<string, MemoryStream>();
+        private readonly Dictionary<string, TimeSpan> _durationCache = new Dictionary<string, TimeSpan>();
         private static readonly string[] AudioExtensions = new[]
         {
-            "adx","ahx","aifc","aiff","apex","asf","ast","at3","at9","au","avr","bcstm","bcwav","bfstm","bfwav","binka","brstm","brwav","caf","cv3","dsp","fap","flac","hca","hps","htk","idsp","ircam","kvs","lopus","mat","mat4","mat5","mdsp","mpc","msf","mtaf","nist","nwa","ogg","opus","paf","pcm","pvf","qoa","rada","raw","rf64","sd2","sf","snd","sph","snr","svx","swav","tta","vag","voc","w64","wav","wavex","wem","wma","xi","xa","xma","xwma"
+            "adx","ahx","aifc","aiff","apex","asf","ast","at3","at9","au","avr","bcstm","bcwav","bfstm","bfwav","binka","brstm","brwav","caf","cv3","dsp","fap","flac","hca","hps","htk","idsp","ircam","kvs","lopus","mat","mat4","mat5","mdsp","mpc","msf","mtaf","nist","nwa","ogg","opus","paf","pcm","pvf","qoa","rada","raw","rf64","sd2","sf","snd","sph","snr","svx","swav","tta","vag","voc","w64","wav","wavex","wem","wma","wv","xi","xa","xma","xwma"
         };
 
         public AudioPlayerForm()
@@ -120,6 +122,17 @@ namespace super_toolbox
             };
             controlPanel.Controls.Add(volumeLabel);
 
+            lblPlayTime = new Label
+            {
+                Text = "00:00 / 00:00",
+                ForeColor = Color.FromArgb(0, 120, 215),
+                BackColor = Color.Transparent,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 16F, FontStyle.Bold),
+                Location = new Point(startX + totalWidth + 160, (controlPanel.Height - 30) / 2)
+            };
+            controlPanel.Controls.Add(lblPlayTime);
+
             controlPanel.Resize += (s, e) => {
                 int newStartX = (controlPanel.Width - totalWidth) / 2;
                 if (newStartX < 10) newStartX = 10;
@@ -127,22 +140,21 @@ namespace super_toolbox
                     controlPanel.Controls[i].Location = new Point(newStartX + i * (buttonWidth + buttonSpacing), (controlPanel.Height - buttonHeight) / 2);
                 volumeLabel.Location = new Point(newStartX + totalWidth + 5, (controlPanel.Height - 20) / 2);
                 volumeTrackBar.Location = new Point(newStartX + totalWidth + 35, (controlPanel.Height - 30) / 2);
+                lblPlayTime.Location = new Point(newStartX + totalWidth + 160, (controlPanel.Height - 30) / 2);
             };
 
             btnPrev.Click += (s, e) => { if (_currentIndex > 0) { _currentIndex--; SelectAndPlay(); } };
             btnPlay.Click += BtnPlay_Click;
             btnPause.Click += (s, e) => { if (_isPlaying) { _isPaused = true; _isPlaying = false; _pausedElapsed = DateTime.Now - _playStartTime; updateTimer.Stop(); _soundOut?.Pause(); lblStatus.Text = "已暂停"; UpdateButtonStates(); } };
-            btnStop.Click += (s, e) => { _cancellation?.Cancel(); _isPlaying = _isPaused = false; updateTimer.Stop(); _soundOut?.Stop(); lblStatus.Text = "已停止"; progressBar.Value = 0; if (_currentIndex >= 0 && _currentIndex < _durations.Count && _durations[_currentIndex] != TimeSpan.Zero) lblTime.Text = $"00:00 / {_durations[_currentIndex]:mm\\:ss}"; else lblTime.Text = "00:00 / 00:00"; UpdateButtonStates(); };
+            btnStop.Click += (s, e) => { _cancellation?.Cancel(); _isPlaying = _isPaused = false; updateTimer.Stop(); _soundOut?.Stop(); lblStatus.Text = "已停止"; if (_currentIndex >= 0 && _currentIndex < _durations.Count && _durations[_currentIndex] != TimeSpan.Zero) lblTime.Text = $"00:00 / {_durations[_currentIndex]:mm\\:ss}"; else lblTime.Text = "00:00 / 00:00"; UpdateButtonStates(); };
             btnNext.Click += (s, e) => { if (_currentIndex < _playlist.Count - 1) { _currentIndex++; SelectAndPlay(); } };
 
             var infoPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(45, 45, 48), Padding = new Padding(20, 5, 20, 5) };
-            lblFile = new Label { Text = "未选择文件", AutoSize = true, Font = new Font("Segoe UI", 11F, FontStyle.Bold), ForeColor = Color.FromArgb(0, 120, 215) };
-            lblStatus = new Label { Text = "就绪", AutoSize = true, Font = new Font("Segoe UI", 9F), ForeColor = Color.FromArgb(160, 160, 160) };
-            lblTime = new Label { Text = "00:00 / 00:00", AutoSize = true, Font = new Font("Segoe UI", 11F, FontStyle.Bold), ForeColor = Color.FromArgb(0, 120, 215) };
-            progressBar = new ProgressBar { Height = 6, Style = ProgressBarStyle.Continuous, ForeColor = Color.FromArgb(0, 120, 215), BackColor = Color.FromArgb(63, 63, 70) };
+            lblFile = new Label { Text = "未选择文件", AutoSize = true, Font = new Font("Segoe UI", 11F, FontStyle.Bold), ForeColor = Color.FromArgb(0, 120, 215), Anchor = AnchorStyles.Left | AnchorStyles.Top };
+            lblStatus = new Label { Text = "就绪", AutoSize = true, Font = new Font("Segoe UI", 9F), ForeColor = Color.FromArgb(160, 160, 160), Anchor = AnchorStyles.Left | AnchorStyles.Top, Location = new Point(0, 22) };
+            lblTime = new Label { Text = "00:00 / 00:00", AutoSize = true, Font = new Font("Segoe UI", 11F, FontStyle.Bold), ForeColor = Color.FromArgb(0, 120, 215), Anchor = AnchorStyles.Right | AnchorStyles.Top };
 
-            infoPanel.Controls.AddRange(new Control[] { lblFile, lblStatus, lblTime, progressBar });
-            infoPanel.Resize += (s, e) => { lblTime.Left = infoPanel.Width - lblTime.Width - 20; progressBar.Width = infoPanel.Width - 40; };
+            infoPanel.Controls.AddRange(new Control[] { lblFile, lblStatus, lblTime });
             topPanel.Controls.Add(controlPanel);
             topPanel.Controls.Add(infoPanel);
             controlPanel.Dock = DockStyle.Top;
@@ -165,12 +177,12 @@ namespace super_toolbox
             };
             listViewFiles.Columns.AddRange(new ColumnHeader[] { colIndex, colFileName, colDuration });
             listViewFiles.Resize += (s, e) => { if (listViewFiles.Columns.Count >= 3 && listViewFiles.Width > 0) { int totalWidth = listViewFiles.ClientSize.Width; colIndex.Width = 50; colDuration.Width = 80; colFileName.Width = totalWidth - colIndex.Width - colDuration.Width - 4; if (colFileName.Width < 100) colFileName.Width = 100; } };
-            listViewFiles.SelectedIndexChanged += (s, e) => { if (listViewFiles.SelectedIndices.Count > 0) { _currentIndex = listViewFiles.SelectedIndices[0]; lblFile.Text = Path.GetFileName(_playlist[_currentIndex]); lblTime.Text = _durations[_currentIndex] != TimeSpan.Zero ? $"00:00 / {_durations[_currentIndex]:mm\\:ss}" : "00:00 / 未知"; progressBar.Value = 0; UpdateButtonStates(); } };
+            listViewFiles.SelectedIndexChanged += (s, e) => { if (listViewFiles.SelectedIndices.Count > 0) { _currentIndex = listViewFiles.SelectedIndices[0]; lblFile.Text = Path.GetFileName(_playlist[_currentIndex]); if (!_isPlaying) lblPlayTime.Text = _durations[_currentIndex] != TimeSpan.Zero ? $"00:00 / {_durations[_currentIndex]:mm\\:ss}" : "00:00 / 未知"; UpdateButtonStates(); } };
             listViewFiles.DoubleClick += (s, e) => { if (_currentIndex >= 0) PlayCurrentFile(); };
 
             var bottomPanel = new Panel { Dock = DockStyle.Bottom, Height = 45, BackColor = Color.FromArgb(45, 45, 48), Padding = new Padding(12, 0, 12, 0) };
             btnClearList = new Button { Text = "清空列表", Size = new Size(90, 27), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(63, 63, 70), ForeColor = Color.White, Location = new Point(12, 9) };
-            btnClearList.Click += (s, e) => { BtnStop_Click(null, EventArgs.Empty); _playlist.Clear(); _durations.Clear(); listViewFiles.Items.Clear(); _currentIndex = -1; UpdateButtonStates(); };
+            btnClearList.Click += (s, e) => { _currentIndex = -1; BtnStop_Click(null, EventArgs.Empty); _playlist.Clear(); _durations.Clear(); listViewFiles.Items.Clear(); ClearAudioCache(); UpdateButtonStates(); };
 
             cboFormat = new ComboBox { Size = new Size(180, 27), DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Color.FromArgb(45, 45, 48), ForeColor = Color.FromArgb(230, 230, 230), FlatStyle = FlatStyle.Flat, Location = new Point(110, 9) };
             cboFormat.Items.AddRange(new string[] { "目前支持的所有格式" }.Concat(AudioExtensions).ToArray());
@@ -201,28 +213,25 @@ namespace super_toolbox
                     }
                     else
                     {
-                        progressBar.Value = 0;
                         if (_totalDuration.TotalMilliseconds < 500)
                         {
-                            lblTime.Text = $"{_totalDuration:mm\\:ss\\:ff} / {_totalDuration:mm\\:ss\\:ff}";
+                            lblPlayTime.Text = $"{_totalDuration:mm\\:ss\\:ff} / {_totalDuration:mm\\:ss\\:ff}";
                         }
                         else
                         {
-                            lblTime.Text = _currentIndex >= 0 && _durations[_currentIndex] != TimeSpan.Zero ? $"00:00 / {_durations[_currentIndex]:mm\\:ss}" : "00:00 / 00:00";
+                            lblPlayTime.Text = _currentIndex >= 0 && _durations[_currentIndex] != TimeSpan.Zero ? $"{_durations[_currentIndex]:mm\\:ss} / {_durations[_currentIndex]:mm\\:ss}" : "00:00 / 00:00";
                         }
                         UpdateButtonStates();
                     }
                     return;
                 }
-                if (_totalDuration.TotalSeconds > 0)
-                    progressBar.Value = (int)(elapsed.TotalSeconds / _totalDuration.TotalSeconds * 100);
                 if (_totalDuration.TotalMilliseconds < 500)
                 {
-                    lblTime.Text = $"{elapsed:mm\\:ss\\:ff} / {_totalDuration:mm\\:ss\\:ff}";
+                    lblPlayTime.Text = $"{elapsed:mm\\:ss\\:ff} / {_totalDuration:mm\\:ss\\:ff}";
                 }
                 else
                 {
-                    lblTime.Text = $"{elapsed:mm\\:ss} / {_totalDuration:mm\\:ss}";
+                    lblPlayTime.Text = $"{elapsed:mm\\:ss} / {_totalDuration:mm\\:ss}";
                 }
             };
         }
@@ -400,7 +409,7 @@ namespace super_toolbox
                 "*.ircam", "*.kvs", "*.lopus", "*.mat", "*.mat4", "*.mat5", "*.mdsp", "*.mpc", "*.msf",
                 "*.mtaf", "*.nist", "*.nwa", "*.ogg", "*.opus", "*.paf", "*.pcm", "*.pvf", "*.qoa",
                 "*.rada", "*.raw", "*.rf64", "*.sd2", "*.sf", "*.snd", "*.sph", "*.snr", "*.svx",
-                "*.swav", "*.tta", "*.vag", "*.voc", "*.w64", "*.wav", "*.wavex", "*.wem", "*.wma",
+                "*.swav", "*.tta", "*.vag", "*.voc", "*.w64", "*.wav", "*.wavex", "*.wem", "*.wma", "*.wv",
                 "*.xi", "*.xa", "*.xma", "*.xwma"
             };
         }
@@ -466,7 +475,7 @@ namespace super_toolbox
                     var duration = await GetAudioDurationAsync(_playlist[_currentIndex]);
                     _durations[_currentIndex] = duration;
                     UpdateDurationDisplay(_currentIndex, duration);
-                    lblTime.Text = duration.TotalMilliseconds < 1000 ? $"00:00 / {duration:ss\\:fff}" : $"00:00 / {duration:mm\\:ss}";
+                    lblPlayTime.Text = duration.TotalMilliseconds < 1000 ? $"00:00 / {duration:ss\\:fff}" : $"00:00 / {duration:mm\\:ss}";
                 }
                 catch { lblStatus.Text = "解码失败"; return; }
             }
@@ -529,12 +538,23 @@ namespace super_toolbox
             _playStartTime = DateTime.Now;
             _isPlaying = true;
             _isPaused = false;
+            
+            // 设置初始播放时间显示
+            if (_totalDuration.TotalMilliseconds < 500)
+            {
+                lblPlayTime.Text = $"00:00:00 / {_totalDuration:mm\\:ss\\:ff}";
+            }
+            else
+            {
+                lblPlayTime.Text = $"00:00 / {_totalDuration:mm\\:ss}";
+            }
 
             updateTimer.Interval = _totalDuration.TotalMilliseconds < 500 ? 50 : 100;
             updateTimer.Start();
             UpdateButtonStates();
 
             _soundOut.Play();
+            lblStatus.Text = "播放中...";
 
             while (_isPlaying && !ct.IsCancellationRequested)
                 await Task.Delay(100, ct);
@@ -568,17 +588,35 @@ namespace super_toolbox
             string fmt = cboFormat.SelectedItem?.ToString() == "目前支持的所有格式" ? Path.GetExtension(filePath).TrimStart('.').ToLower() : cboFormat.SelectedItem?.ToString()?.ToLower() ?? "";
             if (string.IsNullOrEmpty(fmt)) throw new Exception("无法识别的格式");
 
+            if (_durationCache.TryGetValue(filePath, out TimeSpan cachedDuration))
+                return cachedDuration;
+
             if (fmt == "wav")
             {
                 using var fs = File.OpenRead(filePath);
                 var ms = new MemoryStream();
                 await fs.CopyToAsync(ms);
                 ms.Position = 0;
-                return GetWavDuration(ms);
+                TimeSpan duration = GetWavDuration(ms);
+                _durationCache[filePath] = duration;
+                return duration;
+            }
+
+            if (fmt == "at3")
+            {
+                var result = await DecodeAt3ToWav(filePath, CancellationToken.None);
+                _decodedAudioCache[filePath] = result.Stream;
+                _durationCache[filePath] = result.Duration;
+                return result.Duration;
             }
 
             if (new[] { "hca", "adx", "bcstm", "bfstm", "brstm", "dsp", "hps", "idsp", "mdsp" }.Contains(fmt))
-                return await GetDurationWithVGAudio(filePath, fmt);
+            {
+                var result = await DecodeWithVGAudio(filePath, fmt, CancellationToken.None);
+                _decodedAudioCache[filePath] = result.Stream;
+                _durationCache[filePath] = result.Duration;
+                return result.Duration;
+            }
 
             return await GetDurationWithTempFile(filePath, fmt);
         }
@@ -593,33 +631,38 @@ namespace super_toolbox
             try
             {
                 await Task.Run(() => {
-                    BaseExtractor? ext = fmt == "xma" ? TryXmaDecoders(path) : CreateExtractorByFormat(fmt);
-                    if (ext == null) throw new Exception("无对应解码器");
-                    string sf = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + Path.GetExtension(path));
-                    File.Copy(path, sf, true);
-                    try
+                    BaseExtractor? ext = fmt switch
+                {
+                    "xma" => TryXmaDecoders(path),
+                    "at3" => TryAt3Decoders(path),
+                    _ => CreateExtractorByFormat(fmt)
+                };
+                if (ext == null) throw new Exception("无对应解码器");
+                string sf = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + Path.GetExtension(path));
+                File.Copy(path, sf, true);
+                try
+                {
+                    ext.ExtractAsync(Path.GetTempPath(), CancellationToken.None).Wait();
+                    string wavOut = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(sf) + ".wav");
+                    if (File.Exists(wavOut))
                     {
-                        ext.ExtractAsync(Path.GetTempPath(), CancellationToken.None).Wait();
-                        string wavOut = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(sf) + ".wav");
-                        if (File.Exists(wavOut))
-                        {
-                            if (File.Exists(tempWav)) File.Delete(tempWav);
-                            File.Move(wavOut, tempWav);
-                        }
+                        if (File.Exists(tempWav)) File.Delete(tempWav);
+                        File.Move(wavOut, tempWav);
                     }
-                    finally { try { File.Delete(sf); } catch { } }
-                });
-                if (!File.Exists(tempWav)) throw new Exception("未生成wav");
-                using var fs = File.OpenRead(tempWav);
-                var ms = new MemoryStream();
-                await fs.CopyToAsync(ms);
-                ms.Position = 0;
-                return GetWavDuration(ms);
-            }
-            finally { if (File.Exists(tempWav)) try { File.Delete(tempWav); } catch { } }
+                }
+                finally { try { File.Delete(sf); } catch { } }
+            });
+            if (!File.Exists(tempWav)) throw new Exception("未生成wav");
+            using var fs = File.OpenRead(tempWav);
+            var ms = new MemoryStream();
+            await fs.CopyToAsync(ms);
+            ms.Position = 0;
+            return GetWavDuration(ms);
         }
+        finally { if (File.Exists(tempWav)) try { File.Delete(tempWav); } catch { } }
+    }
 
-        private async Task<TimeSpan> GetSd2DurationWithCodecExe(string sd2Path)
+    private async Task<TimeSpan> GetSd2DurationWithCodecExe(string sd2Path)
         {
             string tempWav = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.wav");
             string codecExe = GetCodecExePath();
@@ -690,8 +733,14 @@ namespace super_toolbox
                 return await DecodeSd2WithCodecExe(path, ct);
             }
             _tempFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".wav");
-            await Task.Run(() => {
-                BaseExtractor? ext = fmt == "xma" ? TryXmaDecoders(path) : CreateExtractorByFormat(fmt);
+            await Task.Run(() =>
+            {
+                BaseExtractor? ext = fmt switch
+                {
+                    "xma" => TryXmaDecoders(path),
+                    "at3" => TryAt3Decoders(path),
+                    _ => CreateExtractorByFormat(fmt)
+                };
                 if (ext == null) throw new Exception("无对应解码器");
                 string sf = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + Path.GetExtension(path));
                 File.Copy(path, sf, true);
@@ -799,20 +848,182 @@ namespace super_toolbox
         }
         private async Task<(MemoryStream Stream, TimeSpan Duration)> DecodeToWavStreamWithDuration(string path, string fmt, CancellationToken ct)
         {
+            if (_decodedAudioCache.TryGetValue(path, out MemoryStream? cachedStream))
+            {
+                if (cachedStream.CanRead)
+                {
+                    cachedStream.Position = 0;
+                    MemoryStream copyStream = new MemoryStream();
+                    cachedStream.CopyTo(copyStream);
+                    copyStream.Position = 0;
+                    TimeSpan duration = _durationCache.TryGetValue(path, out TimeSpan d) ? d : TimeSpan.Zero;
+                    return (copyStream, duration);
+                }
+                else
+                {
+                    _decodedAudioCache.Remove(path);
+                }
+            }
+
             if (fmt == "wav")
             {
                 var ms = new MemoryStream();
                 using var fs = File.OpenRead(path);
                 await fs.CopyToAsync(ms, ct);
                 ms.Position = 0;
-                return (ms, GetWavDuration(ms));
+                TimeSpan duration = GetWavDuration(ms);
+                _decodedAudioCache[path] = ms;
+                _durationCache[path] = duration;
+                ms.Position = 0;
+                return (ms, duration);
+            }
+
+            if (fmt == "at3")
+            {
+                var result = await DecodeAt3ToWav(path, ct);
+                _decodedAudioCache[path] = result.Stream;
+                _durationCache[path] = result.Duration;
+                return result;
             }
 
             if (new[] { "hca", "adx", "bcstm", "bfstm", "brstm", "dsp", "hps", "idsp", "mdsp" }.Contains(fmt))
-                return await DecodeWithVGAudio(path, fmt, ct);
+            {
+                var result = await DecodeWithVGAudio(path, fmt, ct);
+                _decodedAudioCache[path] = result.Stream;
+                _durationCache[path] = result.Duration;
+                return result;
+            }
 
-            return await DecodeWithTempFile(path, fmt, ct);
+            var tempResult = await DecodeWithTempFile(path, fmt, ct);
+            _decodedAudioCache[path] = tempResult.Stream;
+            _durationCache[path] = tempResult.Duration;
+            return tempResult;
         }
+
+        private Task<(MemoryStream Stream, TimeSpan Duration)> DecodeAt3ToWav(string path, CancellationToken ct) => Task.Run(() =>
+        {
+            byte[] data = File.ReadAllBytes(path);
+            if (data == null || data.Length == 0)
+                throw new Exception("文件为空");
+
+            int channels = 2;
+            int sampleRate = 44100;
+            int blockAlign = 96;
+            byte[]? audioData = null;
+
+            if (data.Length >= 12 && data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F')
+            {
+                int offset = 12;
+                while (offset + 8 <= data.Length)
+                {
+                    string chunkId = System.Text.Encoding.ASCII.GetString(data, offset, 4);
+                    int chunkSize = BitConverter.ToInt32(data, offset + 4);
+                    offset += 8;
+
+                    if (chunkId == "fmt ")
+                    {
+                        channels = BitConverter.ToInt16(data, offset + 2);
+                        sampleRate = BitConverter.ToInt32(data, offset + 4);
+                        blockAlign = BitConverter.ToInt16(data, offset + 12);
+                        if (blockAlign <= 0) blockAlign = 96;
+                    }
+                    else if (chunkId == "data")
+                    {
+                        audioData = new byte[chunkSize];
+                        Array.Copy(data, offset, audioData, 0, chunkSize);
+                        break;
+                    }
+                    offset += chunkSize;
+                }
+            }
+            else
+            {
+                audioData = data;
+            }
+
+            if (audioData == null || audioData.Length == 0)
+                throw new Exception("无法提取音频数据");
+
+            Span<byte> magic = data.Length >= 0x16 ? new Span<byte>(data, 0x10, 6) : new Span<byte>();
+            byte[] atrac3Pattern = { 0x20, 0x00, 0x00, 0x00, 0x70, 0x02 };
+            bool isAtrac3 = magic.Length >= 6 && magic.SequenceEqual(atrac3Pattern);
+
+            ILightCodec codec = isAtrac3 ? LightCodec.CodecFactory.Get(LightCodec.AudioCodec.AT3) 
+                                         : LightCodec.CodecFactory.Get(LightCodec.AudioCodec.AT3plus);
+            
+            if (codec == null)
+                throw new Exception("无法创建解码器");
+
+            int initResult = codec.init(blockAlign, channels, channels, 0);
+            if (initResult < 0)
+                throw new Exception("解码器初始化失败");
+
+            int samplesPerFrame = codec.NumberOfSamples;
+            if (samplesPerFrame <= 0)
+                samplesPerFrame = 1024;
+
+            int totalFrames = audioData.Length / blockAlign;
+            if (totalFrames <= 0)
+                throw new Exception("没有可解码的帧");
+
+            int totalSamples = totalFrames * samplesPerFrame;
+            short[] pcmData = new short[totalSamples * channels];
+
+            int outputOffset = 0;
+            int inputOffset = 0;
+
+            unsafe
+            {
+                fixed (byte* inputPtr = audioData)
+                {
+                    while (inputOffset + blockAlign <= audioData.Length && outputOffset < pcmData.Length)
+                    {
+                        fixed (short* outputPtr = &pcmData[outputOffset])
+                        {
+                            int bytesWritten;
+                            int consumed = codec.decode(inputPtr + inputOffset, blockAlign, outputPtr, out bytesWritten);
+                            if (consumed <= 0)
+                                break;
+                            outputOffset += bytesWritten / sizeof(short);
+                        }
+                        inputOffset += blockAlign;
+                    }
+                }
+            }
+
+            if (outputOffset == 0)
+                throw new Exception("未解码出任何数据");
+
+            short[][] channelData = new short[channels][];
+            int samplesPerChannel = outputOffset / channels;
+            
+            for (int c = 0; c < channels; c++)
+            {
+                channelData[c] = new short[samplesPerChannel];
+                for (int i = 0; i < samplesPerChannel; i++)
+                {
+                    channelData[c][i] = pcmData[i * channels + c];
+                }
+            }
+
+            var pcmFormat = new VGAudio.Formats.Pcm16.Pcm16Format(channelData, sampleRate);
+            var audio = new AudioData(pcmFormat);
+
+            var waveConfig = new VGAudio.Containers.Wave.WaveConfiguration
+            {
+                Codec = VGAudio.Containers.Wave.WaveCodec.Pcm16Bit
+            };
+
+            var ms = new MemoryStream();
+            var waveWriter = new VGAudio.Containers.Wave.WaveWriter();
+            waveWriter.WriteToStream(audio, ms, waveConfig);
+            ms.Position = 0;
+
+            double durationSeconds = (double)samplesPerChannel / sampleRate;
+            var duration = TimeSpan.FromSeconds(durationSeconds);
+
+            return (ms, duration);
+        }, ct);
 
         private Task<(MemoryStream Stream, TimeSpan Duration)> DecodeWithVGAudio(string path, string fmt, CancellationToken ct) => Task.Run(() =>
         {
@@ -926,6 +1137,23 @@ namespace super_toolbox
             return null;
         }
 
+        private BaseExtractor? TryAt3Decoders(string path)
+        {
+            using var fs = File.OpenRead(path);
+            byte[] buffer = new byte[0x16];
+            int bytesRead = fs.Read(buffer, 0, buffer.Length);
+            if (bytesRead < 0x16) return new At3plus2wav_Converter();
+
+            Span<byte> magic = new Span<byte>(buffer, 0x10, 6);
+            byte[] atrac3Pattern = { 0x20, 0x00, 0x00, 0x00, 0x70, 0x02 };
+            byte[] atrac3pPattern = { 0x34, 0x00, 0x00, 0x00, 0xFE, 0xFF };
+
+            if (magic.SequenceEqual(atrac3Pattern))
+                return new At32wav_Converter();
+
+            return new At3plus2wav_Converter();
+        }
+
         private BaseExtractor? CreateExtractorByFormat(string fmt) => fmt switch
         {
             "aifc" => new Aifc2wav_Converter(),
@@ -934,7 +1162,7 @@ namespace super_toolbox
             "apex" => new Apex2wav_Converter(),
             "asf" => new Asf2wav_Converter(),
             "ast" => new Ast2wav_Converter(),
-            "at3" => new At3plus2wav_Converter(),
+            "at3" => null,
             "at9" => new At92wav_Converter(),
             "au" => new Snd2wav_Converter(),
             "avr" => new Avr2wav_Converter(),
@@ -980,6 +1208,7 @@ namespace super_toolbox
             "wavex" => new Wavex2wav_Converter(),
             "wem" => new Wem2wav_Converter(),
             "wma" => new Wma2wav_Converter(),
+            "wv" => new Wv2Wav_Converter(),
             "xa" => new MaxisXa2wav_Converter(),
             "xi" => new Xi2wav_Converter(),
             "xwma" => new Xwma2wav_Converter(),
@@ -1003,14 +1232,13 @@ namespace super_toolbox
             updateTimer.Stop();
             _soundOut?.Stop();
             lblStatus.Text = "已停止";
-            progressBar.Value = 0;
             if (_currentIndex >= 0 && _currentIndex < _durations.Count && _durations[_currentIndex] != TimeSpan.Zero)
             {
                 var duration = _durations[_currentIndex];
-                lblTime.Text = duration.TotalMilliseconds < 1000 ? $"00:00 / {duration:ss\\:fff}" : $"00:00 / {duration:mm\\:ss}";
+                lblPlayTime.Text = duration.TotalMilliseconds < 1000 ? $"00:00 / {duration:ss\\:fff}" : $"00:00 / {duration:mm\\:ss}";
             }
             else
-                lblTime.Text = "00:00 / 00:00";
+                lblPlayTime.Text = "00:00 / 00:00";
             UpdateButtonStates();
         }
 
@@ -1022,6 +1250,7 @@ namespace super_toolbox
             _soundOut?.Dispose();
             _waveSource?.Dispose();
             _currentWavStream?.Dispose();
+            ClearAudioCache();
             if (!string.IsNullOrEmpty(_tempFile) && File.Exists(_tempFile))
             {
                 try { File.Delete(_tempFile); } catch { }
@@ -1035,6 +1264,16 @@ namespace super_toolbox
                 }
             }
             catch { }
+        }
+
+        private void ClearAudioCache()
+        {
+            foreach (var stream in _decodedAudioCache.Values)
+            {
+                try { stream.Dispose(); } catch { }
+            }
+            _decodedAudioCache.Clear();
+            _durationCache.Clear();
         }
     }
 }

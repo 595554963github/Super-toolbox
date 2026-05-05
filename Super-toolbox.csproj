@@ -11,6 +11,7 @@
 		<GenerateDependencyFile>false</GenerateDependencyFile>
 		<Configurations>Release</Configurations>
 		<Platforms>AnyCPU</Platforms>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
 		<DebugType>embedded</DebugType>
@@ -190,6 +191,9 @@
 		<EmbeddedResource Include="plugins\codec.exe">
 			<LogicalName>embedded.codec.exe</LogicalName>
 		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\wavpack_test.exe">
+			<LogicalName>embedded.wavpack_test.exe</LogicalName>
+		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="AuroraLib.Compression" Version="1.5.4" />
@@ -233,6 +237,9 @@
 		</Reference>
 		<Reference Include="GXTConvert">
 			<HintPath>plugins\GXTConvert.dll</HintPath>
+		</Reference>
+		<Reference Include="LightCodec">
+		  <HintPath>plugins\LightCodec.dll</HintPath>
 		</Reference>
 		<Reference Include="LzhamWrapper">
 			<HintPath>plugins\LzhamWrapper.dll</HintPath>
