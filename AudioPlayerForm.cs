@@ -42,7 +42,7 @@ namespace super_toolbox
         private readonly Dictionary<string, TimeSpan> _durationCache = new Dictionary<string, TimeSpan>();
         private static readonly string[] AudioExtensions = new[]
         {
-            "adx","ahx","aifc","aiff","apex","asf","ast","at3","at9","au","avr","bcstm","bcwav","bfstm","bfwav","binka","brstm","brwav","caf","cv3","dsp","fap","flac","hca","hps","htk","idsp","ircam","kvs","lopus","mat","mat4","mat5","mdsp","mpc","msf","mtaf","nist","nwa","ogg","opus","paf","pcm","pvf","qoa","rada","raw","rf64","sd2","sf","snd","sph","snr","svx","swav","tta","vag","voc","w64","wav","wavex","wem","wma","wv","xi","xa","xma","xwma"
+            "adx","ahx","aifc","aiff","ape","apex","asf","ast","at3","at9","au","avr","bcstm","bcwav","bfstm","bfwav","binka","brstm","brwav","caf","cv3","dsp","fap","flac","hca","hps","htk","idsp","ircam","kvs","lopus","mat","mat4","mat5","mdsp","mpc","msf","mtaf","nist","nwa","ogg","opus","paf","pcm","pvf","qoa","rada","raw","rf64","sd2","sf","snd","sph","snr","svx","swav","tta","vag","voc","w64","wav","wavex","wem","wma","wv","xi","xa","xma","xwma"
         };
 
         public AudioPlayerForm()
@@ -388,7 +388,7 @@ namespace super_toolbox
                     .ToList();
                 _durations = new List<TimeSpan>(new TimeSpan[_playlist.Count]);
                 RefreshPlaylist();
-                lblStatus.Text = $"已加载{_playlist.Count}个音频，开始解码...";
+                lblStatus.Text = $"已加载{_playlist.Count}个音频,开始解码...";
                 UpdateButtonStates();
 
                 _ = AutoDecodePlaylistAsync();
@@ -403,7 +403,7 @@ namespace super_toolbox
         {
             return new string[]
             {
-                "*.adx", "*.ahx", "*.aifc", "*.aiff", "*.apex", "*.asf", "*.ast", "*.at3", "*.at9",
+                "*.adx", "*.ahx", "*.aifc", "*.aiff", "*.ape", "*.apex", "*.asf", "*.ast", "*.at3", "*.at9",
                 "*.au", "*.avr", "*.bcstm", "*.bcwav", "*.bfstm", "*.bfwav", "*.binka", "*.brstm", "*.brwav",
                 "*.caf", "*.cv3", "*.dsp", "*.fap", "*.flac", "*.hca", "*.hps", "*.htk", "*.idsp",
                 "*.ircam", "*.kvs", "*.lopus", "*.mat", "*.mat4", "*.mat5", "*.mdsp", "*.mpc", "*.msf",
@@ -1159,6 +1159,7 @@ namespace super_toolbox
             "aifc" => new Aifc2wav_Converter(),
             "aiff" => new Aiff2wav_Converter(),
             "ahx" => new Ahx2wav_Converter(),
+            "ape" => new Ape2wav_Converter(),
             "apex" => new Apex2wav_Converter(),
             "asf" => new Asf2wav_Converter(),
             "ast" => new Ast2wav_Converter(),

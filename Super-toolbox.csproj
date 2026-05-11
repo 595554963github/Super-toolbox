@@ -23,9 +23,6 @@
 		<EmbeddedResource Include="plugins\csopak.dll">
 			<LogicalName>embedded.csopak.dll</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\jbpd2png.dll">
-			<LogicalName>embedded.jbpd2png.dll</LogicalName>
-		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\gust_ebm.exe">
 			<LogicalName>embedded.gust_ebm.exe</LogicalName>
 		</EmbeddedResource>
@@ -64,9 +61,6 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\pb3.dll">
 			<LogicalName>embedded.pb3.dll</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\cpz7.exe">
-			<LogicalName>embedded.cpz7.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\SRPG_Unpacker.exe">
 			<LogicalName>embedded.SRPG_Unpacker.exe</LogicalName>
@@ -116,8 +110,8 @@
 		<EmbeddedResource Include="plugins\at3cmp.exe">
 			<LogicalName>embedded.at3cmp.exe</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\PS3_at3tool.exe">
-			<LogicalName>embedded.PS3_at3tool.exe</LogicalName>
+		<EmbeddedResource Include="plugins\at3plusenc.exe">
+			<LogicalName>embedded.at3plusenc.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\at9tool.exe">
 			<LogicalName>embedded.at9tool.exe</LogicalName>
@@ -163,6 +157,9 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\RadAudioCodec.dll">
 			<LogicalName>embedded.RadAudioCodec.dll</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="plugins\mac.exe">
+			<LogicalName>embedded.mac.exe</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\flac.exe">
 			<LogicalName>embedded.flac.exe</LogicalName>
@@ -261,6 +258,9 @@
 		</Reference>
 		<Reference Include="Shadowrun">
 			<HintPath>plugins\Shadowrun.dll</HintPath>
+		</Reference>
+		<Reference Include="LibAtrac9">
+		  <HintPath>plugins\LibAtrac9.dll</HintPath>
 		</Reference>
 		<Reference Include="VGAudio">
 		  <HintPath>plugins\VGAudio.dll</HintPath>

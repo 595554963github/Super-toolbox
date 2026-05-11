@@ -211,8 +211,6 @@ namespace super_toolbox
                 "CMVS引擎 - CPZ6" => new CPZ6_Extractor(),
                 "CMVS引擎 - CPZ7" => new CPZ7_Extractor(),
                 "CMVS引擎 - pb3" => new PB3_Converter(),
-                "CMVS引擎 - cmv" => new CmvExtractor(),
-                "CMVS引擎 - jbpd" => new Jbpd2png_Converter(),
                 "初音未来歌姬计划 - DIVAFILE" => new DIVAFILE_Extractor(),
                 "初音未来歌姬计划 - farc" => new Farc_Extractor(),
                 "创意赛车族摩登赛车 - hdr/dat" => new ModNationRacers_Extractor(),
@@ -405,6 +403,8 @@ namespace super_toolbox
                 "xi2wav" => new Xi2wav_Converter(),
                 "wav2wv" => new Wav2Wv_Converter(),
                 "wv2wav" => new Wv2Wav_Converter(),
+                "wav2ape" => new Wav2ape_Converter(),
+                "ape2wav" => new Ape2wav_Converter(),
                 _ => throw new NotSupportedException($"不支持的格式:{formatName}")
             };
         }
