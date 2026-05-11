@@ -1,8 +1,5 @@
 using System.Text.RegularExpressions;
 using LightCodec;
-using VGAudio.Containers.Wave;
-using VGAudio.Formats;
-using VGAudio.Formats.Pcm16;
 
 namespace super_toolbox
 {
@@ -25,13 +22,13 @@ namespace super_toolbox
 
             var at3Files = Directory.GetFiles(directoryPath, "*.at3", SearchOption.AllDirectories)
                      .OrderBy(f =>
-                    {
-                        string fileName = Path.GetFileNameWithoutExtension(f);
-                        var match = Regex.Match(fileName, @"_(\d+)$");
-                        if (match.Success && int.TryParse(match.Groups[1].Value, out int num))
-                            return num;
-                        return int.MaxValue;
-                    })
+                     {
+                         string fileName = Path.GetFileNameWithoutExtension(f);
+                         var match = Regex.Match(fileName, @"_(\d+)$");
+                         if (match.Success && int.TryParse(match.Groups[1].Value, out int num))
+                             return num;
+                         return int.MaxValue;
+                     })
                     .ThenBy(f => Path.GetFileNameWithoutExtension(f))
                     .ToArray();
 
@@ -179,31 +176,8 @@ namespace super_toolbox
                 if (outputOffset == 0)
                     return false;
 
-                short[][] channelData = new short[channels][];
-                int samplesPerChannel = outputOffset / channels;
-                
-                for (int c = 0; c < channels; c++)
-                {
-                    channelData[c] = new short[samplesPerChannel];
-                    for (int i = 0; i < samplesPerChannel; i++)
-                    {
-                        channelData[c][i] = pcmData[i * channels + c];
-                    }
-                }
-
-                var pcmFormat = new Pcm16Format(channelData, sampleRate);
-                var audio = new AudioData(pcmFormat);
-
-                var waveConfig = new WaveConfiguration
-                {
-                    Codec = WaveCodec.Pcm16Bit
-                };
-
-                var waveWriter = new WaveWriter();
-                using (var stream = File.Create(wavFilePath))
-                {
-                    waveWriter.WriteToStream(audio, stream, waveConfig);
-                }
+                // Write WAV file directly (no VGAudio dependency)
+                WriteWavFile(wavFilePath, pcmData, outputOffset, sampleRate, channels);
 
                 return true;
             }
@@ -215,6 +189,41 @@ namespace super_toolbox
             {
                 ConversionError?.Invoke(this, $"转换错误:{ex.Message}");
                 return false;
+            }
+        }
+
+        private static void WriteWavFile(string filePath, short[] pcmData, int totalSamples, int sampleRate, int channels)
+        {
+            int dataSize = totalSamples * sizeof(short);
+            int fileSize = 36 + dataSize;
+
+            using (var fs = File.Create(filePath))
+            using (var bw = new BinaryWriter(fs))
+            {
+                // RIFF header
+                bw.Write(new byte[] { (byte)'R', (byte)'I', (byte)'F', (byte)'F' });
+                bw.Write(fileSize);
+                bw.Write(new byte[] { (byte)'W', (byte)'A', (byte)'V', (byte)'E' });
+
+                // fmt chunk
+                bw.Write(new byte[] { (byte)'f', (byte)'m', (byte)'t', (byte)' ' });
+                bw.Write(16);                          // chunk size
+                bw.Write((short)1);                    // PCM format
+                bw.Write((short)channels);             // channels
+                bw.Write(sampleRate);                  // sample rate
+                bw.Write(sampleRate * channels * 2);   // byte rate
+                bw.Write((short)(channels * 2));       // block align
+                bw.Write((short)16);                   // bits per sample
+
+                // data chunk
+                bw.Write(new byte[] { (byte)'d', (byte)'a', (byte)'t', (byte)'a' });
+                bw.Write(dataSize);
+
+                // Write PCM data
+                for (int i = 0; i < totalSamples; i++)
+                {
+                    bw.Write(pcmData[i]);
+                }
             }
         }
     }
