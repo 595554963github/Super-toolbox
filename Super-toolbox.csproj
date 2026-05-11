@@ -6,12 +6,12 @@
 		<Nullable>enable</Nullable>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<EnableDefaultCompileItems>true</EnableDefaultCompileItems>
-		<NoWarn>MSB3270;MSB3277;MSB3026;NU1701</NoWarn>
+		<EnableDefaultCompileItems>true</EnableDefaultCompileItems>		
 		<GenerateDependencyFile>false</GenerateDependencyFile>
 		<Configurations>Release</Configurations>
 		<Platforms>AnyCPU</Platforms>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<NoWarn>NU1701;MSB3277;MSB3270</NoWarn>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
 		<DebugType>embedded</DebugType>
@@ -82,9 +82,6 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\wfLZ.dll">
 			<LogicalName>embedded.wfLZ.dll</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="plugins\ahx2wav.dll">
-			<LogicalName>embedded.ahx2wav.dll</LogicalName>
 		</EmbeddedResource>
 		<EmbeddedResource Include="plugins\bdat-toolset.exe">
 			<LogicalName>embedded.bdat-toolset.exe</LogicalName>
@@ -223,20 +220,11 @@
 		<Reference Include="DALLib">
 			<HintPath>plugins\DALLib.dll</HintPath>
 		</Reference>
-		<Reference Include="DyingLight">
-			<HintPath>plugins\DyingLight.dll</HintPath>
-		</Reference>
 		<Reference Include="gdidrop">
 			<HintPath>plugins\gdidrop.dll</HintPath>
 		</Reference>
-		<Reference Include="GNF2PNG">
-			<HintPath>plugins\GNF2PNG.dll</HintPath>
-		</Reference>
 		<Reference Include="GXTConvert">
 			<HintPath>plugins\GXTConvert.dll</HintPath>
-		</Reference>
-		<Reference Include="LightCodec">
-		  <HintPath>plugins\LightCodec.dll</HintPath>
 		</Reference>
 		<Reference Include="LzhamWrapper">
 			<HintPath>plugins\LzhamWrapper.dll</HintPath>
@@ -260,10 +248,10 @@
 			<HintPath>plugins\Shadowrun.dll</HintPath>
 		</Reference>
 		<Reference Include="LibAtrac9">
-		  <HintPath>plugins\LibAtrac9.dll</HintPath>
+			<HintPath>plugins\LibAtrac9.dll</HintPath>
 		</Reference>
 		<Reference Include="VGAudio">
-		  <HintPath>plugins\VGAudio.dll</HintPath>
+			<HintPath>plugins\VGAudio.dll</HintPath>
 		</Reference>
 		<Reference Include="WarTales_PakExtractor">
 			<HintPath>plugins\WarTales_PakExtractor.dll</HintPath>
@@ -274,5 +262,8 @@
 		<Reference Include="ZstdNet">
 			<HintPath>plugins\ZstdNet.dll</HintPath>
 		</Reference>
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="Utility\" />
 	</ItemGroup>
 </Project>

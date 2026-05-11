@@ -159,6 +159,7 @@ namespace super_toolbox
                 "CFSI - cfsi打包器" => new Cfsi_Repacker(),
                 "消逝的光芒 - rpack" => new DyingLight_rpack_Extractor(),
                 "消逝的光芒 - csb" => new DyingLight_csb_Extractor(),
+                "消逝的光芒 - spb" => new DyingLight_spb_Extractor(),
                 "PlayStation MultiStream File - msf" => new Msf_Extractor(),
                 "PlayStation - pssg" => new PSSG_Extractor(),
                 "Terminal Reality - pod/epd" => new PodExtractor(),

@@ -157,6 +157,7 @@ namespace super_toolbox
             { "CFSI - cfsi打包器", ("其他档案", "cfsi打包器,可将一个文件夹及子文件夹里的所有文件重新打包成cfsi文件") },
             { "消逝的光芒 - rpack", ("其他档案", "消逝的光芒rpack专用提取器") },
             { "消逝的光芒 - csb", ("其他档案", "消逝的光芒csb专用提取器") },
+            { "消逝的光芒 - spb", ("其他档案", "消逝的光芒spb专用提取器") },
             { "PlayStation MultiStream File - msf", ("音频", "以二进制形式从索尼游戏中提取msf音频文件") },
             { "PlayStation - pssg", ("图片", "PlayStation pssg档案提取器,可提取该档案中的图片资源") },
             { "Terminal Reality - pod/epd", ("其他档案", "Terminal Reality工作室的pod档案提取器,代表作为星球大战原力释放2,可提取pod/epd档案中的资源") },
