@@ -1,4 +1,3 @@
-using Syroot.BinaryData.Extensions;
 using System.IO.MemoryMappedFiles;
 using System.Text;
 
@@ -101,7 +100,7 @@ namespace super_toolbox
                                     processedFiles++;
 
                                     OnFileExtracted(outputPath);
-                                    ExtractionProgress?.Invoke(this, $"已提取:{entry.Name} ({processedFiles}/{totalFiles})");
+                                    ExtractionProgress?.Invoke(this, $"已提取:{Path.GetFileName(entry.Name)} ({processedFiles}/{totalFiles})");
                                 }
                                 catch (Exception ex)
                                 {
@@ -673,7 +672,9 @@ namespace super_toolbox
                                 row[column.Name] = (int)mem.ReadByte();
                                 break;
                             case CpkTableFlags.TypeSByte:
-                                row[column.Name] = (int)mem.ReadSByte();
+                                int sbyteValue = mem.ReadByte();
+                                if (sbyteValue == -1) break;
+                                row[column.Name] = (sbyte)sbyteValue;
                                 break;
                             case CpkTableFlags.TypeUInt16:
                                 row[column.Name] = (int)ReadUInt16(mem);
