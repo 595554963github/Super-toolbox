@@ -1,9 +1,7 @@
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using VGAudio.Containers.Wave;
 using VGAudio.Formats;
 using VGAudio.Formats.Pcm16;
-using VGAudio.Formats.Pcm8;
 
 namespace super_toolbox
 {
@@ -13,84 +11,15 @@ namespace super_toolbox
         public event EventHandler<string>? ConversionProgress;
         public event EventHandler<string>? ConversionError;
 
-        private static string _tempDllPath;
-
-        static Wav2asf3_Converter()
-        {
-            _tempDllPath = LoadEmbeddedDll("embedded.EA_XA-ADPCM.dll", "EA_XA-ADPCM_R3.dll");
-        }
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern IntPtr LoadLibrary(string lpFileName);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool FreeLibrary(IntPtr hModule);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
-
-        private delegate int ConvertWavToAsfDelegate(string inputPath, string outputPath);
-
-        private new static string LoadEmbeddedDll(string resourceName, string outputFileName)
-        {
-            string tempPath = Path.Combine(Path.GetTempPath(), outputFileName);
-
-            if (File.Exists(tempPath))
-            {
-                try { File.Delete(tempPath); }
-                catch
-                {
-                    tempPath = Path.Combine(Path.GetTempPath(), $"{Path.GetFileNameWithoutExtension(outputFileName)}_{Guid.NewGuid().ToString("N").Substring(0, 8)}.dll");
-                }
-            }
-
-            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            using (var stream = assembly.GetManifestResourceStream(resourceName))
-            {
-                if (stream == null)
-                    throw new Exception($"嵌入式资源{resourceName}未找到");
-
-                using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
-                {
-                    stream.CopyTo(fileStream);
-                }
-            }
-
-            return tempPath;
-        }
-
-        private int CallDllFunction(string wavFilePath, string asfFilePath)
-        {
-            IntPtr hModule = IntPtr.Zero;
-            try
-            {
-                hModule = LoadLibrary(_tempDllPath);
-                if (hModule == IntPtr.Zero)
-                    throw new Exception($"无法加载DLL,错误代码:{Marshal.GetLastWin32Error()}");
-
-                IntPtr pFunc = GetProcAddress(hModule, "ConvertWavToAsfR3");
-                if (pFunc == IntPtr.Zero)
-                    throw new Exception("找不到函数ConvertWavToAsfR3");
-
-                ConvertWavToAsfDelegate convertFunc = Marshal.GetDelegateForFunctionPointer<ConvertWavToAsfDelegate>(pFunc);
-                return convertFunc(wavFilePath, asfFilePath);
-            }
-            finally
-            {
-                if (hModule != IntPtr.Zero) FreeLibrary(hModule);
-            }
-        }
-
-        private async Task<bool> ConvertToPcmWav(string inputWav, string tempPcmWav, CancellationToken cancellationToken)
+        private async Task<bool> ConvertWAVToASF(string wavFilePath, string asfFilePath, CancellationToken cancellationToken)
         {
             try
             {
-                ConversionProgress?.Invoke(this, $"读取WAV文件:{Path.GetFileName(inputWav)}");
+                ConversionProgress?.Invoke(this, $"读取WAV文件:{Path.GetFileName(wavFilePath)}");
 
                 var wavReader = new WaveReader();
                 AudioData audioData;
-
-                using (var wavStream = File.OpenRead(inputWav))
+                using (var wavStream = File.OpenRead(wavFilePath))
                 {
                     audioData = wavReader.Read(wavStream);
                 }
@@ -101,55 +30,30 @@ namespace super_toolbox
                     return false;
                 }
 
-                var pcm16 = audioData.GetFormat<Pcm16Format>();
+                Pcm16Format pcm16 = audioData.GetFormat<Pcm16Format>();
                 if (pcm16 == null)
                 {
-                    var pcm8 = audioData.GetFormat<Pcm8Format>();
-                    if (pcm8 != null)
+                    var allFormats = audioData.GetAllFormats().ToList();
+                    if (allFormats.Count > 0)
                     {
-                        pcm16 = pcm8.ToPcm16();
+                        pcm16 = allFormats.First().ToPcm16();
                     }
                     else
                     {
-                        ConversionError?.Invoke(this, "不支持的WAV格式(仅支持PCM8/PCM16)");
+                        ConversionError?.Invoke(this, "无法转换WAV格式");
                         return false;
                     }
                 }
 
-                var wavWriter = new WaveWriter();
-                using (var outputStream = File.Create(tempPcmWav))
-                {
-                    wavWriter.WriteToStream(pcm16, outputStream);
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                ConversionError?.Invoke(this, $"转换错误:{ex.Message}");
-                return false;
-            }
-        }
-
-        private async Task<bool> ConvertWAVToASF(string wavFilePath, string asfFilePath, CancellationToken cancellationToken)
-        {
-            string tempPcmWav = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + "_pcm.wav");
-
-            try
-            {
-                bool pcmSuccess = await ConvertToPcmWav(wavFilePath, tempPcmWav, cancellationToken);
-                if (!pcmSuccess) return false;
+                int nChannels = pcm16.ChannelCount;
+                int nSamples = pcm16.SampleCount;
+                short[][] channels = pcm16.Channels;
 
                 return await Task.Run(() =>
                 {
-                    int result = CallDllFunction(tempPcmWav, asfFilePath);
-
-                    if (result != 0)
-                    {
-                        ConversionError?.Invoke(this, $"转换失败,错误码:{result}");
-                        return false;
-                    }
-
+                    using var outFile = File.Create(asfFilePath);
+                    var encoder = new AsfEncoder(3, nChannels, pcm16.SampleRate, nSamples);
+                    encoder.WriteFile(outFile, channels);
                     return true;
                 }, cancellationToken);
             }
@@ -157,11 +61,6 @@ namespace super_toolbox
             {
                 ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
                 return false;
-            }
-            finally
-            {
-                try { if (File.Exists(tempPcmWav)) File.Delete(tempPcmWav); }
-                catch { }
             }
         }
 

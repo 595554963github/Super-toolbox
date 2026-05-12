@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 namespace super_toolbox
@@ -11,14 +10,6 @@ namespace super_toolbox
 
         private const int ADPCM_FLAG_NOISE_SHAPING = 0x1;
         private const int ADPCM_SUCCESS = 0;
-
-        [DllImport("IMA_codec.dll", CallingConvention = CallingConvention.Cdecl)]
-        private static extern int ADPCM_DecodeFile(string inputFile, string outputFile, int flags);
-
-        static Xma2wav3_Converter()
-        {
-            LoadEmbeddedDll("embedded.IMA_codec.dll", "IMA_codec.dll");
-        }
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -110,7 +101,7 @@ namespace super_toolbox
             {
                 try
                 {
-                    int result = ADPCM_DecodeFile(xmaFilePath, wavFilePath, ADPCM_FLAG_NOISE_SHAPING);
+                    int result = ImaAdpcmCodec.DecodeFile(xmaFilePath, wavFilePath, ADPCM_FLAG_NOISE_SHAPING);
                     return result == ADPCM_SUCCESS;
                 }
                 catch (Exception ex)

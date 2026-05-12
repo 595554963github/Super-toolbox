@@ -1,9 +1,7 @@
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using VGAudio.Containers.Wave;
 using VGAudio.Formats;
 using VGAudio.Formats.Pcm16;
-using VGAudio.Formats.Pcm8;
 
 namespace super_toolbox
 {
@@ -13,84 +11,15 @@ namespace super_toolbox
         public event EventHandler<string>? ConversionProgress;
         public event EventHandler<string>? ConversionError;
 
-        private static string _tempDllPath;
-
-        static Wav2snr_Converter()
-        {
-            _tempDllPath = LoadEmbeddedDll("embedded.EA_XA-ADPCM.dll", "EA_XA-ADPCM3.dll");
-        }
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern IntPtr LoadLibrary(string lpFileName);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool FreeLibrary(IntPtr hModule);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
-
-        private delegate int ConvertWavToXasDelegate(string inputPath, string outputPath, int loop);
-
-        private new static string LoadEmbeddedDll(string resourceName, string outputFileName)
-        {
-            string tempPath = Path.Combine(Path.GetTempPath(), outputFileName);
-
-            if (File.Exists(tempPath))
-            {
-                try { File.Delete(tempPath); }
-                catch
-                {
-                    tempPath = Path.Combine(Path.GetTempPath(), $"{Path.GetFileNameWithoutExtension(outputFileName)}_{Guid.NewGuid().ToString("N").Substring(0, 8)}.dll");
-                }
-            }
-
-            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            using (var stream = assembly.GetManifestResourceStream(resourceName))
-            {
-                if (stream == null)
-                    throw new Exception($"嵌入式资源{resourceName}未找到");
-
-                using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
-                {
-                    stream.CopyTo(fileStream);
-                }
-            }
-
-            return tempPath;
-        }
-
-        private int CallDllFunction(string wavFilePath, string xasFilePath, int loop)
-        {
-            IntPtr hModule = IntPtr.Zero;
-            try
-            {
-                hModule = LoadLibrary(_tempDllPath);
-                if (hModule == IntPtr.Zero)
-                    throw new Exception($"无法加载DLL,错误代码:{Marshal.GetLastWin32Error()}");
-
-                IntPtr pFunc = GetProcAddress(hModule, "ConvertWavToXas");
-                if (pFunc == IntPtr.Zero)
-                    throw new Exception("找不到函数ConvertWavToXas");
-
-                ConvertWavToXasDelegate convertFunc = Marshal.GetDelegateForFunctionPointer<ConvertWavToXasDelegate>(pFunc);
-                return convertFunc(wavFilePath, xasFilePath, loop);
-            }
-            finally
-            {
-                if (hModule != IntPtr.Zero) FreeLibrary(hModule);
-            }
-        }
-
-        private async Task<bool> ConvertToPcmWav(string inputWav, string tempPcmWav, CancellationToken cancellationToken)
+        private async Task<bool> ConvertWAVToXAS(string wavFilePath, string xasFilePath, int loop, CancellationToken cancellationToken)
         {
             try
             {
-                ConversionProgress?.Invoke(this, $"读取WAV文件:{Path.GetFileName(inputWav)}");
+                ConversionProgress?.Invoke(this, $"读取WAV文件:{Path.GetFileName(wavFilePath)}");
 
                 var wavReader = new WaveReader();
                 AudioData audioData;
-
-                using (var wavStream = File.OpenRead(inputWav))
+                using (var wavStream = File.OpenRead(wavFilePath))
                 {
                     audioData = wavReader.Read(wavStream);
                 }
@@ -101,54 +30,94 @@ namespace super_toolbox
                     return false;
                 }
 
-                var pcm16 = audioData.GetFormat<Pcm16Format>();
+                Pcm16Format pcm16 = audioData.GetFormat<Pcm16Format>();
                 if (pcm16 == null)
                 {
-                    var pcm8 = audioData.GetFormat<Pcm8Format>();
-                    if (pcm8 != null)
+                    var allFormats = audioData.GetAllFormats().ToList();
+                    if (allFormats.Count > 0)
                     {
-                        pcm16 = pcm8.ToPcm16();
+                        pcm16 = allFormats.First().ToPcm16();
                     }
                     else
                     {
-                        ConversionError?.Invoke(this, "不支持的WAV格式(仅支持PCM8/PCM16)");
+                        ConversionError?.Invoke(this, "无法转换WAV格式");
                         return false;
                     }
                 }
 
-                var wavWriter = new WaveWriter();
-                using (var outputStream = File.Create(tempPcmWav))
-                {
-                    wavWriter.WriteToStream(pcm16, outputStream);
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                ConversionError?.Invoke(this, $"转换错误:{ex.Message}");
-                return false;
-            }
-        }
-
-        private async Task<bool> ConvertWAVToXAS(string wavFilePath, string xasFilePath, int loop, CancellationToken cancellationToken)
-        {
-            string tempPcmWav = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + "_pcm.wav");
-
-            try
-            {
-                bool pcmSuccess = await ConvertToPcmWav(wavFilePath, tempPcmWav, cancellationToken);
-                if (!pcmSuccess) return false;
+                int nChannels = pcm16.ChannelCount;
+                int nSamples = pcm16.SampleCount;
+                short[][] channels = pcm16.Channels;
+                int sampleRate = pcm16.SampleRate;
+                bool isLoop = loop != 0;
 
                 return await Task.Run(() =>
                 {
-                    int result = CallDllFunction(tempPcmWav, xasFilePath, loop);
+                    using var outFile = File.Create(xasFilePath);
 
-                    if (result != 0)
+                    byte[] header = new byte[isLoop ? 24 : 20];
+                    int pos = 0;
+                    header[pos++] = 0x04;
+                    header[pos++] = (byte)((nChannels - 1) * 4);
+                    header[pos++] = (byte)((sampleRate >> 8) & 0xFF);
+                    header[pos++] = (byte)(sampleRate & 0xFF);
+                    uint samplesFlags = (uint)nSamples | (isLoop ? (1u << 29) : 0);
+                    header[pos++] = (byte)((samplesFlags >> 24) & 0xFF);
+                    header[pos++] = (byte)((samplesFlags >> 16) & 0xFF);
+                    header[pos++] = (byte)((samplesFlags >> 8) & 0xFF);
+                    header[pos++] = (byte)(samplesFlags & 0xFF);
+                    if (isLoop)
                     {
-                        ConversionError?.Invoke(this, $"转换失败,错误码:{result}");
-                        return false;
+                        header[pos++] = 0; header[pos++] = 0;
+                        header[pos++] = 0; header[pos++] = 0;
                     }
+                    int offsetBlockSizeValue = pos;
+                    pos += 4;
+                    header[pos++] = (byte)(((uint)nSamples >> 24) & 0xFF);
+                    header[pos++] = (byte)(((uint)nSamples >> 16) & 0xFF);
+                    header[pos++] = (byte)(((uint)nSamples >> 8) & 0xFF);
+                    header[pos++] = (byte)((uint)nSamples & 0xFF);
+                    outFile.Write(header, 0, pos);
+
+                    var encoders = new EaXaEncoder[nChannels];
+                    for (int c = 0; c < nChannels; c++)
+                        encoders[c] = new EaXaEncoder();
+
+                    int codedSamples = 0;
+                    bool lastBlock = false;
+                    byte[] block = new byte[76 * nChannels];
+                    short[] samples = new short[128 * nChannels];
+
+                    while (!lastBlock)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        int samplesInBlock = 128;
+                        codedSamples += samplesInBlock;
+                        if (codedSamples >= nSamples)
+                        {
+                            int toRemove = codedSamples - nSamples;
+                            samplesInBlock -= toRemove;
+                            codedSamples = nSamples;
+                            lastBlock = true;
+                        }
+
+                        ReadSamples(channels, samples, nSamples, nChannels, codedSamples - samplesInBlock, samplesInBlock);
+
+                        int blockPos = 0;
+                        EncodeXasBlock(encoders, samples, block, ref blockPos, samplesInBlock, nChannels);
+                        outFile.Write(block, 0, blockPos);
+                    }
+
+                    long endPos = outFile.Length;
+                    outFile.Seek(offsetBlockSizeValue, SeekOrigin.Begin);
+                    uint blockSizeVal = (uint)(endPos - offsetBlockSizeValue);
+                    byte[] bsBuf = new byte[4];
+                    bsBuf[0] = (byte)((blockSizeVal >> 24) & 0xFF);
+                    bsBuf[1] = (byte)((blockSizeVal >> 16) & 0xFF);
+                    bsBuf[2] = (byte)((blockSizeVal >> 8) & 0xFF);
+                    bsBuf[3] = (byte)(blockSizeVal & 0xFF);
+                    outFile.Write(bsBuf, 0, 4);
 
                     return true;
                 }, cancellationToken);
@@ -158,10 +127,66 @@ namespace super_toolbox
                 ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
                 return false;
             }
-            finally
+        }
+
+        private static void EncodeXasBlock(EaXaEncoder[] encoders, short[] samples, byte[] output, ref int outPos, int nSamples, int nChannels)
+        {
+            for (int c = 0; c < nChannels; c++)
             {
-                try { if (File.Exists(tempPcmWav)) File.Delete(tempPcmWav); }
-                catch { }
+                short[] inputSamples = new short[128];
+                int srcOffset = c * nSamples;
+                int copyCount = Math.Min(nSamples, 128);
+                Array.Copy(samples, srcOffset, inputSamples, 0, copyCount);
+
+                short[][] startSamples = new short[4][];
+                for (int i = 0; i < 4; i++) startSamples[i] = new short[2];
+                byte[][] encoded = new byte[4][];
+                for (int i = 0; i < 4; i++) encoded[i] = new byte[16];
+
+                EaXaEncoder encoder = encoders[c];
+
+                for (int i = 0; i < 4; i++)
+                {
+                    int grpOffset = i * 32;
+                    startSamples[i][0] = (short)(EaXaEncoder.ClipInt16(inputSamples[grpOffset] + 8) & 0xFFF0);
+                    startSamples[i][1] = (short)(EaXaEncoder.ClipInt16(inputSamples[grpOffset + 1] + 8) & 0xFFF0);
+                    encoder.PreviousSample = startSamples[i][0];
+                    encoder.CurrentSample = startSamples[i][1];
+                    encoder.ClearErrors();
+                    encoder.EncodeSubblock(inputSamples, grpOffset + 2, encoded[i], 0, 30);
+                }
+
+                for (int i = 0; i < 4; i++)
+                {
+                    byte infoByte = encoded[i][0];
+                    ushort val0 = (ushort)((ushort)startSamples[i][0] | (ushort)(infoByte >> 4));
+                    ushort val1 = (ushort)((ushort)startSamples[i][1] | (ushort)(infoByte & 0x0F));
+                    output[outPos++] = (byte)(val0 & 0xFF);
+                    output[outPos++] = (byte)((val0 >> 8) & 0xFF);
+                    output[outPos++] = (byte)(val1 & 0xFF);
+                    output[outPos++] = (byte)((val1 >> 8) & 0xFF);
+                }
+
+                for (int j = 1; j <= 15; j++)
+                {
+                    for (int i = 0; i < 4; i++)
+                        output[outPos++] = encoded[i][j];
+                }
+            }
+        }
+
+        private static void ReadSamples(short[][] channels, short[] output, int totalSamples, int nChannels, int offset, int count)
+        {
+            for (int c = 0; c < nChannels; c++)
+            {
+                var ch = channels[c];
+                int srcStart = Math.Min(offset, ch.Length);
+                int srcCount = Math.Min(count, Math.Max(0, ch.Length - srcStart));
+                int dstStart = c * count;
+                if (srcCount > 0)
+                    Array.Copy(ch, srcStart, output, dstStart, srcCount);
+                for (int i = srcCount; i < count; i++)
+                    output[dstStart + i] = 0;
             }
         }
 

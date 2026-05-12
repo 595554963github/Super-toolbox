@@ -1,9 +1,7 @@
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using VGAudio.Containers.Wave;
 using VGAudio.Formats;
 using VGAudio.Formats.Pcm16;
-using VGAudio.Formats.Pcm8;
 
 namespace super_toolbox
 {
@@ -13,84 +11,15 @@ namespace super_toolbox
         public event EventHandler<string>? ConversionProgress;
         public event EventHandler<string>? ConversionError;
 
-        private static string _tempDllPath;
-
-        static Wav2MaxisXa_Converter()
-        {
-            _tempDllPath = LoadEmbeddedDll("embedded.EA_XA-ADPCM.dll", "EA_XA-ADPCM4.dll");
-        }
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern IntPtr LoadLibrary(string lpFileName);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool FreeLibrary(IntPtr hModule);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
-
-        private delegate int ConvertWavToMaxisXaDelegate(string inputPath, string outputPath);
-
-        private new static string LoadEmbeddedDll(string resourceName, string outputFileName)
-        {
-            string tempPath = Path.Combine(Path.GetTempPath(), outputFileName);
-
-            if (File.Exists(tempPath))
-            {
-                try { File.Delete(tempPath); }
-                catch
-                {
-                    tempPath = Path.Combine(Path.GetTempPath(), $"{Path.GetFileNameWithoutExtension(outputFileName)}_{Guid.NewGuid().ToString("N").Substring(0, 8)}.dll");
-                }
-            }
-
-            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            using (var stream = assembly.GetManifestResourceStream(resourceName))
-            {
-                if (stream == null)
-                    throw new Exception($"嵌入式资源{resourceName}未找到");
-
-                using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
-                {
-                    stream.CopyTo(fileStream);
-                }
-            }
-
-            return tempPath;
-        }
-
-        private int CallDllFunction(string wavFilePath, string xaFilePath)
-        {
-            IntPtr hModule = IntPtr.Zero;
-            try
-            {
-                hModule = LoadLibrary(_tempDllPath);
-                if (hModule == IntPtr.Zero)
-                    throw new Exception($"无法加载DLL,错误代码:{Marshal.GetLastWin32Error()}");
-
-                IntPtr pFunc = GetProcAddress(hModule, "ConvertWavToMaxisXa");
-                if (pFunc == IntPtr.Zero)
-                    throw new Exception("找不到函数ConvertWavToMaxisXa");
-
-                ConvertWavToMaxisXaDelegate convertFunc = Marshal.GetDelegateForFunctionPointer<ConvertWavToMaxisXaDelegate>(pFunc);
-                return convertFunc(wavFilePath, xaFilePath);
-            }
-            finally
-            {
-                if (hModule != IntPtr.Zero) FreeLibrary(hModule);
-            }
-        }
-
-        private async Task<bool> ConvertToPcmWav(string inputWav, string tempPcmWav, CancellationToken cancellationToken)
+        private async Task<bool> ConvertWAVToMaxisXa(string wavFilePath, string xaFilePath, CancellationToken cancellationToken)
         {
             try
             {
-                ConversionProgress?.Invoke(this, $"读取WAV文件:{Path.GetFileName(inputWav)}");
+                ConversionProgress?.Invoke(this, $"读取WAV文件:{Path.GetFileName(wavFilePath)}");
 
                 var wavReader = new WaveReader();
                 AudioData audioData;
-
-                using (var wavStream = File.OpenRead(inputWav))
+                using (var wavStream = File.OpenRead(wavFilePath))
                 {
                     audioData = wavReader.Read(wavStream);
                 }
@@ -101,53 +30,83 @@ namespace super_toolbox
                     return false;
                 }
 
-                var pcm16 = audioData.GetFormat<Pcm16Format>();
+                Pcm16Format pcm16 = audioData.GetFormat<Pcm16Format>();
                 if (pcm16 == null)
                 {
-                    var pcm8 = audioData.GetFormat<Pcm8Format>();
-                    if (pcm8 != null)
+                    var allFormats = audioData.GetAllFormats().ToList();
+                    if (allFormats.Count > 0)
                     {
-                        pcm16 = pcm8.ToPcm16();
+                        pcm16 = allFormats.First().ToPcm16();
                     }
                     else
                     {
-                        ConversionError?.Invoke(this, "不支持的WAV格式(仅支持PCM8/PCM16)");
+                        ConversionError?.Invoke(this, "无法转换WAV格式");
                         return false;
                     }
                 }
 
-                var wavWriter = new WaveWriter();
-                using (var outputStream = File.Create(tempPcmWav))
-                {
-                    wavWriter.WriteToStream(pcm16, outputStream);
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                ConversionError?.Invoke(this, $"转换错误:{ex.Message}");
-                return false;
-            }
-        }
-
-        private async Task<bool> ConvertWAVToMaxisXa(string wavFilePath, string xaFilePath, CancellationToken cancellationToken)
-        {
-            string tempPcmWav = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + "_pcm.wav");
-
-            try
-            {
-                bool pcmSuccess = await ConvertToPcmWav(wavFilePath, tempPcmWav, cancellationToken);
-                if (!pcmSuccess) return false;
+                int nChannels = pcm16.ChannelCount;
+                int nSamples = pcm16.SampleCount;
+                short[][] channels = pcm16.Channels;
 
                 return await Task.Run(() =>
                 {
-                    int result = CallDllFunction(tempPcmWav, xaFilePath);
+                    using var outFile = File.Create(xaFilePath);
 
-                    if (result != 0)
+                    byte[] header = new byte[24];
+                    int pos = 0;
+                    header[pos++] = (byte)'X';
+                    header[pos++] = (byte)'A';
+                    header[pos++] = 0x00;
+                    header[pos++] = 0x00;
+                    WriteLE32(header, ref pos, (uint)(nSamples * 2 * nChannels));
+                    WriteLE16(header, ref pos, 1);
+                    WriteLE16(header, ref pos, (ushort)nChannels);
+                    WriteLE32(header, ref pos, (uint)pcm16.SampleRate);
+                    WriteLE32(header, ref pos, (uint)(nChannels * pcm16.SampleRate * 2));
+                    WriteLE16(header, ref pos, (ushort)(nChannels * 2));
+                    WriteLE16(header, ref pos, 16);
+                    outFile.Write(header, 0, 24);
+
+                    var encoders = new EaXaEncoder[nChannels];
+                    for (int c = 0; c < nChannels; c++)
+                        encoders[c] = new EaXaEncoder();
+
+                    int codedSamples = 0;
+                    bool lastBlock = false;
+                    int blockSize = 15 * nChannels;
+                    byte[] block = new byte[blockSize];
+                    short[] samples = new short[28 * nChannels];
+
+                    while (!lastBlock)
                     {
-                        ConversionError?.Invoke(this, $"转换失败,错误码:{result}");
-                        return false;
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        int samplesInBlock = 28;
+                        codedSamples += samplesInBlock;
+                        if (codedSamples >= nSamples)
+                        {
+                            int toRemove = codedSamples - nSamples;
+                            samplesInBlock -= toRemove;
+                            codedSamples = nSamples;
+                            lastBlock = true;
+                        }
+
+                        ReadSamples(channels, samples, nSamples, nChannels, codedSamples - samplesInBlock, samplesInBlock);
+
+                        if (samplesInBlock < 28)
+                            Array.Clear(block, 0, blockSize);
+
+                        int nBytes = 1 + (samplesInBlock + 1) / 2;
+                        for (int c = 0; c < nChannels; c++)
+                        {
+                            byte[] encoded = new byte[15];
+                            encoders[c].EncodeSubblock(samples, c * samplesInBlock, encoded, 0, samplesInBlock);
+                            for (int b = 0; b < nBytes; b++)
+                                block[c + b * nChannels] = encoded[b];
+                        }
+
+                        outFile.Write(block, 0, blockSize);
                     }
 
                     return true;
@@ -158,10 +117,20 @@ namespace super_toolbox
                 ConversionError?.Invoke(this, $"转换异常:{ex.Message}");
                 return false;
             }
-            finally
+        }
+
+        private static void ReadSamples(short[][] channels, short[] output, int totalSamples, int nChannels, int offset, int count)
+        {
+            for (int c = 0; c < nChannels; c++)
             {
-                try { if (File.Exists(tempPcmWav)) File.Delete(tempPcmWav); }
-                catch { }
+                var ch = channels[c];
+                int srcStart = Math.Min(offset, ch.Length);
+                int srcCount = Math.Min(count, Math.Max(0, ch.Length - srcStart));
+                int dstStart = c * count;
+                if (srcCount > 0)
+                    Array.Copy(ch, srcStart, output, dstStart, srcCount);
+                for (int i = srcCount; i < count; i++)
+                    output[dstStart + i] = 0;
             }
         }
 
@@ -271,6 +240,20 @@ namespace super_toolbox
                 ConversionError?.Invoke(this, $"严重错误:{ex.Message}");
                 OnConversionFailed($"严重错误:{ex.Message}");
             }
+        }
+
+        private static void WriteLE32(byte[] buf, ref int pos, uint val)
+        {
+            buf[pos++] = (byte)(val & 0xFF);
+            buf[pos++] = (byte)((val >> 8) & 0xFF);
+            buf[pos++] = (byte)((val >> 16) & 0xFF);
+            buf[pos++] = (byte)((val >> 24) & 0xFF);
+        }
+
+        private static void WriteLE16(byte[] buf, ref int pos, ushort val)
+        {
+            buf[pos++] = (byte)(val & 0xFF);
+            buf[pos++] = (byte)((val >> 8) & 0xFF);
         }
     }
 }
