@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class Lzx_Decompressor : BaseExtractor
     {
-        public new event EventHandler<string>? DecompressionStarted;
-        public new event EventHandler<string>? DecompressionProgress;
-        public new event EventHandler<string>? DecompressionError;
+        public event EventHandler<string>? DecompressionStarted;
+        public event EventHandler<string>? DecompressionProgress;
+        public event EventHandler<string>? DecompressionError;
         static Lzx_Decompressor()
         {
             LoadLzxDll();

@@ -9,9 +9,9 @@ namespace super_toolbox
         private static bool _isInitialized;
         private static string _initError = string.Empty;
 
-        public new event EventHandler<string>? DecompressionStarted;
-        public new event EventHandler<string>? DecompressionProgress;
-        public new event EventHandler<string>? DecompressionError;
+        public event EventHandler<string>? DecompressionStarted;
+        public event EventHandler<string>? DecompressionProgress;
+        public event EventHandler<string>? DecompressionError;
 
         static Microsoft_Decompressor()
         {

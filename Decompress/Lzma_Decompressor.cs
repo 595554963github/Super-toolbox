@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class Lzma_Decompressor : BaseExtractor
     {
-        public new event EventHandler<string>? DecompressionStarted;
-        public new event EventHandler<string>? DecompressionProgress;
-        public new event EventHandler<string>? DecompressionError;
+        public event EventHandler<string>? DecompressionStarted;
+        public event EventHandler<string>? DecompressionProgress;
+        public event EventHandler<string>? DecompressionError;
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {

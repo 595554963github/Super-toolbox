@@ -6,9 +6,9 @@ namespace super_toolbox
     {
         private const ushort COMPRESSION_FORMAT_LZNT1 = 2;
 
-        public new event EventHandler<string>? DecompressionStarted;
-        public new event EventHandler<string>? DecompressionProgress;
-        public new event EventHandler<string>? DecompressionError;
+        public event EventHandler<string>? DecompressionStarted;
+        public event EventHandler<string>? DecompressionProgress;
+        public event EventHandler<string>? DecompressionError;
 
         [DllImport("ntdll.dll", SetLastError = true)]
         private static extern uint RtlDecompressBuffer(

@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class Yay0_Decompressor : BaseExtractor
     {      
-        public new event EventHandler<string>? DecompressionStarted;
-        public new event EventHandler<string>? DecompressionProgress;
-        public new event EventHandler<string>? DecompressionError;
+        public event EventHandler<string>? DecompressionStarted;
+        public event EventHandler<string>? DecompressionProgress;
+        public event EventHandler<string>? DecompressionError;
         private static readonly byte[] Yay0Magic = { 0x59, 0x61, 0x79, 0x30 };
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {

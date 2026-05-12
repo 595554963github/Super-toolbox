@@ -4,9 +4,9 @@ namespace super_toolbox
 {
     public class Brotli_Decompressor : BaseExtractor
     {
-        public new event EventHandler<string>? DecompressionStarted;
-        public new event EventHandler<string>? DecompressionProgress;
-        public new event EventHandler<string>? DecompressionError;
+        public event EventHandler<string>? DecompressionStarted;
+        public event EventHandler<string>? DecompressionProgress;
+        public event EventHandler<string>? DecompressionError;
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
@@ -47,7 +47,7 @@ namespace super_toolbox
                         string fileName = Path.GetFileNameWithoutExtension(filePath);
                         string outputPath = Path.Combine(decompressedDir, fileName);
                         string? outputDir = Path.GetDirectoryName(outputPath);
-                        
+
                         if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
                         {
                             Directory.CreateDirectory(outputDir);

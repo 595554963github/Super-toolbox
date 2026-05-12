@@ -6,9 +6,9 @@ namespace super_toolbox
     public class LzhamCustom_Decompressor : BaseExtractor
     {
         private static string _tempExePath;
-        public new event EventHandler<string>? DecompressionStarted;
-        public new event EventHandler<string>? DecompressionProgress;
-        public new event EventHandler<string>? DecompressionError;
+        public event EventHandler<string>? DecompressionStarted;
+        public event EventHandler<string>? DecompressionProgress;
+        public event EventHandler<string>? DecompressionError;
         static LzhamCustom_Decompressor()
         {
             string tempDir = Path.Combine(Path.GetTempPath(), "supertoolbox_temp");

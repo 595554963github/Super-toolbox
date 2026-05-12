@@ -6,9 +6,9 @@ namespace super_toolbox
     {
         private const uint COMPRESS_ALGORITHM_MSZIP = 2;
 
-        public new event EventHandler<string>? DecompressionStarted;
-        public new event EventHandler<string>? DecompressionProgress;
-        public new event EventHandler<string>? DecompressionError;
+        public event EventHandler<string>? DecompressionStarted;
+        public event EventHandler<string>? DecompressionProgress;
+        public event EventHandler<string>? DecompressionError;
 
         [DllImport("cabinet.dll", SetLastError = true)]
         private static extern bool CreateDecompressor(uint algorithm, IntPtr allocationRoutines, out IntPtr decompressorHandle);

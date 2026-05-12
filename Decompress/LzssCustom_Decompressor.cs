@@ -2,9 +2,9 @@ namespace super_toolbox
 {
     public class LzssCustom_Decompressor : BaseExtractor
     {
-        public new event EventHandler<string>? DecompressionStarted;
-        public new event EventHandler<string>? DecompressionProgress;
-        public new event EventHandler<string>? DecompressionError;
+        public event EventHandler<string>? DecompressionStarted;
+        public event EventHandler<string>? DecompressionProgress;
+        public event EventHandler<string>? DecompressionError;
 
         private const int LOOKAHEAD_BUFFER_SIZE = 264;
         private const int MIN_LENGTH = 4;
@@ -172,7 +172,7 @@ namespace super_toolbox
                 BitInputStream bitStream = new BitInputStream(inputStream);
                 try
                 {
-                    // 读取原始文件大小（32位，小端序）
+                    // 读取原始文件大小（32位,小端序）
                     ulong fileSizeBits = bitStream.GetBits(32);
                     long fsize = (long)fileSizeBits;
 

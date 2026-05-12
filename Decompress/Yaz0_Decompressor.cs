@@ -5,9 +5,9 @@ namespace super_toolbox
     public class Yaz0_Decompressor : BaseExtractor
     {
         private static readonly byte[] Yaz0Magic = { 0x59, 0x61, 0x7A, 0x30 };
-        public new event EventHandler<string>? DecompressionStarted;
-        public new event EventHandler<string>? DecompressionProgress;
-        public new event EventHandler<string>? DecompressionError;
+        public event EventHandler<string>? DecompressionStarted;
+        public event EventHandler<string>? DecompressionProgress;
+        public event EventHandler<string>? DecompressionError;
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
