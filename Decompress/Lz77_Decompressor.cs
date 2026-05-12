@@ -1,54 +1,49 @@
 namespace super_toolbox
 {
-    public class Lz77_Compressor : BaseExtractor
+    public class Lz77_Decompressor : BaseExtractor
     {
-        public new event EventHandler<string>? CompressionStarted;
-        public new event EventHandler<string>? CompressionProgress;
-        public new event EventHandler<string>? CompressionError;
-
-        private const int BufferSize = 64;
+        public event EventHandler<string>? DecompressionStarted;
+        public event EventHandler<string>? DecompressionProgress;
+        public event EventHandler<string>? DecompressionError;
 
         public override async Task ExtractAsync(string directoryPath, CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(directoryPath))
             {
-                CompressionError?.Invoke(this, $"源文件夹{directoryPath}不存在");
-                OnCompressionFailed($"源文件夹{directoryPath}不存在");
+                DecompressionError?.Invoke(this, $"源文件夹{directoryPath}不存在");
+                OnDecompressionFailed($"源文件夹{directoryPath}不存在");
                 return;
             }
 
-            var filesToCompress = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
-            if (filesToCompress.Length == 0)
-            {
-                CompressionError?.Invoke(this, "未找到需要压缩的文件");
-                OnCompressionFailed("未找到需要压缩的文件");
-                return;
-            }
-
-            string compressedDir = Path.Combine(directoryPath, "Compressed");
-            Directory.CreateDirectory(compressedDir);
-            CompressionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
+            string decompressedDir = Path.Combine(directoryPath, "Decompressed");
+            Directory.CreateDirectory(decompressedDir);
+            DecompressionStarted?.Invoke(this, $"开始处理目录:{directoryPath}");
 
             try
             {
                 await Task.Run(() =>
                 {
-                    foreach (var file in Directory.GetFiles(compressedDir, "*.lz77", SearchOption.AllDirectories))
+                    var allFiles = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
+                    var filesToProcess = allFiles.Where(IsLz77File).ToArray();
+
+                    if (filesToProcess.Length == 0)
                     {
-                        File.Delete(file);
+                        DecompressionError?.Invoke(this, "未找到有效的LZ77压缩文件");
+                        OnDecompressionFailed("未找到有效的LZ77压缩文件");
+                        return;
                     }
 
-                    TotalFilesToCompress = filesToCompress.Length;
+                    TotalFilesToDecompress = filesToProcess.Length;
                     int processedFiles = 0;
 
-                    foreach (var filePath in filesToCompress)
+                    foreach (var filePath in filesToProcess)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         processedFiles++;
-                        CompressionProgress?.Invoke(this, $"正在压缩文件({processedFiles}/{TotalFilesToCompress}): {Path.GetFileName(filePath)}");
+                        DecompressionProgress?.Invoke(this, $"正在解压文件({processedFiles}/{TotalFilesToDecompress}): {Path.GetFileName(filePath)}");
 
-                        string relativePath = GetRelativePath(directoryPath, filePath);
-                        string outputPath = Path.Combine(compressedDir, relativePath + ".lz77");
+                        string fileName = Path.GetFileNameWithoutExtension(filePath);
+                        string outputPath = Path.Combine(decompressedDir, fileName);
                         string outputDir = Path.GetDirectoryName(outputPath) ??
                             throw new InvalidOperationException($"无法确定输出目录路径:{outputPath}");
 
@@ -59,98 +54,103 @@ namespace super_toolbox
 
                         try
                         {
-                            CompressFileWithLz77(filePath, outputPath, BufferSize);
-
-                            if (File.Exists(outputPath) && new FileInfo(outputPath).Length > 0)
+                            if (DecompressLz77File(filePath, outputPath))
                             {
-                                CompressionProgress?.Invoke(this, $"已压缩:{Path.GetFileName(outputPath)}");
-                                OnFileCompressed(outputPath);
+                                if (File.Exists(outputPath) && new FileInfo(outputPath).Length > 0)
+                                {
+                                    DecompressionProgress?.Invoke(this, $"已解压:{Path.GetFileName(outputPath)}");
+                                    OnFileDecompressed(outputPath);
+                                }
+                                else
+                                {
+                                    DecompressionError?.Invoke(this, $"解压成功但输出文件异常:{outputPath}");
+                                    OnDecompressionFailed($"解压成功但输出文件异常:{outputPath}");
+                                }
                             }
                             else
                             {
-                                CompressionError?.Invoke(this, $"压缩成功但输出文件异常:{outputPath}");
-                                OnCompressionFailed($"压缩成功但输出文件异常:{outputPath}");
+                                DecompressionError?.Invoke(this, $"解压文件失败:{filePath}");
+                                OnDecompressionFailed($"解压文件失败:{filePath}");
                             }
                         }
                         catch (Exception ex)
                         {
-                            CompressionError?.Invoke(this, $"压缩文件{filePath}时出错:{ex.Message}");
-                            OnCompressionFailed($"压缩文件{filePath}时出错:{ex.Message}");
+                            DecompressionError?.Invoke(this, $"解压文件{filePath}时出错:{ex.Message}");
+                            OnDecompressionFailed($"解压文件{filePath}时出错:{ex.Message}");
                         }
                     }
 
-                    OnCompressionCompleted();
-                    CompressionProgress?.Invoke(this, $"压缩完成,共压缩{TotalFilesToCompress}个文件");
+                    OnDecompressionCompleted();
+                    DecompressionProgress?.Invoke(this, $"解压完成,共解压{TotalFilesToDecompress}个文件");
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
             {
-                CompressionError?.Invoke(this, "压缩操作已取消");
-                OnCompressionFailed("压缩操作已取消");
+                DecompressionError?.Invoke(this, "解压操作已取消");
+                OnDecompressionFailed("解压操作已取消");
                 throw;
             }
             catch (Exception ex)
             {
-                CompressionError?.Invoke(this, $"压缩过程出错:{ex.Message}");
-                OnCompressionFailed($"压缩过程出错:{ex.Message}");
+                DecompressionError?.Invoke(this, $"解压过程出错:{ex.Message}");
+                OnDecompressionFailed($"解压过程出错:{ex.Message}");
             }
         }
 
-        private void CompressFileWithLz77(string inputPath, string outputPath, int bufferSize)
+        private bool IsLz77File(string filePath)
         {
-            byte[] input = File.ReadAllBytes(inputPath);
-            List<byte> output = new List<byte>();
-            int position = 0;
-
-            while (position < input.Length)
+            try
             {
-                int matchLength = 0;
-                int matchDistance = 0;
-                int searchStart = Math.Max(0, position - bufferSize);
-
-                for (int i = searchStart; i < position; i++)
-                {
-                    int currentLength = 0;
-                    int maxLength = Math.Min(bufferSize, input.Length - position);
-
-                    while (currentLength < maxLength &&
-                           input[i + currentLength] == input[position + currentLength])
-                    {
-                        currentLength++;
-                    }
-
-                    if (currentLength > matchLength && currentLength >= 3)
-                    {
-                        matchLength = currentLength;
-                        matchDistance = position - i;
-                    }
-                }
-
-                if (matchLength >= 3)
-                {
-                    output.AddRange(BitConverter.GetBytes((ushort)matchDistance));
-                    output.Add((byte)matchLength);
-                    position += matchLength;
-                }
-                else
-                {
-                    output.Add(0);
-                    output.Add(input[position]);
-                    position++;
-                }
+                return Path.GetExtension(filePath).Equals(".lz77", StringComparison.OrdinalIgnoreCase);
             }
-
-            File.WriteAllBytes(outputPath, output.ToArray());
+            catch
+            {
+                return false;
+            }
         }
 
-        private string GetRelativePath(string rootPath, string fullPath)
+        private bool DecompressLz77File(string inputPath, string outputPath)
         {
-            Uri rootUri = new Uri(rootPath.EndsWith(Path.DirectorySeparatorChar.ToString())
-                ? rootPath
-                : rootPath + Path.DirectorySeparatorChar);
-            Uri fullUri = new Uri(fullPath);
-            return Uri.UnescapeDataString(rootUri.MakeRelativeUri(fullUri).ToString()
-                .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
+            try
+            {
+                byte[] input = File.ReadAllBytes(inputPath);
+                List<byte> output = new List<byte>();
+                int position = 0;
+
+                while (position < input.Length)
+                {
+                    if (position + 1 < input.Length && input[position] == 0)
+                    {
+                        output.Add(input[position + 1]);
+                        position += 2;
+                    }
+                    else if (position + 3 <= input.Length)
+                    {
+                        ushort distance = BitConverter.ToUInt16(input, position);
+                        byte length = input[position + 2];
+
+                        int start = output.Count - distance;
+                        for (int i = 0; i < length; i++)
+                        {
+                            if (start + i < output.Count)
+                                output.Add(output[start + i]);
+                        }
+
+                        position += 3;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                File.WriteAllBytes(outputPath, output.ToArray());
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public override void Extract(string directoryPath)
